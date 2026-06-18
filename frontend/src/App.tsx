@@ -2,9 +2,19 @@ import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from './auth/AuthContext'
+import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import FieldResponder from './pages/FieldResponder'
+import Communications from './pages/Communications'
+import IncidentDetail from './pages/IncidentDetail'
+import Incidents from './pages/Incidents'
+import Reports from './pages/Reports'
+import CommandCenter from './pages/CommandCenter'
+import Settings from './pages/Settings'
+import Tasks from './pages/Tasks'
+import Map from './pages/Map'
+import Shelters from './pages/Shelters'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +79,7 @@ export default function App() {
                 </PublicOnly>
               }
             />
+            {/* Existing pages have their own full-screen layouts — NOT wrapped in <Layout> */}
             <Route
               path="/dashboard"
               element={
@@ -82,6 +93,97 @@ export default function App() {
               element={
                 <RequireAuth>
                   <FieldResponder />
+                </RequireAuth>
+              }
+            />
+            {/* New pages ported from p4 — wrapped in shared <Layout> (sidebar + header) */}
+            <Route
+              path="/command-center"
+              element={
+                <RequireAuth>
+                  <Layout>
+                    <CommandCenter />
+                  </Layout>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/communications"
+              element={
+                <RequireAuth>
+                  <Layout>
+                    <Communications />
+                  </Layout>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/incidents"
+              element={
+                <RequireAuth>
+                  <Layout>
+                    <Incidents />
+                  </Layout>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/incidents/:id"
+              element={
+                <RequireAuth>
+                  <Layout>
+                    <IncidentDetail />
+                  </Layout>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/map"
+              element={
+                <RequireAuth>
+                  <Layout>
+                    <Map />
+                  </Layout>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <RequireAuth>
+                  <Layout>
+                    <Reports />
+                  </Layout>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <RequireAuth>
+                  <Layout>
+                    <Settings />
+                  </Layout>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/shelters"
+              element={
+                <RequireAuth>
+                  <Layout>
+                    <Shelters />
+                  </Layout>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/tasks"
+              element={
+                <RequireAuth>
+                  <Layout>
+                    <Tasks />
+                  </Layout>
                 </RequireAuth>
               }
             />

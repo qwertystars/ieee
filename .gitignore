@@ -21,3 +21,7 @@ dist/
 # OMC state
 .omc/state/
 .omc/logs/
+.omo/run-continuation/
+
+# External references (p4 source cloned for porting)
+tmp/
