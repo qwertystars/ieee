@@ -1,0 +1,90 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_____________ test_command_center_dashboard_when_demo_event_loaded _____________
+
+    def test_command_center_dashboard_when_demo_event_loaded() -> None:
+>       headers = _login()
+                  ^^^^^^^^
+
+backend/tests/test_demo_workflow.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _login() -> dict[str, str]:
+        response = client.post(
+            "/api/auth/login",
+            data={"username": "emergency_manager@demo.disaster", "password": "demo1234"},
+        )
+>       assert response.status_code == 200
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+backend/tests/test_demo_workflow.py:15: AssertionError
+_______ test_field_report_updates_dashboard_when_valid_report_submitted ________
+
+    def test_field_report_updates_dashboard_when_valid_report_submitted() -> None:
+>       headers = _login()
+                  ^^^^^^^^
+
+backend/tests/test_demo_workflow.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _login() -> dict[str, str]:
+        response = client.post(
+            "/api/auth/login",
+            data={"username": "emergency_manager@demo.disaster", "password": "demo1234"},
+        )
+>       assert response.status_code == 200
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+backend/tests/test_demo_workflow.py:15: AssertionError
+_______________ test_field_report_rejected_when_location_missing _______________
+
+    def test_field_report_rejected_when_location_missing() -> None:
+>       headers = _login()
+                  ^^^^^^^^
+
+backend/tests/test_demo_workflow.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _login() -> dict[str, str]:
+        response = client.post(
+            "/api/auth/login",
+            data={"username": "emergency_manager@demo.disaster", "password": "demo1234"},
+        )
+>       assert response.status_code == 200
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+backend/tests/test_demo_workflow.py:15: AssertionError
+____ test_recommendation_approval_and_situation_report_when_manager_reviews ____
+
+    def test_recommendation_approval_and_situation_report_when_manager_reviews() -> None:
+>       headers = _login()
+                  ^^^^^^^^
+
+backend/tests/test_demo_workflow.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _login() -> dict[str, str]:
+        response = client.post(
+            "/api/auth/login",
+            data={"username": "emergency_manager@demo.disaster", "password": "demo1234"},
+        )
+>       assert response.status_code == 200
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+backend/tests/test_demo_workflow.py:15: AssertionError
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/starlette/formparsers.py:12
+  /home/srijan/Documents/ieee/.venv/lib/python3.11/site-packages/starlette/formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.
+    import multipart
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_demo_workflow.py::test_command_center_dashboard_when_demo_event_loaded
+FAILED backend/tests/test_demo_workflow.py::test_field_report_updates_dashboard_when_valid_report_submitted
+FAILED backend/tests/test_demo_workflow.py::test_field_report_rejected_when_location_missing
+FAILED backend/tests/test_demo_workflow.py::test_recommendation_approval_and_situation_report_when_manager_reviews
+4 failed, 1 warning in 0.30s

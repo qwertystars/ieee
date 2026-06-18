@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"/home/srijan/Documents/ieee/.venv/bin/python - <<'PY'\\nfrom fastapi.testclient import TestClient\\nimport app.main as m\\nc = TestClient(m.app)\\nr = c.get('/healthz')\\nprint('GET /healthz', ...",
+  "error": "Exit code 1\n(trapped) error reading bcrypt version\nTraceback (most recent call last):\n  File \"/home/srijan/Documents/ieee/.venv/lib/python3.11/site-packages/passlib/handlers/bcrypt.py\", line 620, in _load_backend_mixin\n    version = _bcrypt.__about__.__version__\n              ^^^^^^^^^^^^^^^^^\nAttributeError: module 'bcrypt' has no attribute '__about__'\nGET /healthz 200 {'status': 'ok'}\nopenapi 200 paths: 1\nTraceback (most recent call last):\n  File \"<stdin>\", line 10, in <module>\n  File \"/home/s...",
+  "timestamp": "2026-06-03T15:08:20.928Z",
+  "retry_count": 1
+}
