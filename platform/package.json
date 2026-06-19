@@ -1,0 +1,31 @@
+{
+  "name": "disaster-response-platform",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck",
+    "lint": "turbo lint",
+    "db:generate": "pnpm --filter worker exec drizzle-kit generate",
+    "db:migrate:local": "pnpm --filter worker exec wrangler d1 migrations apply db --local",
+    "db:migrate:remote": "pnpm --filter worker exec wrangler d1 migrations apply db --remote",
+    "worker:dev": "pnpm --filter worker dev",
+    "worker:types": "pnpm --filter worker exec wrangler types",
+    "web:dev": "pnpm --filter web dev",
+    "web:build": "pnpm --filter web build"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "@biomejs/biome": "^1.9.4",
+    "pnpm": "^9.15.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

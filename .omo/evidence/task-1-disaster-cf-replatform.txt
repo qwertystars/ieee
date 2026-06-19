@@ -1,0 +1,32 @@
+=== T1: Platform monorepo skeleton ===
+Date: 2026-06-19T21:15:00+05:30
+
+SCENARIO 1 (happy): pnpm install + tsc -b exits 0
+---
+$ cd platform && pnpm install
+Packages: +832
+Done in 33.6s
+Exit code: 0
+
+$ pnpm -w exec tsc -b --noEmit
+Exit code: 0 (no output = no errors)
+
+SCENARIO 2 (edge): v1 backend/frontend untouched
+---
+$ git status backend/ frontend/
+On branch main
+nothing to commit, working tree clean
+
+$ git status platform/
+Untracked files:
+	platform/
+
+SCENARIO 3 (adjacent): TS strict + noUncheckedIndexedAccess enforced
+---
+tsconfig.base.json has:
+  "strict": true,
+  "noUncheckedIndexedAccess": true,
+  "noImplicitOverride": true,
+  "exactOptionalPropertyTypes": true
+
+PASS: All 3 scenarios verified.
