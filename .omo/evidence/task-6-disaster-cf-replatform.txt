@@ -1,0 +1,32 @@
+=== T6: visibility serializer + R2 presign + workflow/cron registries ===
+Date: 2026-06-19T22:15:00+05:30
+
+SCENARIO 1 (happy): publicSerialize strips PII from sensitive+draft entity
+---
+$ vitest run test/serialize.test.ts
+ ✓ strips PII fields from sensitive+draft entity
+   (name, phone, email, address, internal_notes, ai_metadata, raw_data all absent)
+   (id, type, title all present)
+
+SCENARIO 2 (happy): publicSerialize whitelists only public fields when public+official
+---
+ ✓ whitelists only public fields when visibility=public and reviewStatus=official
+   (all result keys in PUBLIC_WHITELIST; internal_notes, phone, raw_data absent)
+
+SCENARIO 3 (failure): publicSerialize throws on null input
+---
+ ✓ throws SerializationError on null input
+
+SCENARIO 4 (happy): internal+reviewed entity passes through with minimal redaction
+---
+ ✓ passes through internal+reviewed entity with minimal redaction
+   (name, phone, internal_notes, ai_metadata all present; result !== entity)
+
+SCENARIO 5 (happy): presign + registries compile and export correctly
+---
+presignUpload/presignDownload: dev returns https://r2.local/{bucket}/{key}?upload=true
+WorkflowBase abstract class exported
+cronRegistry.registerCron/getCron/listCrons exported
+registerWorkflow/getWorkflow exported
+
+PASS: All scenarios verified. 11/11 tests pass, tsc clean.

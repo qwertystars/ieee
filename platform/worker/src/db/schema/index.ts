@@ -1,41 +1,16 @@
+// Column helpers re-exported from columns.ts for backward compat
+export { ulidPk, nowMs, updatedAt, visibility, reviewStatus } from './columns';
+// orgId re-exported from orgs.ts
+export { orgId } from './orgs';
+
+// Table imports
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-
-// ─── Column helpers (FEATURES.md:38 — ULID IDs, UTC epoch ms) ──────────────
-
-/** ULID primary key — 26-char Crockford base32, monotonic. */
-export const ulidPk = () =>
-  text('id')
-    .primaryKey()
-    .notNull();
-
-/** UTC epoch milliseconds (FEATURES.md:38). */
-export const nowMs = () => integer('created_at').notNull();
-
-/** Updated-at column, defaults to created_at. */
-export const updatedAt = () => integer('updated_at').notNull();
-
-/** org_id column — present on EVERY org-scoped table (FEATURES.md:37). Indexed. */
-export const orgId = () =>
-  text('org_id')
-    .notNull()
-    .references(() => orgs.id);
-
-/** incident_id column — nullable, present on incident-scoped tables. Indexed. */
-export const incidentId = () =>
-  text('incident_id')
-    .references(() => incidents.id);
-
-/** visibility enum column (FEATURES.md:39). */
-export const visibility = () =>
-  text('visibility', { enum: ['public', 'internal', 'sensitive'] })
-    .notNull()
-    .default('internal');
-
-/** review_status enum column (FEATURES.md:39). */
-export const reviewStatus = () =>
-  text('review_status', { enum: ['draft', 'reviewed', 'official'] })
-    .notNull()
-    .default('draft');
+import { ulidPk, nowMs, updatedAt } from './columns';
+import { orgId } from './orgs';
+import { orgs } from './orgs';
+import { users, memberships, roles, rolePermissions } from './users';
+import { settings } from './settings';
+import { apiKeys, sessions, devices } from './api_keys';
 
 // ─── geo_index table (FEATURES.md:26 — H3 spatial index) ───────────────────
 
@@ -69,21 +44,6 @@ export const idempotency = sqliteTable(
     idemSourceExtIdx: index('idx_idem_source_ext').on(table.source, table.externalId),
   }),
 );
-
-// ─── orgs table (minimal stub — full schema in T7) ─────────────────────────
-
-export const orgs = sqliteTable('orgs', {
-  id: ulidPk(),
-  name: text('name').notNull(),
-  slug: text('slug').notNull().unique(),
-  kind: text('kind', { enum: ['tenant', 'agency', 'workspace'] }).notNull().default('tenant'),
-  branding: text('branding', { mode: 'json' }).$type<Record<string, unknown>>(),
-  settings: text('settings', { mode: 'json' }).$type<Record<string, unknown>>(),
-  dataRegion: text('data_region'),
-  locked: integer('locked', { mode: 'boolean' }).notNull().default(false),
-  createdAt: nowMs(),
-  updatedAt: updatedAt(),
-});
 
 // ─── incidents table (minimal stub — full schema in T21) ──────────────────
 
@@ -119,14 +79,14 @@ export const incidents = sqliteTable(
   }),
 );
 
-// ─── events table (audit hash-chain — FEATURES.md:40, full impl in T5) ───
+// ─── events table (audit hash-chain — FEATURES.md:40) ─────────────────────
 
 export const events = sqliteTable(
   'events',
   {
     id: ulidPk(),
     orgId: orgId(),
-    incidentId: incidentId(),
+    incidentId: text('incident_id'),
     actor: text('actor').notNull(),
     action: text('action').notNull(),
     entity: text('entity').notNull(),
@@ -143,12 +103,24 @@ export const events = sqliteTable(
   }),
 );
 
+// ─── incidentId helper (references incidents, stays in this file) ──────────
+
+export const incidentId = () => text('incident_id').references(() => incidents.id);
+
 // ─── Schema barrel export ───────────────────────────────────────────────────
 
 export const schema = {
   geo_index,
   idempotency,
   orgs,
+  users,
+  memberships,
+  roles,
+  rolePermissions,
+  settings,
+  apiKeys,
+  sessions,
+  devices,
   incidents,
   events,
 };
