@@ -3,6 +3,10 @@ export { users, memberships, roles, rolePermissions } from './users';
 export { settings } from './settings';
 export { apiKeys, sessions, devices } from './api_keys';
 export { notifications } from './notifications';
+export {
+  incidentAttachments, incidentNotes, incidentTags, incidentTeams,
+  incidentLinks, incidentTemplates, mapLayers, mapZones,
+} from './incident_extras';
 
 // Column helpers re-exported from columns.ts for backward compat
 export { ulidPk, nowMs, updatedAt, visibility, reviewStatus } from './columns';
