@@ -6,6 +6,7 @@ import { eq, desc } from 'drizzle-orm';
 import { ulid, nowMs } from '../../lib/ulid';
 import { writeAudit } from '../../lib/audit';
 import { recordIdempotency } from '../../lib/idempotency';
+import { onIncidentCreate } from '../../lib/onIncidentCreate';
 
 export const incidentRoutes = new Hono<AppEnv>();
 
@@ -75,6 +76,8 @@ incidentRoutes.post('/', async (c) => {
   await doStub.fetch(new Request('https://do.local/state'));
 
   await writeAudit({ db, orgId, actor: c.get('orgId') ?? 'system', action: 'incident.create', entity: `incident:${id}`, after: body });
+
+  c.executionCtx.waitUntil(onIncidentCreate(c.env, id, orgId));
 
   if (idempKey) await recordIdempotency(db, 'incident_create', idempKey, { id });
 
