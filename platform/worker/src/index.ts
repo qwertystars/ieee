@@ -2,8 +2,10 @@
  * Disaster Response Platform — Worker Entry Point
  * T1: Platform skeleton booting Hono app with /healthz
  * T2: Bindings wired via wrangler.jsonc, types via `wrangler types`
+ *    + DO class stubs exported so wrangler dev boots
  *
  * Full Hono app skeleton (T4) replaces this with route groups, middleware, chanfana.
+ * Full DO implementations land in their respective phase todos.
  */
 import { Hono } from 'hono';
 
@@ -77,5 +79,55 @@ app.get('/healthz', (c) => {
     environment: c.env.ENVIRONMENT,
   });
 });
+
+// ─── Durable Object stubs (full implementations in phase todos) ──────────────
+
+/** T21: IncidentRoom DO — per-incident WebSocket fanout, presence, live panels. */
+export class IncidentRoom implements DurableObject {
+  constructor(readonly state: DurableObjectState, readonly env: Env) {}
+  async fetch(): Promise<Response> {
+    return new Response('IncidentRoom DO stub — implemented in T21', { status: 200 });
+  }
+}
+
+/** T14: RateLimiter DO — token-bucket per org/key. */
+export class RateLimiter implements DurableObject {
+  constructor(readonly state: DurableObjectState, readonly env: Env) {}
+  async fetch(): Promise<Response> {
+    return new Response('RateLimiter DO stub — implemented in T14', { status: 200 });
+  }
+}
+
+/** T49: TaskTimer DO — per-task SLA alarm + escalation. */
+export class TaskTimer implements DurableObject {
+  constructor(readonly state: DurableObjectState, readonly env: Env) {}
+  async fetch(): Promise<Response> {
+    return new Response('TaskTimer DO stub — implemented in T49', { status: 200 });
+  }
+}
+
+/** T65: ShelterCounter DO — live occupancy per shelter. */
+export class ShelterCounter implements DurableObject {
+  constructor(readonly state: DurableObjectState, readonly env: Env) {}
+  async fetch(): Promise<Response> {
+    return new Response('ShelterCounter DO stub — implemented in T65', { status: 200 });
+  }
+}
+
+/** T116: AmbulanceQueue DO — medical dispatch priority queue. */
+export class AmbulanceQueue implements DurableObject {
+  constructor(readonly state: DurableObjectState, readonly env: Env) {}
+  async fetch(): Promise<Response> {
+    return new Response('AmbulanceQueue DO stub — implemented in T116', { status: 200 });
+  }
+}
+
+/** T157: AgencyRoom DO — inter-agency chat channel. */
+export class AgencyRoom implements DurableObject {
+  constructor(readonly state: DurableObjectState, readonly env: Env) {}
+  async fetch(): Promise<Response> {
+    return new Response('AgencyRoom DO stub — implemented in T157', { status: 200 });
+  }
+}
 
 export default app;

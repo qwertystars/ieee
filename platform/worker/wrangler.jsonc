@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "disaster-response-worker",
   "main": "src/index.ts",
-  "compatibility_date": "2026-06-19",
+  "compatibility_date": "2025-07-18",
   "compatibility_flags": ["nodejs_compat"],
 
   "observability": {
@@ -162,9 +162,7 @@
   "vectorize": [
     {
       "binding": "embeddings",
-      "index_name": "disaster-embeddings",
-      "dimensions": 1024,
-      "metric": "cosine"
+      "index_name": "disaster-embeddings"
     }
   ],
 
