@@ -2,6 +2,7 @@ export { orgs, orgId } from './orgs';
 export { users, memberships, roles, rolePermissions } from './users';
 export { settings } from './settings';
 export { apiKeys, sessions, devices } from './api_keys';
+export { notifications } from './notifications';
 
 // Column helpers re-exported from columns.ts for backward compat
 export { ulidPk, nowMs, updatedAt, visibility, reviewStatus } from './columns';
