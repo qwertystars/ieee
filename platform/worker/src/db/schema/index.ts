@@ -1,7 +1,10 @@
+export { orgs, orgId } from './orgs';
+export { users, memberships, roles, rolePermissions } from './users';
+export { settings } from './settings';
+export { apiKeys, sessions, devices } from './api_keys';
+
 // Column helpers re-exported from columns.ts for backward compat
 export { ulidPk, nowMs, updatedAt, visibility, reviewStatus } from './columns';
-// orgId re-exported from orgs.ts
-export { orgId } from './orgs';
 
 // Table imports
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
