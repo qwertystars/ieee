@@ -54,6 +54,22 @@ export const geo_index = sqliteTable(
   }),
 );
 
+// ─── idempotency table (FEATURES.md:41 — dedup on source+external_id) ─────
+
+export const idempotency = sqliteTable(
+  'idempotency',
+  {
+    id: text('id').primaryKey().notNull(),
+    source: text('source').notNull(),
+    externalId: text('external_id').notNull(),
+    result: text('result', { mode: 'json' }).$type<unknown>(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => ({
+    idemSourceExtIdx: index('idx_idem_source_ext').on(table.source, table.externalId),
+  }),
+);
+
 // ─── orgs table (minimal stub — full schema in T7) ─────────────────────────
 
 export const orgs = sqliteTable('orgs', {
@@ -131,6 +147,7 @@ export const events = sqliteTable(
 
 export const schema = {
   geo_index,
+  idempotency,
   orgs,
   incidents,
   events,

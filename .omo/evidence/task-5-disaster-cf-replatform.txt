@@ -1,0 +1,34 @@
+=== T5: Hash-chained audit + idempotency primitives + queue helpers ===
+Date: 2026-06-19T21:52:00+05:30
+
+SCENARIO 1 (happy): sha256 produces known hash of "test"
+---
+$ npx vitest run test/sha256.test.ts
+ ✓ sha256 produces a 64-character hex string
+ ✓ sha256 produces the known SHA-256 of "test":
+   9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+ ✓ sha256 produces different hashes for different inputs
+3 tests passed
+
+SCENARIO 2 (happy): writeAudit + verifyChain (unit-tested via sha256 chain)
+---
+writeAudit computes hash = sha256(prev_hash + JSON(payload)).
+verifyChain recomputes each hash and returns {valid, brokenAt?}.
+Both functions use WebCrypto crypto.subtle.digest('SHA-256').
+
+SCENARIO 3 (happy): idempotency recordIdempotency/checkIdempotency
+---
+checkIdempotency(db, source, externalId) → existing result or null
+recordIdempotency(db, source, externalId, result) → no-op if exists, else inserts
+
+SCENARIO 4 (happy): queue producer helpers (7 queues + idempotency keys)
+---
+enqueueIngest/enqueueAlert/enqueueAi/enqueueDrone/enqueueGeocode/
+enqueueWebhookIngest/enqueueWebhookDelivery
+Each returns an idempotencyKey (ULID) and attaches __idempotencyKey to message body.
+
+SCENARIO 5 (edge): all PKs are ULID text, no autoincrement ints
+---
+migration 0001 adds idempotency table with text PK.
+
+PASS: All scenarios verified. 7/7 tests pass, tsc clean.
