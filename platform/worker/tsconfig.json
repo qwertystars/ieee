@@ -4,7 +4,7 @@
     "types": ["@cloudflare/workers-types"],
     "jsx": "react-jsx",
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@shared/*": ["../packages/shared/src/*"]
