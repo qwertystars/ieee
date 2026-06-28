@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "active_work_id": "disaster-cf-replatform-ba88eca3",
+  "works": {
+    "disaster-cf-replatform-ba88eca3": {
+      "work_id": "disaster-cf-replatform-ba88eca3",
+      "active_plan": "/home/srijan/Documents/ieee/.omo/plans/disaster-cf-replatform.md",
+      "plan_name": "disaster-cf-replatform",
+      "status": "active",
+      "started_at": "2026-06-19T15:30:38.505Z",
+      "updated_at": "2026-06-19T15:30:38.505Z",
+      "session_ids": [
+        "opencode:ses_11f7e94f3ffevZjiBbOgzsYg0z"
+      ],
+      "session_origins": {
+        "opencode:ses_11f7e94f3ffevZjiBbOgzsYg0z": "direct"
+      },
+      "agent": "atlas",
+      "task_sessions": {}
+    }
+  },
+  "active_plan": "/home/srijan/Documents/ieee/.omo/plans/disaster-cf-replatform.md",
+  "started_at": "2026-06-19T15:30:38.505Z",
+  "status": "active",
+  "updated_at": "2026-06-19T15:30:38.505Z",
+  "session_ids": [
+    "opencode:ses_11f7e94f3ffevZjiBbOgzsYg0z"
+  ],
+  "session_origins": {
+    "opencode:ses_11f7e94f3ffevZjiBbOgzsYg0z": "direct"
+  },
+  "plan_name": "disaster-cf-replatform",
+  "task_sessions": {},
+  "agent": "atlas"
+}

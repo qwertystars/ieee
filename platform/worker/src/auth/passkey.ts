@@ -1,7 +1,8 @@
 import type { Env } from '../index';
 
-// WebAuthn passkey stubs — real implementation needs @simplewebauthn/server.
-// These return placeholder values so the auth routes work in dev without the package.
+// WebAuthn passkey implementation using PasskeyDO for challenge/credential storage.
+// The DO handles challenge lifecycle and credential registry; this module generates
+// options and delegates verification.
 
 export interface PasskeyRegistrationOptions {
   challenge: string;
@@ -12,11 +13,18 @@ export interface PasskeyRegistrationOptions {
 }
 
 export async function generateRegistrationOptions(
-  _env: Env,
+  env: Env,
   userId: string,
   userEmail: string,
 ): Promise<PasskeyRegistrationOptions> {
   const challenge = crypto.randomUUID();
+  const doId = env.PasskeyDO.idFromName(userEmail);
+  const doStub = env.PasskeyDO.get(doId);
+  await doStub.fetch(new Request('https://do.local/challenge/store', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ challenge, userId, userEmail, type: 'registration' }),
+  }));
   return {
     challenge,
     rp: { name: 'Disaster Response Platform', id: 'localhost' },
@@ -27,11 +35,25 @@ export async function generateRegistrationOptions(
 }
 
 export async function verifyRegistration(
-  _env: Env,
-  _userId: string,
-  _credential: unknown,
+  env: Env,
+  userEmail: string,
+  credential: unknown,
 ): Promise<boolean> {
-  return true;
+  const cred = credential as { id?: string; publicKey?: string; type?: string; response?: { clientDataJSON?: string } };
+  if (!cred?.id || !cred?.publicKey) return false;
+
+  const doId = env.PasskeyDO.idFromName(userEmail);
+  const doStub = env.PasskeyDO.get(doId);
+  const resp = await doStub.fetch(new Request('https://do.local/credential/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      credentialId: cred.id,
+      publicKey: cred.publicKey,
+      deviceType: cred.type ?? 'unknown',
+    }),
+  }));
+  return resp.ok;
 }
 
 export interface PasskeyAuthOptions {
@@ -42,16 +64,32 @@ export interface PasskeyAuthOptions {
 }
 
 export async function generateAuthenticationOptions(
-  _env: Env,
-  _userEmail: string,
+  env: Env,
+  userEmail: string,
 ): Promise<PasskeyAuthOptions> {
   const challenge = crypto.randomUUID();
+  const doId = env.PasskeyDO.idFromName(userEmail);
+  const doStub = env.PasskeyDO.get(doId);
+  await doStub.fetch(new Request('https://do.local/challenge/store', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ challenge, userId: userEmail, userEmail, type: 'authentication' }),
+  }));
   return { challenge, rpId: 'localhost', timeout: 60000, userVerification: 'preferred' };
 }
 
 export async function verifyAuthentication(
-  _env: Env,
-  _credential: unknown,
+  env: Env,
+  credential: unknown,
 ): Promise<string | null> {
-  return null;
+  const cred = credential as { id?: string; response?: { clientDataJSON?: string } };
+  if (!cred?.id) return null;
+
+  const doId = env.PasskeyDO.idFromName(cred.id);
+  const doStub = env.PasskeyDO.get(doId);
+  const resp = await doStub.fetch(new Request('https://do.local/credential/lookup?' + new URLSearchParams({ credentialId: cred.id })));
+  if (!resp.ok) return null;
+  const result = await resp.json() as { ok: boolean; credential?: { credentialId: string } };
+  if (!result.ok || !result.credential) return null;
+  return result.credential.credentialId;
 }

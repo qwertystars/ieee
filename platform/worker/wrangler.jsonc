@@ -136,7 +136,8 @@
       { "name": "TaskTimer", "class_name": "TaskTimer" },
       { "name": "ShelterCounter", "class_name": "ShelterCounter" },
       { "name": "AmbulanceQueue", "class_name": "AmbulanceQueue" },
-      { "name": "AgencyRoom", "class_name": "AgencyRoom" }
+      { "name": "AgencyRoom", "class_name": "AgencyRoom" },
+      { "name": "PasskeyDO", "class_name": "PasskeyDO" }
     ]
   },
 
@@ -149,7 +150,8 @@
         "TaskTimer",
         "ShelterCounter",
         "AmbulanceQueue",
-        "AgencyRoom"
+        "AgencyRoom",
+        "PasskeyDO"
       ]
     }
   ],

@@ -7,6 +7,10 @@ export {
   incidentAttachments, incidentNotes, incidentTags, incidentTeams,
   incidentLinks, incidentTemplates, mapLayers, mapZones,
 } from './incident_extras';
+export {
+  disasterEvents, incidentReports, roadStatuses, responseTeams,
+  tasks, shelters, recommendations, alerts, areaAssessments,
+} from './domain';
 
 // Column helpers re-exported from columns.ts for backward compat
 export { ulidPk, nowMs, updatedAt, visibility, reviewStatus } from './columns';
@@ -19,6 +23,10 @@ import { orgs } from './orgs';
 import { users, memberships, roles, rolePermissions } from './users';
 import { settings } from './settings';
 import { apiKeys, sessions, devices } from './api_keys';
+import {
+  disasterEvents, incidentReports, roadStatuses, responseTeams,
+  tasks, shelters, recommendations, alerts, areaAssessments,
+} from './domain';
 
 // ─── geo_index table (FEATURES.md:26 — H3 spatial index) ───────────────────
 
@@ -131,4 +139,13 @@ export const schema = {
   devices,
   incidents,
   events,
+  disasterEvents,
+  incidentReports,
+  roadStatuses,
+  responseTeams,
+  tasks,
+  shelters,
+  recommendations,
+  alerts,
+  areaAssessments,
 };
