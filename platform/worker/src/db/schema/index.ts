@@ -51,6 +51,7 @@ import {
   infraAssets, infraAssetDeps,
 } from './p8_domain';
 import { scenarios, droneMissions, droneFlights, damageReports } from './p9_predsim';
+import { analyticsRollups, decisions, savedSearches, kbDocuments } from './p10_analytics';
 
 // ─── geo_index table (FEATURES.md:26 — H3 spatial index) ───────────────────
 
@@ -188,6 +189,9 @@ export {
 // P9 schemas
 export { scenarios, droneMissions, droneFlights, damageReports } from './p9_predsim';
 
+// P10 schemas
+export { analyticsRollups, decisions, savedSearches, kbDocuments } from './p10_analytics';
+
 export const schema = {
   geo_index,
   idempotency,
@@ -232,4 +236,6 @@ export const schema = {
   infraAssets, infraAssetDeps,
   // P9
   scenarios, droneMissions, droneFlights, damageReports,
+  // P10
+  analyticsRollups, decisions, savedSearches, kbDocuments,
 };
