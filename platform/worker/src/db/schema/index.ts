@@ -61,7 +61,7 @@ export const idempotency = sqliteTable(
   }),
 );
 
-// ─── incidents table (minimal stub — full schema in T21) ──────────────────
+// ─── incidents table (DESIGN.md §4: Incident) ─────────────────────────────
 
 export const incidents = sqliteTable(
   'incidents',
