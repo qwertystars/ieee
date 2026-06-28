@@ -32,6 +32,10 @@ import {
   responders, vehicles, equipment, shifts, fieldCheckins, fieldReports,
   helpRequests, volunteerProfiles, communityOrgs,
 } from './p3';
+import {
+  shelterStatus, shelterCheckins, shelterSupplyRequests, shelterPlans,
+  missingPersons, foundPersons, missingPersonNotes, reunificationCases,
+} from './p4_shelters';
 
 // ─── geo_index table (FEATURES.md:26 — H3 spatial index) ───────────────────
 
@@ -138,6 +142,12 @@ export {
 } from './p3';
 export type { ChecklistItem } from './p3';
 
+// P4 schemas
+export {
+  shelterStatus, shelterCheckins, shelterSupplyRequests, shelterPlans,
+  missingPersons, foundPersons, missingPersonNotes, reunificationCases,
+} from './p4_shelters';
+
 export const schema = {
   geo_index,
   idempotency,
@@ -165,4 +175,7 @@ export const schema = {
   taskExtras, taskLinks, taskComments, taskAttachments, taskTemplates,
   responders, vehicles, equipment, shifts, fieldCheckins, fieldReports,
   helpRequests, volunteerProfiles, communityOrgs,
+  // P4
+  shelterStatus, shelterCheckins, shelterSupplyRequests, shelterPlans,
+  missingPersons, foundPersons, missingPersonNotes, reunificationCases,
 };
