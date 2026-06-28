@@ -40,6 +40,10 @@ import {
   rawReports, ingestLogs, feedSources, weatherObs, weatherForecasts,
   popH3, popEstimates, popNeeds, weatherIndices,
 } from './p5_ingestion';
+import {
+  alertDeliveries, alertTemplates, commsDrafts, publicSubscriptions,
+  webhookSubscriptions, webhookDeliveries,
+} from './p6_comms';
 
 // ─── geo_index table (FEATURES.md:26 — H3 spatial index) ───────────────────
 
@@ -158,6 +162,12 @@ export {
   popH3, popEstimates, popNeeds, weatherIndices,
 } from './p5_ingestion';
 
+// P6 schemas
+export {
+  alertDeliveries, alertTemplates, commsDrafts, publicSubscriptions,
+  webhookSubscriptions, webhookDeliveries,
+} from './p6_comms';
+
 export const schema = {
   geo_index,
   idempotency,
@@ -191,4 +201,7 @@ export const schema = {
   // P5
   rawReports, ingestLogs, feedSources, weatherObs, weatherForecasts,
   popH3, popEstimates, popNeeds, weatherIndices,
+  // P6
+  alertDeliveries, alertTemplates, commsDrafts, publicSubscriptions,
+  webhookSubscriptions, webhookDeliveries,
 };

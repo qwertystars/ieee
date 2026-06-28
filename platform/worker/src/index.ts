@@ -36,6 +36,7 @@ import { volunteerRoutes } from './api/routes/volunteers';
 import { shelterExtRoutes } from './api/routes/shelterExt';
 import { missingPersonRoutes } from './api/routes/missingPersons';
 import { ingestionRoutes } from './api/routes/ingestion';
+import { commsRoutes } from './api/routes/comms';
 import {
   ingestConsumer, alertConsumer, aiConsumer, droneConsumer,
   geocodeConsumer, webhookIngestConsumer, webhookDeliveryConsumer,
@@ -122,6 +123,7 @@ app.route('/api', volunteerRoutes);
 app.route('/api', shelterExtRoutes);
 app.route('/api', missingPersonRoutes);
 app.route('/api', ingestionRoutes);
+app.route('/api', commsRoutes);
 
 // ─── OpenAPI via chanfana ───────────────────────────────────────────────────
 
