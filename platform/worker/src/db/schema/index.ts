@@ -44,6 +44,7 @@ import {
   alertDeliveries, alertTemplates, commsDrafts, publicSubscriptions,
   webhookSubscriptions, webhookDeliveries,
 } from './p6_comms';
+import { aiCalls, prompts, aiOutputs, reports, reportTemplates } from './p7_ai_reports';
 
 // ─── geo_index table (FEATURES.md:26 — H3 spatial index) ───────────────────
 
@@ -168,6 +169,9 @@ export {
   webhookSubscriptions, webhookDeliveries,
 } from './p6_comms';
 
+// P7 schemas
+export { aiCalls, prompts, aiOutputs, reports, reportTemplates } from './p7_ai_reports';
+
 export const schema = {
   geo_index,
   idempotency,
@@ -204,4 +208,6 @@ export const schema = {
   // P6
   alertDeliveries, alertTemplates, commsDrafts, publicSubscriptions,
   webhookSubscriptions, webhookDeliveries,
+  // P7
+  aiCalls, prompts, aiOutputs, reports, reportTemplates,
 };
