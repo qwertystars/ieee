@@ -56,6 +56,10 @@ import {
   securityLogs, retentionPolicies, consents, featureFlags, announcements,
   limitCounters, dsrRequests, complianceRecords,
 } from './p11_security';
+import {
+  agencies, mous, incidentShares, exercises, watches,
+  recoveryCases, costCodes, costEntries, rateCards,
+} from './p12_multiagency';
 
 // ─── geo_index table (FEATURES.md:26 — H3 spatial index) ───────────────────
 
@@ -202,6 +206,12 @@ export {
   limitCounters, dsrRequests, complianceRecords,
 } from './p11_security';
 
+// P12 schemas
+export {
+  agencies, mous, incidentShares, exercises, watches,
+  recoveryCases, costCodes, costEntries, rateCards,
+} from './p12_multiagency';
+
 export const schema = {
   geo_index,
   idempotency,
@@ -251,4 +261,7 @@ export const schema = {
   // P11
   securityLogs, retentionPolicies, consents, featureFlags, announcements,
   limitCounters, dsrRequests, complianceRecords,
+  // P12
+  agencies, mous, incidentShares, exercises, watches,
+  recoveryCases, costCodes, costEntries, rateCards,
 };

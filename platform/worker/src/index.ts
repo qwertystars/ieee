@@ -42,6 +42,7 @@ import { domainP8Routes } from './api/routes/domainP8';
 import { predsimRoutes } from './api/routes/predsim';
 import { analyticsRoutes } from './api/routes/analytics';
 import { securityRoutes } from './api/routes/security';
+import { multiagencyRoutes } from './api/routes/multiagency';
 import {
   ingestConsumer, alertConsumer, aiConsumer, droneConsumer,
   geocodeConsumer, webhookIngestConsumer, webhookDeliveryConsumer,
@@ -134,6 +135,7 @@ app.route('/api', domainP8Routes);
 app.route('/api', predsimRoutes);
 app.route('/api', analyticsRoutes);
 app.route('/api', securityRoutes);
+app.route('/api', multiagencyRoutes);
 
 // ─── OpenAPI via chanfana ───────────────────────────────────────────────────
 
