@@ -50,6 +50,7 @@ import {
   logisticsItems, logisticsStock, logisticsMovements, resourceRequests,
   infraAssets, infraAssetDeps,
 } from './p8_domain';
+import { scenarios, droneMissions, droneFlights, damageReports } from './p9_predsim';
 
 // ─── geo_index table (FEATURES.md:26 — H3 spatial index) ───────────────────
 
@@ -184,6 +185,9 @@ export {
   infraAssets, infraAssetDeps,
 } from './p8_domain';
 
+// P9 schemas
+export { scenarios, droneMissions, droneFlights, damageReports } from './p9_predsim';
+
 export const schema = {
   geo_index,
   idempotency,
@@ -226,4 +230,6 @@ export const schema = {
   roadEdges, evacZones, medicalFacilities, triagePatients,
   logisticsItems, logisticsStock, logisticsMovements, resourceRequests,
   infraAssets, infraAssetDeps,
+  // P9
+  scenarios, droneMissions, droneFlights, damageReports,
 };
