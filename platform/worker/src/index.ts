@@ -43,6 +43,8 @@ import { predsimRoutes } from './api/routes/predsim';
 import { analyticsRoutes } from './api/routes/analytics';
 import { securityRoutes } from './api/routes/security';
 import { multiagencyRoutes } from './api/routes/multiagency';
+import { observabilityRoutes } from './api/routes/observability';
+import { scifiRoutes } from './api/routes/scifi';
 import {
   ingestConsumer, alertConsumer, aiConsumer, droneConsumer,
   geocodeConsumer, webhookIngestConsumer, webhookDeliveryConsumer,
@@ -136,6 +138,8 @@ app.route('/api', predsimRoutes);
 app.route('/api', analyticsRoutes);
 app.route('/api', securityRoutes);
 app.route('/api', multiagencyRoutes);
+app.route('/api', observabilityRoutes);
+app.route('/api', scifiRoutes);
 
 // ─── OpenAPI via chanfana ───────────────────────────────────────────────────
 

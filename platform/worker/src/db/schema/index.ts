@@ -60,6 +60,8 @@ import {
   agencies, mous, incidentShares, exercises, watches,
   recoveryCases, costCodes, costEntries, rateCards,
 } from './p12_multiagency';
+import { sloMetrics, cronJobs, localeDocuments, glossaryTerms } from './p13_observability';
+import { sciFiOutputs } from './p14_scifi';
 
 // ─── geo_index table (FEATURES.md:26 — H3 spatial index) ───────────────────
 
@@ -212,6 +214,12 @@ export {
   recoveryCases, costCodes, costEntries, rateCards,
 } from './p12_multiagency';
 
+// P13 schemas
+export { sloMetrics, cronJobs, localeDocuments, glossaryTerms } from './p13_observability';
+
+// P14 schemas
+export { sciFiOutputs } from './p14_scifi';
+
 export const schema = {
   geo_index,
   idempotency,
@@ -264,4 +272,8 @@ export const schema = {
   // P12
   agencies, mous, incidentShares, exercises, watches,
   recoveryCases, costCodes, costEntries, rateCards,
+  // P13
+  sloMetrics, cronJobs, localeDocuments, glossaryTerms,
+  // P14
+  sciFiOutputs,
 };
