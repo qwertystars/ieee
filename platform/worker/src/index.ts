@@ -29,6 +29,10 @@ import { taskRoutes } from './api/routes/tasks';
 import { shelterRoutes } from './api/routes/shelters';
 import { recommendationRoutes } from './api/routes/recommendations';
 import { dashboardRoutes as mvpDashboardRoutes } from './api/routes/mvpDashboard';
+import { taskExtRoutes } from './api/routes/tasksExt';
+import { fieldRoutes } from './api/routes/field';
+import { helpRequestRoutes } from './api/routes/helpRequests';
+import { volunteerRoutes } from './api/routes/volunteers';
 import {
   ingestConsumer, alertConsumer, aiConsumer, droneConsumer,
   geocodeConsumer, webhookIngestConsumer, webhookDeliveryConsumer,
@@ -108,6 +112,10 @@ app.route('/api', taskRoutes);
 app.route('/api', shelterRoutes);
 app.route('/api', recommendationRoutes);
 app.route('/api', mvpDashboardRoutes);
+app.route('/api', taskExtRoutes);
+app.route('/api', fieldRoutes);
+app.route('/api', helpRequestRoutes);
+app.route('/api', volunteerRoutes);
 
 // ─── OpenAPI via chanfana ───────────────────────────────────────────────────
 

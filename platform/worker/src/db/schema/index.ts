@@ -27,6 +27,11 @@ import {
   disasterEvents, incidentReports, roadStatuses, responseTeams,
   tasks, shelters, recommendations, alerts, areaAssessments,
 } from './domain';
+import {
+  taskExtras, taskLinks, taskComments, taskAttachments, taskTemplates,
+  responders, vehicles, equipment, shifts, fieldCheckins, fieldReports,
+  helpRequests, volunteerProfiles, communityOrgs,
+} from './p3';
 
 // ─── geo_index table (FEATURES.md:26 — H3 spatial index) ───────────────────
 
@@ -125,6 +130,14 @@ export const incidentId = () => text('incident_id').references(() => incidents.i
 
 // ─── Schema barrel export ───────────────────────────────────────────────────
 
+// P3 schemas
+export {
+  taskExtras, taskLinks, taskComments, taskAttachments, taskTemplates,
+  responders, vehicles, equipment, shifts, fieldCheckins, fieldReports,
+  helpRequests, volunteerProfiles, communityOrgs,
+} from './p3';
+export type { ChecklistItem } from './p3';
+
 export const schema = {
   geo_index,
   idempotency,
@@ -148,4 +161,8 @@ export const schema = {
   recommendations,
   alerts,
   areaAssessments,
+  // P3
+  taskExtras, taskLinks, taskComments, taskAttachments, taskTemplates,
+  responders, vehicles, equipment, shifts, fieldCheckins, fieldReports,
+  helpRequests, volunteerProfiles, communityOrgs,
 };
