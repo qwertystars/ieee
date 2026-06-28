@@ -38,6 +38,7 @@ import { missingPersonRoutes } from './api/routes/missingPersons';
 import { ingestionRoutes } from './api/routes/ingestion';
 import { commsRoutes } from './api/routes/comms';
 import { aiRoutes } from './api/routes/ai';
+import { domainP8Routes } from './api/routes/domainP8';
 import {
   ingestConsumer, alertConsumer, aiConsumer, droneConsumer,
   geocodeConsumer, webhookIngestConsumer, webhookDeliveryConsumer,
@@ -126,6 +127,7 @@ app.route('/api', missingPersonRoutes);
 app.route('/api', ingestionRoutes);
 app.route('/api', commsRoutes);
 app.route('/api', aiRoutes);
+app.route('/api', domainP8Routes);
 
 // ─── OpenAPI via chanfana ───────────────────────────────────────────────────
 

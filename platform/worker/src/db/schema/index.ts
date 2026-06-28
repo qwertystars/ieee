@@ -45,6 +45,11 @@ import {
   webhookSubscriptions, webhookDeliveries,
 } from './p6_comms';
 import { aiCalls, prompts, aiOutputs, reports, reportTemplates } from './p7_ai_reports';
+import {
+  roadEdges, evacZones, medicalFacilities, triagePatients,
+  logisticsItems, logisticsStock, logisticsMovements, resourceRequests,
+  infraAssets, infraAssetDeps,
+} from './p8_domain';
 
 // ─── geo_index table (FEATURES.md:26 — H3 spatial index) ───────────────────
 
@@ -172,6 +177,13 @@ export {
 // P7 schemas
 export { aiCalls, prompts, aiOutputs, reports, reportTemplates } from './p7_ai_reports';
 
+// P8 schemas
+export {
+  roadEdges, evacZones, medicalFacilities, triagePatients,
+  logisticsItems, logisticsStock, logisticsMovements, resourceRequests,
+  infraAssets, infraAssetDeps,
+} from './p8_domain';
+
 export const schema = {
   geo_index,
   idempotency,
@@ -210,4 +222,8 @@ export const schema = {
   webhookSubscriptions, webhookDeliveries,
   // P7
   aiCalls, prompts, aiOutputs, reports, reportTemplates,
+  // P8
+  roadEdges, evacZones, medicalFacilities, triagePatients,
+  logisticsItems, logisticsStock, logisticsMovements, resourceRequests,
+  infraAssets, infraAssetDeps,
 };
