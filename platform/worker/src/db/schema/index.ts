@@ -36,6 +36,10 @@ import {
   shelterStatus, shelterCheckins, shelterSupplyRequests, shelterPlans,
   missingPersons, foundPersons, missingPersonNotes, reunificationCases,
 } from './p4_shelters';
+import {
+  rawReports, ingestLogs, feedSources, weatherObs, weatherForecasts,
+  popH3, popEstimates, popNeeds, weatherIndices,
+} from './p5_ingestion';
 
 // ─── geo_index table (FEATURES.md:26 — H3 spatial index) ───────────────────
 
@@ -148,6 +152,12 @@ export {
   missingPersons, foundPersons, missingPersonNotes, reunificationCases,
 } from './p4_shelters';
 
+// P5 schemas
+export {
+  rawReports, ingestLogs, feedSources, weatherObs, weatherForecasts,
+  popH3, popEstimates, popNeeds, weatherIndices,
+} from './p5_ingestion';
+
 export const schema = {
   geo_index,
   idempotency,
@@ -178,4 +188,7 @@ export const schema = {
   // P4
   shelterStatus, shelterCheckins, shelterSupplyRequests, shelterPlans,
   missingPersons, foundPersons, missingPersonNotes, reunificationCases,
+  // P5
+  rawReports, ingestLogs, feedSources, weatherObs, weatherForecasts,
+  popH3, popEstimates, popNeeds, weatherIndices,
 };

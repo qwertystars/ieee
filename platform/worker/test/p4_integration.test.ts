@@ -36,7 +36,13 @@ describe('P4: Shelter Management + Missing Persons', () => {
   beforeAll(async () => {
     await ensureMigrations();
     const { body } = await postJSON('/api/seed/demo', {});
-    testOrgId = (body as { orgId: string }).orgId;
+    const seedBody = body as { orgId?: string };
+    if (seedBody.orgId) {
+      testOrgId = seedBody.orgId;
+    } else {
+      const result = await env.db.prepare('SELECT id FROM orgs WHERE slug = ?').bind('rivertown-demo').first<{ id: string }>();
+      testOrgId = result?.id ?? 'system';
+    }
   });
 
   it('creates a missing person report', async () => {
