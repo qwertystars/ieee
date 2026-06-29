@@ -86,10 +86,34 @@ ingestionRoutes.post('/ingest/webhook', async (c) => {
   const hmacSig = c.req.header('X-Signature');
   if (!hmacSig) return c.json({ error: { code: 'UNAUTHORIZED', message: 'Missing HMAC signature', request_id: c.get('requestId') } }, 401);
 
-  const body = await c.req.json().catch(() => ({} as Record<string, unknown>));
+  const rawBody = await c.req.text();
+  const feedSource = await db.select().from(feedSources)
+    .where(and(eq(feedSources.orgId, orgId), eq(feedSources.name, source))).limit(1).all();
+
+  const secret = (feedSource[0]?.config as { secret?: string } | null)?.secret;
+  if (!secret) {
+    return c.json({ error: { code: 'UNAUTHORIZED', message: 'No shared secret registered for source', request_id: c.get('requestId') } }, 401);
+  }
+
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(rawBody));
+  const expected = Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, '0')).join('');
+
+  if (!timingSafeEqual(expected, hmacSig)) {
+    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Invalid HMAC signature', request_id: c.get('requestId') } }, 401);
+  }
+
+  const body = JSON.parse(rawBody) as Record<string, unknown>;
   const externalId = (body.externalId as string) ?? ulid();
 
+  const existing = await db.select().from(rawReports)
+    .where(and(eq(rawReports.source, source), eq(rawReports.externalId, externalId))).limit(1).all();
+  if (existing[0]) {
+    return c.json({ id: existing[0].id, ok: true, duplicate: true });
+  }
+
   const id = ulid();
+  const logId = ulid();
   await db.insert(rawReports).values({
     id, orgId,
     source,
@@ -98,11 +122,35 @@ ingestionRoutes.post('/ingest/webhook', async (c) => {
     observedAt: nowMs(),
     confidence: 0.7,
     status: 'staged',
+    ingestLogId: logId,
     createdAt: nowMs(),
   });
 
+  await db.insert(ingestLogs).values({
+    id: logId, orgId,
+    source,
+    externalId,
+    action: 'stage',
+    result: 'ok',
+    createdAt: nowMs(),
+  });
+
+  if (feedSource[0]) {
+    await db.update(feedSources).set({ lastSuccessAt: nowMs(), lastError: null }).where(eq(feedSources.id, feedSource[0].id));
+  }
+
+  await writeAudit({ db, orgId, incidentId: null, actor: orgId, action: 'ingest.webhook', entity: `raw_report:${id}`, after: { source, externalId } });
   return c.json({ id, ok: true }, 201);
 });
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
 
 // T76: File upload ingest (simplified — parses CSV/JSON arrays)
 ingestionRoutes.post('/ingest/upload', async (c) => {

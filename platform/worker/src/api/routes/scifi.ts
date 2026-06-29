@@ -4,9 +4,15 @@ import { drizzle } from 'drizzle-orm/d1';
 import { sciFiOutputs } from '../../db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { ulid, nowMs } from '../../lib/ulid';
-import { writeAudit } from '../../lib/audit';
+import { writeAudit, sha256 } from '../../lib/audit';
 
 export const scifiRoutes = new Hono<AppEnv>();
+
+async function deterministicScore(seed: string): Promise<number> {
+  const digest = await sha256(seed);
+  const slice = digest.slice(0, 8);
+  return parseInt(slice, 16) / 0xffffffff;
+}
 
 // T172: Digital twin — composition over existing layers
 scifiRoutes.post('/scifi/digital-twin', async (c) => {
@@ -54,11 +60,17 @@ scifiRoutes.post('/scifi/hyperlocal', async (c) => {
   const id = ulid();
   const db = drizzle(c.env.db);
   const h3Cells = (body.h3Cells as string[]) ?? [];
-  const scores = h3Cells.map((h3) => ({
-    h3,
-    riskScore: Math.random() * 0.8 + 0.1,
-    rescuePriority: Math.random() * 0.9 + 0.1,
-    trappedProbability: Math.random() * 0.3,
+  const incidentId = (body.incidentId as string) ?? 'default';
+  const scores = await Promise.all(h3Cells.map(async (h3) => {
+    const riskSeed = await deterministicScore(`${incidentId}:${h3}:risk`);
+    const rescueSeed = await deterministicScore(`${incidentId}:${h3}:rescue`);
+    const trappedSeed = await deterministicScore(`${incidentId}:${h3}:trapped`);
+    return {
+      h3,
+      riskScore: riskSeed * 0.8 + 0.1,
+      rescuePriority: rescueSeed * 0.9 + 0.1,
+      trappedProbability: trappedSeed * 0.3,
+    };
   }));
   await db.insert(sciFiOutputs).values({
     id, orgId,

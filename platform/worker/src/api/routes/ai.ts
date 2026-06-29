@@ -18,32 +18,52 @@ aiRoutes.post('/ai/call', async (c) => {
   const input = body.input as string;
   const startTime = nowMs();
 
+  // Workers AI pricing (llama-3.1-8b-instruct): ~$0.0001 / 1K input tokens, ~$0.0003 / 1K output tokens
+  const COST_PER_1K_INPUT = 0.0001;
+  const COST_PER_1K_OUTPUT = 0.0003;
+
   let output: unknown = null;
   let success = true;
   let error: string | null = null;
   let provider = 'workers-ai';
-  let model = 'default';
+  let model = 'llama-3.1-8b-instruct';
+  let inputTokens: number | null = null;
+  let outputTokens: number | null = null;
+
+  if (!c.env.ai) {
+    await db.insert(aiCalls).values({
+      id: callId, orgId,
+      incidentId: (body.incidentId as string) ?? null,
+      promptName,
+      promptVersion: 1,
+      provider,
+      model,
+      inputTokens: null,
+      outputTokens: null,
+      latencyMs: nowMs() - startTime,
+      cost: 0,
+      success: false,
+      error: 'AI binding not available',
+      createdAt: nowMs(),
+    });
+    return c.json({ error: { code: 'AI_UNAVAILABLE', message: 'AI binding not configured on this Worker', request_id: c.get('requestId') } }, 503);
+  }
 
   try {
-    if (c.env.ai) {
-      const aiResp = await c.env.ai.run('@cf/meta/llama-3.1-8b-instruct' as never, {
-        messages: [{ role: 'user', content: input }],
-        max_tokens: 500,
-      } as never);
-      output = aiResp;
-      model = 'llama-3.1-8b-instruct';
-    } else {
-      output = { response: 'AI binding not available - stub response' };
-      error = 'AI binding not available';
-      success = false;
-    }
+    const aiResp = await c.env.ai.run('@cf/meta/llama-3.1-8b-instruct' as never, {
+      messages: [{ role: 'user', content: input }],
+      max_tokens: 500,
+    } as never);
+    output = aiResp;
+    inputTokens = (aiResp as { usage?: { prompt_tokens?: number } })?.usage?.prompt_tokens ?? null;
+    outputTokens = (aiResp as { usage?: { completion_tokens?: number } })?.usage?.completion_tokens ?? null;
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
     success = false;
-    output = { response: 'Fallback: AI provider unavailable' };
   }
 
   const latencyMs = nowMs() - startTime;
+  const cost = ((inputTokens ?? 0) / 1000) * COST_PER_1K_INPUT + ((outputTokens ?? 0) / 1000) * COST_PER_1K_OUTPUT;
 
   await db.insert(aiCalls).values({
     id: callId, orgId,
@@ -52,16 +72,16 @@ aiRoutes.post('/ai/call', async (c) => {
     promptVersion: 1,
     provider,
     model,
-    inputTokens: (output as { usage?: { prompt_tokens?: number } })?.usage?.prompt_tokens ?? null,
-    outputTokens: (output as { usage?: { completion_tokens?: number } })?.usage?.completion_tokens ?? null,
+    inputTokens,
+    outputTokens,
     latencyMs,
-    cost: 0,
+    cost,
     success,
     error,
     createdAt: nowMs(),
   });
 
-  return c.json({ id: callId, output, success, latencyMs, provider, model });
+  return c.json({ id: callId, output, success, latencyMs, provider, model, cost, inputTokens, outputTokens });
 });
 
 // T101: Create prompt version
