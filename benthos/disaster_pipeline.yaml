@@ -1,0 +1,16 @@
+# Benthos disaster pipeline — minimal placeholder.
+# T10 will replace this with the full fusion/normalization pipeline.
+# Pass-through: observations.raw -> observations.normalized
+
+input:
+  kafka:
+    addresses:
+      - redpanda:9092
+    topics: [observations.raw]
+    consumer_group: benthos-disaster-pipeline
+
+output:
+  kafka:
+    addresses:
+      - redpanda:9092
+    topic: observations.normalized

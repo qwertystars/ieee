@@ -49,3 +49,64 @@ PostgreSQL 16 in a single Docker image. No extension was dropped.
 - `Dockerfile.db` — custom PostgreSQL 16 image with all four extensions.
 - `docs/db-extensions.md` — decision document with usage notes.
 - `.omo/evidence/task-0a-resqnet-sage.txt` — full test output.
+
+## T1 — Project skeleton + Docker Compose (2026-07-18)
+
+### Outcome
+Full Docker Compose stack boots successfully with all 10 services: db, redis,
+redpanda, minio, ollama, benthos, backend, frontend, prometheus, grafana.
+`curl http://localhost:8000/healthz` returns `{"ok":true}` with all service
+bindings. Frontend `npm install && npm run build` exits 0.
+
+### Key findings
+
+1. **PYTHONPATH must be set in docker-compose.yml.** The `alembic` command
+   (at `/usr/local/bin/alembic`) does not include the WORKDIR in `sys.path`.
+   Without `PYTHONPATH: /app`, `alembic upgrade head` fails with
+   `ModuleNotFoundError: No module named 'app'`. uvicorn works without it
+   because it adds the current directory to the path, but alembic does not.
+
+2. **Ollama image has no curl or wget.** The `ollama/ollama:latest` image is
+   based on a minimal Ubuntu and does not include `curl` or `wget`. The
+   healthcheck must use `ollama list` (built-in command) instead of
+   `curl -f http://localhost:11434/api/tags`.
+
+3. **Redpanda `--memory 4G` is required, not 1G.** The original T1 plan note
+   was correct: 1G is below Redpanda's minimum. The `--memory 4G` flag in the
+   `redpanda start` command works reliably.
+
+4. **Redpanda internal/external address split works with `--kafka-addr` and
+   `--advertise-kafka-addr` flags.** The pattern:
+   ```
+   --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+   --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+   ```
+   Internal address (`redpanda:9092`) for container-to-container, external
+   (`localhost:19092`) for host access. Both work simultaneously.
+
+5. **Backend Dockerfile builds successfully with all heavy packages.** torch
+   (CPU-only from `https://download.pytorch.org/whl/cpu`), torchgeo, rasterio,
+   and gdal all install correctly. The GDAL Python package is installed
+   separately with `pip install gdal==$(gdal-config --version)` to match the
+   system GDAL version (3.6.2 on Debian Bookworm). Total pip install time:
+   ~90 seconds.
+
+6. **`docker compose up -d --wait` requires healthchecks on all services.**
+   Services without healthchecks are considered ready immediately. Services
+   with healthchecks must pass before `--wait` returns. The ollama healthcheck
+   initially failed because it used `curl` (not available); switching to
+   `ollama list` fixed it.
+
+7. **Frontend port 5173 can conflict with host processes.** If a Vite dev
+   server is already running on the host, `docker compose up frontend` will
+   fail with "address already in use". Kill the host process before starting
+   the container.
+
+### Files produced
+- `docker-compose.yml` — full 10-service stack.
+- `backend/` — FastAPI project with all package structure.
+- `frontend/` — React + Vite + TypeScript + Tailwind project.
+- `benthos/disaster_pipeline.yaml` — minimal placeholder.
+- `prometheus.yml` — scrape config.
+- `.env.example` — all env vars with defaults.
+- `.omo/evidence/task-1-resqnet-sage.txt` — healthz + AGE test output.
