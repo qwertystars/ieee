@@ -23,6 +23,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
 
   # ── Redis: cache + pub/sub ──────────────────────────────────────────────────
   redis:
@@ -34,6 +39,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
 
   # ── Redpanda: self-hosted Kafka (single-node dev mode) ──────────────────────
   # Internal address for container-to-container, external for host access.
@@ -61,6 +71,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
 
   # ── MinIO: S3-compatible object storage ─────────────────────────────────────
   minio:
@@ -79,6 +94,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
 
   # ── Ollama: local LLM inference (offline, for T36/T48) ──────────────────────
   ollama:
@@ -92,6 +112,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 8G
 
   # ── Benthos: stream processor (observations.raw -> observations.normalized) ─
   # T10 will replace the placeholder config with the full fusion pipeline.
@@ -105,6 +130,11 @@ services:
         condition: service_started
     ports:
       - "4195:4195"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
 
   # ── Backend: FastAPI + uvicorn ──────────────────────────────────────────────
   # Uses psycopg3 (postgresql+psycopg://) NOT psycopg2.
@@ -143,6 +173,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
 
   # ── Frontend: React + Vite dev server ───────────────────────────────────────
   frontend:
@@ -157,6 +192,11 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
 
   # ── Prometheus: metrics scraping ───────────────────────────────────────────
   prometheus:
@@ -165,6 +205,11 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
 
   # ── Grafana: dashboards ─────────────────────────────────────────────────────
   grafana:
@@ -177,6 +222,11 @@ services:
       - prometheus
     volumes:
       - grafana_data:/var/lib/grafana
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
 
 volumes:
   pgdata:

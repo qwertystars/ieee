@@ -1,5 +1,7 @@
 """pytest fixtures for the ResQNet-SAGE backend."""
 
+from collections.abc import Generator
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -28,9 +30,6 @@ def override_get_db() -> Generator:
         yield db
     finally:
         db.close()
-
-
-from collections.abc import Generator  # noqa: E402
 
 
 @pytest.fixture

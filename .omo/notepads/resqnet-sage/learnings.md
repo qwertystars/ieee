@@ -110,3 +110,138 @@ bindings. Frontend `npm install && npm run build` exits 0.
 - `prometheus.yml` — scrape config.
 - `.env.example` — all env vars with defaults.
 - `.omo/evidence/task-1-resqnet-sage.txt` — healthz + AGE test output.
+
+## T2 — Rich observation schema + core DB schema (2026-07-18)
+
+### Outcome
+Created 23-field observation model (27 columns including id/org_id/incident_id),
+14 core entity tables, graph_edges, hypotheses, scenarios, events (hash-chained
+audit), and 6 PostgreSQL enum types. Alembic migration `0001_init_schema.py`
+creates all tables with PostGIS Geometry columns and GiST spatial indexes.
+Geometry round-trip test passes.
+
+### Key findings
+
+1. **GeoAlchemy2 `Geometry` does not accept `index=True` as a keyword arg.**
+   The `index` parameter must be set via `Index(..., postgresql_using="gist")`
+   in `__table_args__` or via `op.create_index(..., postgresql_using="gist")`
+   in the migration. Passing `index=True` to `Geometry()` raises
+   `TypeError: _GISType.__init__() got an unexpected keyword argument 'index'`.
+
+2. **`sa.Enum(PythonEnum, name="...", create_type=False)` does NOT prevent
+   duplicate type creation.** The `create_type=False` parameter is specific to
+   `sqlalchemy.dialects.postgresql.ENUM`, not the base `sa.Enum`. When using
+   `sa.Enum()` in `op.create_table`, SQLAlchemy's `_on_table_create` hook
+   tries to create the enum type regardless. The fix: don't pre-create enum
+   types with `.create()` — let `op.create_table` create them automatically.
+   Each enum should be used in only one table to avoid conflicts.
+
+3. **`mapped_column(PythonEnum, native_enum=False)` fails — must wrap in
+   `SAEnum()`.** The correct pattern is:
+   ```python
+   from sqlalchemy import Enum as SAEnum
+   source_type: Mapped[SourceType] = mapped_column(SAEnum(SourceType, native_enum=False))
+   ```
+   Passing the Python enum class directly as the first positional arg to
+   `mapped_column` raises `ArgumentError: 'SchemaItem' object expected`.
+
+4. **`native_enum=False` stores enum values as VARCHAR, not PG enum type.**
+   This is fine for the model layer. The migration creates native PG enum
+   types via `sa.Enum(PythonEnum, name="...")` in `op.create_table` columns.
+   The model's `native_enum=False` means SQLAlchemy sends string values,
+   which PostgreSQL coerces to the enum type.
+
+5. **conftest.py had a pre-existing bug: `Generator` imported after use.**
+   The `from collections.abc import Generator` was at line 33, but
+   `override_get_db() -> Generator` was at line 25. Python evaluates
+   annotations at function definition time, so this raised `NameError`.
+   Fixed by moving the import to the top of the file.
+
+6. **27 columns on observations, not 23 or 25.** The task lists 25 fields
+   (observation_id through duplicate_group) plus org_id and incident_id for
+   tenancy = 27 total. The "23-field event model" is the conceptual name;
+   the MUST DO list is authoritative with 25 fields + 2 tenancy columns.
+
+### Files produced
+- `backend/app/models/__init__.py` — exports all models + TenancyMixin/TimestampMixin
+- `backend/app/models/enums.py` — 6 Python enums (SourceType, CorroborationState, etc.)
+- `backend/app/models/observation.py` — Observation model (27 columns)
+- `backend/app/models/entities.py` — 14 entity models (Hazard through Decision)
+- `backend/app/models/relationships.py` — GraphEdge model
+- `backend/app/models/hypotheses.py` — Hypothesis model
+- `backend/app/models/scenarios.py` — Scenario model
+- `backend/app/models/events.py` — Event model (hash-chained audit)
+- `backend/alembic/versions/0001_init_schema.py` — Alembic migration
+- `backend/tests/test_schema.py` — geometry round-trip test
+
+## T53 — Offline pre-deployment preparation script (2026-07-18)
+
+### Outcome
+Created `scripts/offline_prep.sh` (12-step idempotent, resilient script) and
+`scripts/offline_prep_lib.sh` (helper functions). Added `deploy.resources.limits`
+to all 10 services in `docker-compose.yml`. Created `docs/offline-prep.md` with
+hardware requirements and troubleshooting.
+
+### Key findings
+
+1. **`pip download` fails atomically on GDAL.** The `pip download -r requirements.txt`
+   command exits with an error when it encounters `gdal>=3.6.0` because GDAL
+   requires the system `gdal-config` binary (from `libgdal-dev`). No `.whl` files
+   are saved — pip resolves all dependencies before downloading. Fix: two-phase
+   download — try full requirements first, then retry with `grep -v gdal` if it
+   fails. This vendors all non-GDAL packages for offline use.
+
+2. **Docker Compose `deploy.resources.limits` is enforced in non-swarm mode.**
+   Docker Compose v2+ respects `cpus` and `memory` limits under
+   `deploy.resources.limits` when running `docker compose up`. The `docker compose
+   config` command expands `4G` to `4294967296` bytes and `0.5` cpus to
+   `"0.5"` — both are valid.
+
+3. **ML model base weights are on HuggingFace, not GitHub.** DOFA, TorchGeo
+   ResNet50 S1, Clay, and TerraMind all use HuggingFace model repositories. The
+   URLs in the script are best-effort — if a model repo path changes, update the
+   `*_URL` variable at the top of `offline_prep.sh`. The script logs a warning
+   and continues if any URL is unavailable.
+
+4. **tippecanoe is not installed on the dev machine.** PMTiles generation is
+   skipped with a warning. The documentation explains how to install it
+   (`brew install tippecanoe` on macOS, build from source on Linux).
+
+5. **Ollama model pull (`llama3.1:8b`) downloads 4.9 GB.** This is the
+   slowest step in the script (~40 seconds at 125 MB/s on a fast connection,
+   much longer on low-bandwidth). The script starts the Ollama container first,
+   waits for it to be healthy, then pulls the model. If the pull is interrupted,
+   re-running the script detects the partial model and resumes.
+
+6. **`set -euo pipefail` with `|| log_warn` pattern works for resilience.**
+   Each potentially-failing command is followed by `|| log_warn "..."`. The `||`
+   operator prevents `set -e` from exiting because the overall expression
+   succeeds (the right side returns 0). This allows the script to continue past
+   individual download failures while still catching genuine errors (like missing
+   required arguments or undefined variables).
+
+7. **Docker build caching makes the script idempotent for image builds.**
+   Re-running `docker build` or `docker compose build` when images are already
+   built returns instantly (all layers CACHED). No explicit "skip if exists"
+   check is needed for Docker images.
+
+### Resource limits added
+
+| Service | CPUs | Memory |
+|---------|------|--------|
+| db | 2 | 4G |
+| redis | 0.5 | 512M |
+| redpanda | 2 | 4G |
+| minio | 1 | 1G |
+| ollama | 4 | 8G |
+| benthos | 0.5 | 512M |
+| backend | 2 | 4G |
+| frontend | 0.5 | 512M |
+| prometheus | 0.5 | 512M |
+| grafana | 0.5 | 512M |
+
+### Files produced
+- `scripts/offline_prep.sh` — 12-step offline preparation script (executable)
+- `scripts/offline_prep_lib.sh` — helper functions (logging, download, step runner)
+- `docs/offline-prep.md` — documentation with hardware requirements and troubleshooting
+- `docker-compose.yml` — modified: added `deploy.resources.limits` to all 10 services
