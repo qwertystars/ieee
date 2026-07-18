@@ -1192,3 +1192,91 @@ Tests:
 5. `test_pull_indicators` — mocks HDX HAPI, pulls 2 indicators (POP + AFFECTED), verifies mapping
 6. `test_map_to_observations_geometry` — verifies country centroid lookup (COL, AFG, unknown)
 7. `test_pull_with_indicator_filter` — filters pulled indicators by indicator_ids list
+
+## T15 — Phenomenon-specific freshness decay (2026-07-18)
+
+### Outcome
+Created `backend/app/fusion/freshness.py` (96 LOC) with `FreshnessCalculator`
+class implementing per-phenomenon exponential decay F = exp(-age/tau). 10
+tests pass (exit 0). All stopping conditions verified: road 60s old F=0.905
+(>0.9), road 2h old F=6.1e-6 (<0.01), building 1h old F=0.959 (>0.9).
+
+### Key findings
+
+1. **Timestamps are epoch milliseconds but tau is in seconds — must convert.**
+   The Observation model stores `observed_at` as `BigInteger` UTC epoch ms
+   (per AGENTS.md convention), but the task spec defines tau in seconds. The
+   `compute_freshness` method converts: `age_seconds = (current_time -
+   observed_at) / 1000.0` before applying `exp(-age_seconds / tau)`. Forgetting
+   this conversion would make freshness decay 1000x too fast (a 60s-old road
+   observation would have F=exp(-60000/600)≈0 instead of 0.905).
+
+2. **Freshness is computed on READ, not stored at write time.** The
+   `compute_freshness` and `compute_for_observation` methods take the current
+   time as a parameter (or call `now_ms()` internally). This means freshness
+   is always current — a 5-minute-old observation queried now and queried
+   again in 10 minutes will have different freshness values. The
+   `Observation.freshness` column (Float, written at ingestion) is the
+   stored-at-write value; the `FreshnessCalculator` provides the live value.
+   Both coexist: the stored value is for sorting/filtering at query time;
+   the computed value is for real-time fusion decisions.
+
+3. **Future observations (clock skew) must be clamped to F=1.0.** When
+   `observed_at > current_time` (e.g., producer clock is ahead of consumer),
+   `exp(-negative)` returns a value > 1.0. The method returns 1.0 immediately
+   for `age_ms <= 0` to keep F in [0, 1]. This is the correct behavior for
+   clock skew tolerance — a "future" observation is treated as maximally
+   fresh rather than producing an invalid freshness > 1.
+
+4. **Instance-level tau overrides don't mutate the module-level dict.** The
+   `FreshnessCalculator.__init__` copies `TAU_BY_PHENOMENON` into
+   `self._overrides` via `dict(...)`. `update_tau` modifies only the instance
+   dict. This means multiple `FreshnessCalculator` instances can have
+   different tau configurations (e.g., per-tenant) without interfering. A
+   future DB table backing per-tenant tau would replace `self._overrides`
+   with a DB lookup.
+
+5. **`SimpleNamespace` does not satisfy `typing.Protocol` for static type
+   checkers.** The `_ObsLike` Protocol requires `observed_at: int` and
+   `phenomenon: str`. `SimpleNamespace` sets attributes dynamically, so
+   basedpyright reports `reportArgumentType`. Fix: use a `@dataclass` with
+   typed fields in tests. The dataclass satisfies the Protocol structurally
+   and gives proper type checking. This is a general pattern for test
+   doubles of ORM models — prefer dataclasses over SimpleNamespace when a
+   Protocol constrains the parameter type.
+
+6. **`compute_for_observation` uses real `now_ms()` — tests must align.**
+   Unlike `compute_freshness` (which takes `current_time` as a parameter),
+   `compute_for_observation` calls `now_ms()` internally. Tests that use a
+   fixed 2023 timestamp for `observed_at` will see F≈0 because the real
+   wall clock is 2026. Fix: call `now_ms()` in the test to set `observed_at`
+   to the current time, then assert `f > 0.99` (allowing a few ms of
+   elapsed time between setting `observed_at` and computing freshness).
+
+7. **The 9 phenomenon types span 5 orders of magnitude in tau.** From
+   `responder_position` (τ=60s, 1 min) to `demographic_vulnerability`
+   (τ=2592000s, 30 days). This reflects the physical reality: a responder's
+   position is stale after a minute, but a neighborhood's demographic
+   vulnerability profile is stable for weeks. Using a single τ for all feeds
+   would either over-decay slow phenomena (building footprints appearing
+   stale after 10 minutes) or under-decay fast phenomena (responder positions
+   appearing fresh after an hour).
+
+### Stopping condition verification
+- Road 60s old: F = exp(-60/600) = exp(-0.1) = 0.9048 > 0.9 ✓
+- Road 2h old (7200s): F = exp(-7200/600) = exp(-12) = 6.14e-6 < 0.01 ✓
+- Building 1h old (3600s): F = exp(-3600/86400) = exp(-0.0417) = 0.9592 > 0.9 ✓
+
+### Files produced
+- `backend/app/fusion/freshness.py` — FreshnessCalculator with per-phenomenon
+  tau, compute_freshness, compute_for_observation, update_tau (96 LOC)
+- `backend/tests/test_freshness.py` — 10 tests: per_type_decay, default_tau,
+  zero_age, old, custom_tau, compute_for_observation, nonpositive_tau_rejected,
+  future_clamped, instance_isolation, all_taus_present (148 LOC)
+
+### Verification
+```
+docker compose run --rm -e PYTHONPATH=/app backend sh -c \
+  "pip install pytest -q && python -m pytest tests/test_freshness.py -q"
+→ 10 passed, 1 warning in 0.03s (exit 0)
+```

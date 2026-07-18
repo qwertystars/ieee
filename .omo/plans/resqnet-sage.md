@@ -375,7 +375,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(fusion): Beta-distributed source reliability with type conditioning`
 
-- [ ] 15. Phenomenon-specific freshness decay — per-observation-type τ
+- [x] 15. Phenomenon-specific freshness decay — per-observation-type τ
   What to do / Must NOT do: `backend/app/fusion/freshness.py` — freshness function `F_i(t) = exp(-(t - t_i) / tau_k)` where τ_k depends on observation type k. Configurable τ per phenomenon: responder_position (τ=60s), road_passability (τ=600s), shelter_capacity (τ=1800s), building_footprint (τ=86400s), demographic_vulnerability (τ=2592000s). Store τ config in `settings` table (tenant-overridable). Compute freshness on read (not write) so it's always current. Must NOT use same expiry for every feed — phenomenon-specific.
   SOTA spec ref: §6.2 (phenomenon-specific freshness)
   Parallelization: Wave 3 | Blocked by: T2 | Blocks: T13
