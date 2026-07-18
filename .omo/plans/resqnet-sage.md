@@ -197,7 +197,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(api): fastapi skeleton + auth + websocket + openapi`
 
-- [ ] 5. OpenTelemetry + Prometheus + Grafana observability
+- [x] 5. OpenTelemetry + Prometheus + Grafana observability
   What to do / Must NOT do: `backend/app/lib/telemetry.py` — OpenTelemetry traces (FastAPI instrumentation, SQLAlchemy instrumentation, Redpafka producer/consumer spans), Prometheus metrics (request count, latency histogram, active WebSocket count, optimization solve time, ML inference time, queue depth). `prometheus.yml` config scraping backend `/metrics` endpoint. `grafana/provisioning/` dashboards: system health, request latency, optimization performance, ML model performance, feed health. Distributed trace IDs propagated from source observation to recommendation (SOTA spec §13.6). Must NOT add observability as an afterthought — wired from T1 onward.
   SOTA spec ref: §13.6 (observability), §14.7 (resilience metrics: p50/p95 latency)
   Parallelization: Wave 1 | Blocked by: T1, T4 | Blocks: all (cross-cutting)
@@ -217,7 +217,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
 <!-- WAVE 2: INGESTION + KNOWLEDGE GRAPH — SOTA spec §3 (federated data fabric), §5 (knowledge graph) -->
 <!-- ════════════════════════════════════════════════════════════════════════════ -->
 
-- [ ] 6. CAP 1.2 adapter — parse, validate, ingest CAP alerts
+- [x] 6. CAP 1.2 adapter — parse, validate, ingest CAP alerts
   What to do / Must NOT do: `backend/app/ingestion/adapters/cap.py` — parse OASIS CAP 1.2 XML alerts (from NDMA SACHET, IPAWS, or any CAP feed). Extract: alert info, area descriptions, geometry (polygon/circle), urgency, severity, certainty, effective/expires times, sender, references (for updates/cancellations). Map to observation schema (event_type=`official_alert`, source_type=`cap_feed`). Handle CAP update/cancel by setting `supersedes` field. Idempotent by CAP identifier. Must NOT auto-publish — all alerts land as `review_status=draft` if AI-generated, `official` if from verified official source.
   SOTA spec ref: §3.2 (CAP 1.2 standard), §3.3 (event schema)
   Parallelization: Wave 2 | Blocked by: T2, T4 | Blocks: T10
@@ -233,7 +233,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(ingestion): CAP 1.2 adapter`
 
-- [ ] 7. SensorThings API adapter — sensor observations, datastreams
+- [x] 7. SensorThings API adapter — sensor observations, datastreams
   What to do / Must NOT do: `backend/app/ingestion/adapters/sensorthings.py` — OGC SensorThings API client. Connect to SensorThings endpoints (rain gauges, river gauges, tide gauges, weather stations, air-quality sensors, IoT flood sensors). Pull Datastream → Observations → map to observation schema (event_type=`sensor_reading`, source_type=`sensorthings`). Handle pagination (`@iot.nextLink`), filtering by time range and spatial bbox. Cron-triggered pull + webhook push support. Must NOT assume sensor availability — handle 404/timeout gracefully and log feed health.
   SOTA spec ref: §3.2 (OGC SensorThings API), §4.1 (meteorological/hydrological sources)
   Parallelization: Wave 2 | Blocked by: T2, T4 | Blocks: T10
@@ -249,7 +249,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(ingestion): SensorThings API adapter`
 
-- [ ] 8. OGC API Features adapter — roads, shelters, hospitals, boundaries
+- [x] 8. OGC API Features adapter — roads, shelters, hospitals, boundaries
   What to do / Must NOT do: `backend/app/ingestion/adapters/ogc_features.py` — OGC API Features client. Connect to OGC API Features endpoints for vector entities (roads, shelters, hospitals, administrative boundaries, evacuation zones). Pull features by collection + bbox + datetime. Map to core entity tables (RoadSegment, Shelter, Hospital, etc.) with geometry in PostGIS. Support incremental sync (only pull features modified since last sync via `datetime` filter). Must NOT overwrite user-edited data — use upsert with conflict detection.
   SOTA spec ref: §3.2 (OGC API Features), §5.1 (core entities)
   Parallelization: Wave 2 | Blocked by: T2, T4 | Blocks: T10
@@ -281,7 +281,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(ingestion): STAC catalog + HDX HAPI adapters`
 
-- [ ] 10. Event-time processing pipeline — Redpanda + Benthos (normalize → dedup → store with provenance)
+- [x] 10. Event-time processing pipeline — Redpanda + Benthos (normalize → dedup → store with provenance)
   What to do / Must NOT do: `backend/app/streaming/producer.py` — aiokafka async producer writing to Redpanda topic `observations.raw`. `backend/app/streaming/consumer.py` — async consumer reading from `observations.normalized` topic → INSERT to PostgreSQL with provenance. `benthos/disaster_pipeline.yaml` — Benthos config: input from `observations.raw`, normalize (bloblang: timestamp to epoch ms, source_type uppercase, coordinate normalization, metadata target_topic), dedup by observation_id (Redis cache), switch-route to type-specific topics (`observations.sensor`, `observations.citizen`, `observations.satellite`, `alerts.official`), DLQ to `observations.dlq`. Schema registry with Avro. PostgreSQL LISTEN/NOTIFY for instant dashboard updates. Must NOT lose observations on processing failure — DLQ + idempotency keys on every message.
   SOTA spec ref: §3.1 (federated ingestion), §3.3 (three different times: observed/received/valid), §13.1 (Kafka/Redpanda + Benthos)
   Parallelization: Wave 2 | Blocked by: T1, T2, T4 | Blocks: T11
@@ -323,7 +323,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(knowledge): temporal crisis knowledge graph + contradictory hypotheses`
 
-- [ ] 12. Federated data fabric — source ownership, policy-controlled sharing, delayed sync
+- [x] 12. Federated data fabric — source ownership, policy-controlled sharing, delayed sync
   What to do / Must NOT do: `backend/app/ingestion/federation.py` — support central feeds (full data), federated queries (query remote endpoints, don't copy data), aggregated outputs (receive summaries, not raw data), local edge processing (process locally, sync results). `sources` table: `id`, `org_id`, `name`, `type` (enum), `provider`, `refresh_interval_s`, `last_success_at`, `last_error`, `status`, `config` (JSONB), `access_policy` (enum), `ownership` (enum: owned/federated/aggregated). Delayed sync: outbox table for observations created offline, sync when connectivity restored, dedup by content hash. Must NOT blindly centralize all data — respect source ownership and access policies.
   SOTA spec ref: §3.1 (federated data fabric), §3.2 (standards), §11 (resilient communications)
   Parallelization: Wave 2 | Blocked by: T2, T4 | Blocks: T37 (offline sync)

@@ -86,6 +86,11 @@ app.add_middleware(RequestIDMiddleware)
 # Register global error handlers.
 register_error_handlers(app)
 
+# ── Telemetry (OpenTelemetry traces + Prometheus metrics) ───────────────────
+from app.lib.telemetry import setup_telemetry  # noqa: E402
+
+setup_telemetry(app)
+
 
 # ── Health checks ───────────────────────────────────────────────────────────
 
@@ -154,6 +159,14 @@ async def healthz_deep() -> dict:
 async def test_error() -> None:
     """Endpoint that raises an unhandled exception for error-handler testing."""
     raise RuntimeError("Intentional test error for error handler verification")
+
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    from app.lib.telemetry import metrics_endpoint
+
+    return metrics_endpoint()
 
 
 # ── API routes ───────────────────────────────────────────────────────────────
