@@ -1,35 +1,63 @@
 {
   "schema_version": 2,
-  "active_work_id": "disaster-cf-replatform-ba88eca3",
+  "active_work_id": "resqnet-sage-9cd61519",
   "works": {
-    "disaster-cf-replatform-ba88eca3": {
-      "work_id": "disaster-cf-replatform-ba88eca3",
-      "active_plan": "/home/srijan/Documents/ieee/.omo/plans/disaster-cf-replatform.md",
-      "plan_name": "disaster-cf-replatform",
+    "resqnet-sage-9cd61519": {
+      "work_id": "resqnet-sage-9cd61519",
+      "active_plan": "/home/srijan/ieee/.omo/plans/resqnet-sage.md",
+      "plan_name": "resqnet-sage",
       "status": "active",
-      "started_at": "2026-06-19T15:30:38.505Z",
-      "updated_at": "2026-06-19T15:30:38.505Z",
+      "started_at": "2026-07-18T07:02:43.604Z",
+      "updated_at": "2026-07-18T07:24:26.711Z",
       "session_ids": [
-        "opencode:ses_11f7e94f3ffevZjiBbOgzsYg0z"
+        "opencode:ses_08e5b53edffeUPgy0NuugS4QGZ"
       ],
       "session_origins": {
-        "opencode:ses_11f7e94f3ffevZjiBbOgzsYg0z": "direct"
+        "opencode:ses_08e5b53edffeUPgy0NuugS4QGZ": "direct"
       },
       "agent": "atlas",
-      "task_sessions": {}
+      "task_sessions": {
+        "todo:51": {
+          "task_key": "todo:51",
+          "task_label": "51",
+          "task_title": "Spike: Validate PostgreSQL + PostGIS + Apache AGE + TimescaleDB coexistence",
+          "session_id": "opencode:ses_08bf4303affeUruVgh3jxCK8fV",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-07-18T07:24:26.711Z",
+          "started_at": "2026-07-18T07:21:17.975Z",
+          "status": "completed",
+          "ended_at": "2026-07-18T07:24:26.707Z",
+          "elapsed_ms": 188732
+        }
+      }
     }
   },
-  "active_plan": "/home/srijan/Documents/ieee/.omo/plans/disaster-cf-replatform.md",
-  "started_at": "2026-06-19T15:30:38.505Z",
+  "active_plan": "/home/srijan/ieee/.omo/plans/resqnet-sage.md",
+  "started_at": "2026-07-18T07:02:43.604Z",
   "status": "active",
-  "updated_at": "2026-06-19T15:30:38.505Z",
+  "updated_at": "2026-07-18T07:24:26.711Z",
   "session_ids": [
-    "opencode:ses_11f7e94f3ffevZjiBbOgzsYg0z"
+    "opencode:ses_08e5b53edffeUPgy0NuugS4QGZ"
   ],
   "session_origins": {
-    "opencode:ses_11f7e94f3ffevZjiBbOgzsYg0z": "direct"
+    "opencode:ses_08e5b53edffeUPgy0NuugS4QGZ": "direct"
   },
-  "plan_name": "disaster-cf-replatform",
-  "task_sessions": {},
+  "plan_name": "resqnet-sage",
+  "task_sessions": {
+    "todo:51": {
+      "task_key": "todo:51",
+      "task_label": "51",
+      "task_title": "Spike: Validate PostgreSQL + PostGIS + Apache AGE + TimescaleDB coexistence",
+      "session_id": "opencode:ses_08bf4303affeUruVgh3jxCK8fV",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-07-18T07:24:26.711Z",
+      "started_at": "2026-07-18T07:21:17.975Z",
+      "status": "completed",
+      "ended_at": "2026-07-18T07:24:26.707Z",
+      "elapsed_ms": 188732
+    }
+  },
   "agent": "atlas"
 }
