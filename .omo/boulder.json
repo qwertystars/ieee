@@ -8,7 +8,7 @@
       "plan_name": "resqnet-sage",
       "status": "active",
       "started_at": "2026-07-18T07:02:43.604Z",
-      "updated_at": "2026-07-18T17:25:01.987Z",
+      "updated_at": "2026-07-18T18:09:49.358Z",
       "session_ids": [
         "opencode:ses_08e5b53edffeUPgy0NuugS4QGZ",
         "opencode:ses_089ea9ea3ffeSuvbJfb6EP0k6R",
@@ -110,6 +110,19 @@
           "updated_at": "2026-07-18T17:25:01.987Z",
           "ended_at": "2026-07-18T17:25:01.987Z",
           "elapsed_ms": 22009227
+        },
+        "todo:16": {
+          "task_key": "todo:16",
+          "task_label": "16",
+          "task_title": "Probabilistic world state estimation — pgmpy Dynamic Bayesian Network (P(X_t | O_{1:t}))",
+          "session_id": "opencode:ses_0899b54dcffesZ5RD3qm2k17cJ",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "started_at": "2026-07-18T17:36:23.174Z",
+          "status": "completed",
+          "updated_at": "2026-07-18T18:09:49.358Z",
+          "ended_at": "2026-07-18T18:09:49.357Z",
+          "elapsed_ms": 2006183
         }
       }
     }
@@ -117,7 +130,7 @@
   "active_plan": "/home/srijan/ieee/.omo/plans/resqnet-sage.md",
   "started_at": "2026-07-18T07:02:43.604Z",
   "status": "active",
-  "updated_at": "2026-07-18T17:25:01.987Z",
+  "updated_at": "2026-07-18T18:09:49.358Z",
   "session_ids": [
     "opencode:ses_08e5b53edffeUPgy0NuugS4QGZ",
     "opencode:ses_089ea9ea3ffeSuvbJfb6EP0k6R",
@@ -219,6 +232,19 @@
       "updated_at": "2026-07-18T17:25:01.987Z",
       "ended_at": "2026-07-18T17:25:01.987Z",
       "elapsed_ms": 22009227
+    },
+    "todo:16": {
+      "task_key": "todo:16",
+      "task_label": "16",
+      "task_title": "Probabilistic world state estimation — pgmpy Dynamic Bayesian Network (P(X_t | O_{1:t}))",
+      "session_id": "opencode:ses_0899b54dcffesZ5RD3qm2k17cJ",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "started_at": "2026-07-18T17:36:23.174Z",
+      "status": "completed",
+      "updated_at": "2026-07-18T18:09:49.358Z",
+      "ended_at": "2026-07-18T18:09:49.357Z",
+      "elapsed_ms": 2006183
     }
   },
   "agent": "atlas"

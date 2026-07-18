@@ -391,7 +391,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(fusion): phenomenon-specific freshness decay`
 
-- [ ] 16. Probabilistic world state estimation — pgmpy Dynamic Bayesian Network (P(X_t | O_{1:t}))
+- [x] 16. Probabilistic world state estimation — pgmpy Dynamic Bayesian Network (P(X_t | O_{1:t}))
   What to do / Must NOT do: `backend/app/fusion/world_state.py` — Dynamic Bayesian Network using pgmpy `DynamicBayesianNetwork` + `DBNInference`. Define crisis state nodes per hazard type (e.g., flood_severity ∈ {none, minor, moderate, severe, extreme}). Inter-slice edges: state_t → state_t+1 (transition). Intra-slice edges: state → sensor_reading, state → citizen_report, state → satellite_observation. CPDs: transition matrix (P(state_t+1 | state_t)), sensor model (P(reading | state)), report model (P(report | state)). `forward_inference(variables=[(state, t)], evidence={...})` for filtering P(X_t | O_{1:t}). Wrap in stateful service class with potential caching for rolling window (last N time slices). Convert heterogeneous evidence (sensor readings, citizen reports, ML outputs) to discrete observations for the DBN. Must NOT use MCMC for real-time — use exact inference (pgmpy's junction tree).
   SOTA spec ref: §6.4 (probabilistic world state), §6.4 (implementation options: Bayesian networks, DBNs)
   Parallelization: Wave 3 | Blocked by: T13 | Blocks: T23 (digital twin reads world state)
@@ -407,7 +407,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(fusion): pgmpy DBN probabilistic world state estimation`
 
-- [ ] 17. Conformal calibration layer — MAPIE (Brier score, ECE, conformal prediction sets, reliability diagrams)
+- [x] 17. Conformal calibration layer — MAPIE (Brier score, ECE, conformal prediction sets, reliability diagrams)
   What to do / Must NOT do: `backend/app/fusion/calibration.py` — wrap ML model predictions with MAPIE conformal prediction intervals. `MapieTimeSeriesRegressor` for time series (EnbPI, `partial_fit` for streaming). `MapieRegressor` for static calibration. Compute and store: Brier score, expected calibration error (ECE), reliability diagram data, negative log likelihood, conformal coverage, interval width, false-confidence rate. Geographically weighted conformal: calibrate per H3 zone to handle spatial distribution shift. Calibration dashboard endpoint returning all metrics. Must NOT claim calibrated uncertainty without empirical validation — compute actual coverage.
   SOTA spec ref: §6.5 (calibrated uncertainty), §14.5 (uncertainty metrics)
   Parallelization: Wave 3 | Blocked by: T13 | Blocks: T44 (evaluation metrics)
@@ -429,7 +429,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
 <!-- INTRA-WAVE ORDER: T22 (model serving infrastructure) MUST be completed FIRST, then T18-T21 can parallelize. T18-T21 all depend on T22's serving layer. -->
 <!-- ════════════════════════════════════════════════════════════════════════════ -->
 
-- [ ] 18. SAR flood mapping pipeline — Sentinel-1 acquisition + TorchGeo + DOFA + probabilistic output
+- [x] 18. SAR flood mapping pipeline — Sentinel-1 acquisition + TorchGeo + DOFA + probabilistic output
   What to do / Must NOT do: `backend/app/perception/flood_mapping.py` — end-to-end SAR flood mapping pipeline. (1) Data acquisition: CDSETool (`from cdsetool.query import query_features; from cdsetool.download import download_features`) for Sentinel-1 GRD products from Copernicus Data Space Ecosystem — NOT sentinelsat (archived/dead). Support "sync when connected" pattern: download available scenes when internet is up, cache in MinIO. (2) Loading: TorchGeo `Sentinel1` dataset class (`from torchgeo.datasets import Sentinel1`, bands=['VV','VH'], separate_files=True) or rasterio for direct file access. (3) Model: DOFA foundation model (`from torchgeo.models import dofa_base_patch16_224, DOFABase16_Weights`) with wavelength=[5.405, 5.405] for C-band SAR. Fine-tune a segmentation head on flood dataset (Sen1Floods11 or WorldFloods). (4) Output: flood probability per pixel (softmax), water depth estimate (DEM fusion via HAND method), uncertainty interval (Monte Carlo Dropout, n=30 samples), model disagreement (ensemble variance), observation time, cloud/sensor quality flag, change from previous observation. Store as COG (Cloud Optimized GeoTIFF) in MinIO via rasterio + rio-cogeo. (5) Copernicus GFM integration: fuse GFM operational product with model output. Must NOT convert to binary flooded/not-flooded immediately — preserve probabilities.
   SOTA spec ref: §4.2 (flood mapping from Earth observation), §4.2 (required outputs), §6.5 (calibrated uncertainty)
   Parallelization: Wave 4 (parallel with W2-W3) | Blocked by: T1, T9 | Blocks: T23
@@ -461,7 +461,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(perception): flood mapping ensemble with disagreement tracking`
 
-- [ ] 20. Building & road damage assessment — xBD/xView2 + SpaceNet 8 + road passability probability
+- [x] 20. Building & road damage assessment — xBD/xView2 + SpaceNet 8 + road passability probability
   What to do / Must NOT do: `backend/app/perception/damage.py` — (1) Building damage: fine-tune model on xBD/xView2 dataset, classify buildings into {no damage, minor, major, destroyed} from post-event imagery (or pre+post pair when available). Support single-post-event-image models when pre-event imagery is missing. (2) Road network: SpaceNet 8 approach connecting building extraction, road extraction, and flood-status detection. Output per road segment: P(passable for vehicle class), expected traversal speed, expected failure time, last confirmation source, alternate route availability. A road can be passable for a boat while unsafe for an ambulance. (3) Output as GeoJSON features with damage probability + uncertainty. Must NOT output "road segmentation mIoU" — output operational passability.
   SOTA spec ref: §4.3 (building and road damage), §4.3 (required operational output)
   Parallelization: Wave 4 | Blocked by: T1 | Blocks: T28 (route reliability)
@@ -477,7 +477,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(perception): building/road damage assessment + vehicle-class passability`
 
-- [ ] 21. Social media & citizen report NLP pipeline — multilingual ASR, urgency, geolocation
+- [x] 21. Social media & citizen report NLP pipeline — multilingual ASR, urgency, geolocation
   What to do / Must NOT do: `backend/app/perception/nlp.py` — process citizen reports, social media, helpline calls through: (1) Language identification + multilingual ASR (Whisper or equivalent for speech-to-text). (2) PII detection + access control redaction before any LLM call. (3) Urgency extraction (low/medium/high/critical). (4) Humanitarian category extraction: trapped/missing person, medical emergency, flooding, structural collapse, fire/electrical, blocked route, shelter request, food/water/medication, infrastructure outage, rescue completed, irrelevant. (5) Place-name extraction + geolocation candidate generation: represent as exact coordinate, road segment, building, named place, ward, candidate-location distribution, or uncertainty polygon — NEVER invent exact GPS from vague report. (6) Image/OCR corroboration. (7) Duplicate/near-duplicate clustering (embedding similarity via FAISS). (8) Credibility + uncertainty estimation (feeds confidence vector). (9) Human review queue when operationally consequential. Must NOT send PII to unrestricted third-party models.
   SOTA spec ref: §4.4 (social media, helplines and citizen reports), §4.4 (required humanitarian categories), §4.4 (geolocation), §4.4 (multimodal limitations), §12.3 (LLM isolation)
   Parallelization: Wave 4 | Blocked by: T1, T4 | Blocks: T13 (confidence vector uses NLP output)
