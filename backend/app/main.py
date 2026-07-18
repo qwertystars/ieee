@@ -1,18 +1,68 @@
 """FastAPI application entry point."""
 
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.config import settings
 
+logger = logging.getLogger("app.main")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup: seed users + start Kafka producer. Shutdown: stop producer."""
+    # 1. Create users table (not in Alembic migration) + seed demo users.
+    from app.auth.seed import seed_demo_users
+    from app.db import SessionLocal, Base, engine
+    from app.models.user import User
+
+    Base.metadata.create_all(bind=engine, tables=[User.__table__])
+    db = SessionLocal()
+    try:
+        count = seed_demo_users(db)
+        if count > 0:
+            logger.info("Seeded %d demo users", count)
+    finally:
+        db.close()
+
+    # 2. Start Redpanda/Kafka producer (best-effort — don't crash if down).
+    producer = None
+    try:
+        from aiokafka import AIOKafkaProducer
+
+        producer = AIOKafkaProducer(
+            bootstrap_servers=settings.REDPANDA_BOOTSTRAP_SERVERS
+        )
+        await producer.start()
+        app.state.kafka_producer = producer
+        logger.info("Kafka producer started")
+    except Exception as exc:
+        logger.warning("Kafka producer failed to start (non-fatal): %s", exc)
+        app.state.kafka_producer = None
+
+    yield
+
+    # Shutdown: stop Kafka producer (best-effort).
+    if producer is not None:
+        try:
+            await producer.stop()
+            logger.info("Kafka producer stopped")
+        except Exception as exc:
+            logger.warning("Kafka producer failed to stop: %s", exc)
+
+
 app = FastAPI(
     title="ResQNet-SAGE",
     description="Disaster Situational Awareness & Response Platform",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
-# CORS
+# CORS (added first → innermost user middleware).
 origins = (
     ["*"] if settings.CORS_ORIGINS == "*" else settings.CORS_ORIGINS.split(",")
 )
@@ -23,6 +73,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Middleware order (last added = outermost = runs first on request):
+# RequestID → OrgContext → CORS → router
+from app.middleware.error_handler import register_error_handlers  # noqa: E402
+from app.middleware.org_context import OrgContextMiddleware  # noqa: E402
+from app.middleware.request_id import RequestIDMiddleware  # noqa: E402
+
+app.add_middleware(OrgContextMiddleware)
+app.add_middleware(RequestIDMiddleware)
+
+# Register global error handlers.
+register_error_handlers(app)
+
+
+# ── Health checks ───────────────────────────────────────────────────────────
 
 
 @app.get("/healthz")
@@ -89,3 +154,28 @@ async def healthz_deep() -> dict:
 async def test_error() -> None:
     """Endpoint that raises an unhandled exception for error-handler testing."""
     raise RuntimeError("Intentional test error for error handler verification")
+
+
+# ── API routes ───────────────────────────────────────────────────────────────
+
+from app.api.routes.auth import router as auth_router  # noqa: E402
+from app.api.routes.eval import router as eval_router  # noqa: E402
+from app.api.routes.hypotheses import router as hypotheses_router  # noqa: E402
+from app.api.routes.observations import router as observations_router  # noqa: E402
+from app.api.routes.optimize import router as optimize_router  # noqa: E402
+from app.api.routes.scenarios import router as scenarios_router  # noqa: E402
+from app.api.routes.sensing import router as sensing_router  # noqa: E402
+from app.api.routes.ws import router as ws_router  # noqa: E402
+from fastapi import APIRouter  # noqa: E402
+
+api_router = APIRouter(prefix="/api")
+api_router.include_router(auth_router)
+api_router.include_router(observations_router)
+api_router.include_router(hypotheses_router)
+api_router.include_router(scenarios_router)
+api_router.include_router(optimize_router)
+api_router.include_router(sensing_router)
+api_router.include_router(eval_router)
+
+app.include_router(api_router)
+app.include_router(ws_router)

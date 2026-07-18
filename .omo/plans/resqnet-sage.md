@@ -155,7 +155,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(schema): rich observation model + knowledge graph entities + audit`
 
-- [ ] 3. ULID + timestamp + audit hash-chain + idempotency primitives (Python)
+- [x] 3. ULID + timestamp + audit hash-chain + idempotency primitives (Python)
   What to do / Must NOT do: `backend/app/lib/ulid.py` — ULID generation (Crockford base32, monotonic, 26-char). `backend/app/lib/time.py` — `now_ms()` UTC epoch ms, `from_iso()`, `to_iso()`. `backend/app/lib/audit.py` — `write_audit(db, org_id, incident_id, actor, action, entity, before, after)` that appends to `events` table with `hash = sha256(prev_hash + json(payload))` and verifies chain on read. `backend/app/lib/idempotency.py` — dedup by `(source, external_id)` unique constraint + message-id dedup table for queue messages. `backend/app/lib/serialize.py` — visibility serializer: whitelists fields by `visibility ∈ {public,internal,sensitive}` + `review_status ∈ {draft,reviewed,official}`. Must NOT use UUID — ULIDs only. Must NOT trust org_id from client — resolved server-side.
   SOTA spec ref: §12.4 (provenance/auditability), §12.1 (data minimization), §12.2 (access control)
   Parallelization: Wave 1 | Blocked by: T1, T2 | Blocks: all state-changing todos
@@ -176,7 +176,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(lib): ulid + audit hash-chain + idempotency + visibility serializer`
 
-- [ ] 4. FastAPI app skeleton: routes, auth, error model, OpenAPI, WebSocket
+- [x] 4. FastAPI app skeleton: routes, auth, error model, OpenAPI, WebSocket
   What to do / Must NOT do: `backend/app/main.py` — FastAPI app with lifespan (starts Redpanda producer, stops on shutdown). Middleware: request_id (UUID, header `X-Request-Id`), org_context (resolves org_id from auth, never from client), structured JSON logger, global error handler returning `{error:{code,message,request_id}}`. Route groups: `/api/auth`, `/api/observations`, `/api/hypotheses`, `/api/scenarios`, `/api/optimize`, `/api/sensing`, `/api/eval`, `/healthz`, `/healthz/deep`, `/openapi.json`. Auth: JWT (python-jose) + passlib bcrypt, `require_roles(*roles)` dep, seed demo users (admin, emergency_manager, responder_coordinator, field_responder, shelter_manager, viewer) password `demo1234`. WebSocket endpoint `/ws/events/{incident_id}` for real-time updates (Redpanda consumer → WS fanout). Pydantic v2 schemas for all entities with `model_config = ConfigDict(from_attributes=True)`. Must NOT scatter auth/org resolution — one middleware layer.
   SOTA spec ref: §13.1 (FastAPI), §10.2 (evaluative AI interface modes), §8 (API for action portfolios)
   Parallelization: Wave 1 | Blocked by: T1, T2 | Blocks: T6-T12

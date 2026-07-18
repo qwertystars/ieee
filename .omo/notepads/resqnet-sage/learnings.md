@@ -245,3 +245,189 @@ hardware requirements and troubleshooting.
 - `scripts/offline_prep_lib.sh` — helper functions (logging, download, step runner)
 - `docs/offline-prep.md` — documentation with hardware requirements and troubleshooting
 - `docker-compose.yml` — modified: added `deploy.resources.limits` to all 10 services
+
+## T4 — FastAPI app skeleton: routes, auth, error model, OpenAPI, WebSocket (2026-07-18)
+
+### Outcome
+Full FastAPI skeleton with JWT auth, 6 demo users, role-based access control,
+request ID middleware, org context middleware (server-side org_id from JWT),
+global error handler (`{error:{code,message,request_id}}`), 7 API route groups
+under `/api`, and a WebSocket endpoint at `/ws/events/{incident_id}`. All
+verification commands pass: OpenAPI 3.1 served at `/openapi.json`, login returns
+JWT, wrong password returns 401, all 6 demo users authenticate successfully.
+
+### Key findings
+
+1. **passlib 1.7.x is incompatible with bcrypt 4.x.** passlib's internal
+   `detect_wrap_bug()` function hashes a >72-byte test string to detect a
+   legacy bcrypt bug. bcrypt 4.x enforces the 72-byte limit strictly (3.x
+   silently truncated), causing `ValueError: password cannot be longer than
+   72 bytes` at import/first-use time. Fix: use the `bcrypt` package directly
+   (`bcrypt.hashpw` / `bcrypt.checkpw`) instead of `passlib.CryptContext`.
+   The `bcrypt` package is already installed as a dependency of
+   `passlib[bcrypt]`, so no requirements change needed.
+
+2. **Starlette middleware ordering: `add_middleware` inserts at position 0.**
+   The LAST middleware added via `add_middleware()` is the OUTERMOST (runs
+   first on request, last on response). To get `RequestID → OrgContext → CORS`
+   execution order, add CORS first, then OrgContext, then RequestID last.
+
+3. **Users table created outside Alembic via `Base.metadata.create_all`.**
+   The Alembic migration (`0001_init_schema.py`) was not modified. The User
+   model is registered to `Base.metadata`, and the users table is created
+   idempotently in the lifespan startup via
+   `Base.metadata.create_all(bind=engine, tables=[User.__table__])`. This
+   is safe because `create_all` uses `CREATE TABLE IF NOT EXISTS`.
+
+4. **Circular import between `deps.py` and `auth/roles.py` resolved by import
+   ordering.** `deps.py` defines `get_current_user`, then imports
+   `require_roles` from `auth/roles.py` at the END of the file. When
+   `roles.py` imports `get_current_user` from `deps.py`, it's already defined.
+   This is a standard Python pattern for breaking circular imports.
+
+5. **`OAuth2PasswordRequestForm` + `OAuth2PasswordBearer` is the cleanest JWT
+   login pattern.** The form accepts `username` and `password` fields
+   (form-encoded, not JSON). The `OAuth2PasswordBearer(tokenUrl="/api/auth/login")`
+   security scheme makes the OpenAPI "Authorize" button work automatically.
+   `auto_error=True` (default) returns 401 if no token is provided on
+   protected routes.
+
+6. **`org_context` middleware extracts org_id from JWT — never from client.**
+   The middleware decodes the Bearer token (if present) and stores
+   `org_id` in `request.state.org_id`. This is separate from
+   `get_current_user` (which does full DB-backed authentication). The
+   middleware is for tenancy scoping; the dependency is for auth. JWT
+   decoding happens twice (middleware + dependency) but is cheap.
+
+7. **Global error handler via `@app.exception_handler(Exception)`.** Registered
+   handlers for `HTTPException`, `RequestValidationError`, and `Exception`
+   ensure all errors return `{error:{code,message,request_id}}`. The
+   `request_id` comes from `request.state.request_id` set by the RequestID
+   middleware. The existing `/api/_test/error` endpoint (RuntimeError) is
+   caught and returns 500 with the error format.
+
+8. **WebSocket endpoint uses `receive_text()` to keep connection alive.**
+   The `/ws/events/{incident_id}` endpoint accepts the connection, sends
+   `{"type":"connected","incident_id":"..."}`, then loops on `receive_text()`.
+   A "ping" message gets a `{"type":"pong"}` response. Real Redpanda consumer
+   fanout will replace the loop with a server-side push.
+
+9. **Redpanda failure is non-fatal.** The lifespan tries to start an
+   `AIOKafkaProducer` in a try/except. When Redpanda is down (container
+   exited), the producer fails to bootstrap, logs a warning, and the app
+   continues without Kafka. This is the correct behavior for development.
+
+### Files produced/modified
+- `backend/app/main.py` (MODIFY — lifespan, middleware, route groups, error handler)
+- `backend/app/deps.py` (MODIFY — get_current_user, oauth2_scheme, require_roles re-export)
+- `backend/app/models/__init__.py` (MODIFY — added User export)
+- `backend/app/models/user.py` (NEW — User model: id, email, hashed_password, role, org_id, created_at)
+- `backend/app/middleware/__init__.py` (NEW)
+- `backend/app/middleware/request_id.py` (NEW — UUID4, X-Request-Id header)
+- `backend/app/middleware/org_context.py` (NEW — org_id from JWT, never from client)
+- `backend/app/middleware/error_handler.py` (NEW — {error:{code,message,request_id}})
+- `backend/app/auth/jwt.py` (NEW — python-jose HS256 create/decode)
+- `backend/app/auth/passwords.py` (NEW — bcrypt direct, not passlib)
+- `backend/app/auth/roles.py` (NEW — require_roles(*roles) dependency factory)
+- `backend/app/auth/seed.py` (NEW — 6 demo users, password demo1234)
+- `backend/app/schemas/auth.py` (NEW — TokenResponse, LoginRequest, UserInfo)
+- `backend/app/schemas/observations.py` (NEW — ObservationResponse with from_attributes=True)
+- `backend/app/api/routes/auth.py` (NEW — POST /api/auth/login)
+- `backend/app/api/routes/observations.py` (NEW — GET /api/observations stub)
+- `backend/app/api/routes/hypotheses.py` (NEW — GET /api/hypotheses stub)
+- `backend/app/api/routes/scenarios.py` (NEW — GET /api/scenarios stub)
+- `backend/app/api/routes/optimize.py` (NEW — GET /api/optimize stub)
+- `backend/app/api/routes/sensing.py` (NEW — GET /api/sensing stub)
+- `backend/app/api/routes/eval.py` (NEW — GET /api/eval stub)
+- `backend/app/api/routes/ws.py` (NEW — WebSocket /ws/events/{incident_id})
+
+## T3 — ULID + timestamp + audit hash-chain + idempotency primitives (2026-07-18)
+
+### Outcome
+Created 5 utility modules in `backend/app/lib/` and 2 test files. All 9 tests pass
+against the real PostgreSQL database in Docker (exit 0). ULIDs are 26-char
+Crockford base32, monotonic per process. The audit hash-chain detects tampering
+of any middle row. Idempotency dedup works via a unique constraint on
+`(source, external_id)`.
+
+### Key findings
+
+1. **The `ulid` PyPI package is not in `requirements.txt`.** Rather than add a
+   new dependency for a 128-bit identifier, implemented ULID natively in
+   `ulid.py` using `time.time_ns()` + `os.urandom(10)`. The implementation is
+   monotonic within a process: same-millisecond calls increment the 80-bit
+   randomness portion under a `threading.Lock`. A `parse_ulid()` helper is
+   included for round-trip verification. 100 rapid-fire ULIDs sort ascending.
+
+2. **Crockford base32 encoding is bit-exact, not byte-exact.** The 48-bit
+   timestamp encodes to 10 chars (50 bits, 2 leading zero padding bits), and
+   the 80-bit randomness encodes to 16 chars (80 bits exact). Total = 26 chars.
+   The encoder extracts 5-bit chunks from the low end of the big-endian int
+   and reverses, so the first char carries the high bits. `parse_ulid` must
+   right-shift the timestamp by 2 to drop the padding bits.
+
+3. **`verify_chain` returns `True | int`, not `bool`.** The MUST DO says
+   "Return True if all match, False if any mismatch (return the index of first
+   mismatch)" — these two specs conflict (False vs. int index). Resolved by
+   returning `True` on success and the 0-based int index on first mismatch.
+   The test uses `is True` / `is not True` so it works whether the return is
+   `False` or an int. Tampering the middle row (index 1) returns `1`.
+
+4. **The `idempotency_keys` table is NOT in the Alembic migration.** The task
+   explicitly forbade modifying the migration or existing models. Created a new
+   `IdempotencyKey` model inside `idempotency.py` (extending `Base`) and an
+   `ensure_table(engine)` helper that calls `IdempotencyKey.__table__.create(
+   checkfirst=True)`. The test module calls `ensure_table(engine)` once via an
+   autouse module-scoped fixture. In production, `ensure_table` should be
+   called at app startup or added to a future migration.
+
+5. **`IntegrityError` is the dedup signal.** `check_and_record` inserts a row
+   and commits; on a duplicate `(source, external_id)`, PostgreSQL raises
+   `IntegrityError` (unique constraint violation). The function catches it,
+   rolls back, and returns `False`. This is the canonical SQLAlchemy pattern
+   for insert-or-reject dedup — no need for a SELECT-then-INSERT race.
+
+6. **Canonical JSON must use `separators=(",", ":")` for byte-stable hashes.**
+   `json.dumps(sort_keys=True)` alone is not enough — the default separators
+   include a space after every `,` and `:`. While this is consistent within a
+   process, explicit compact separators make the hash independent of any
+   future `json` default changes and match the AGENTS.md "canonical
+   serialization" intent.
+
+7. **`datetime.fromisoformat` (Python 3.11) does not accept a trailing `Z`.**
+   The `from_iso()` helper strips `Z` and replaces with `+00:00` before
+   parsing. Naive datetimes (no tzinfo) are assumed UTC. The `to_iso()`
+   helper formats with millisecond precision and a `Z` suffix:
+   `2026-07-18T09:01:20.826Z`. Round-trip `from_iso(to_iso(ms)) == ms` is exact.
+
+8. **`verify_chain` orders by `(ts, id)`, not just `ts`.** Two events written
+   in the same millisecond would have identical `ts` values. Ordering by
+   `id` as a tiebreaker is not strictly correct for ULIDs (the randomness
+   portion is not guaranteed monotonic across processes), but within a single
+   writer process the ULID monotonicity ensures correct ordering. For
+   multi-writer scenarios, a sequence column or Lamport timestamp would be
+   needed — out of scope for T3.
+
+9. **`serialize.py` interprets `visibility` as the viewer's clearance level.**
+   The task spec was ambiguous ("visibility level" could mean the object's
+   classification or the viewer's clearance). Chose viewer clearance because
+   the rules ("sensitive fields hidden for public visibility", "draft fields
+   hidden for non-internal users") only make sense from the viewer's
+   perspective. `SENSITIVE_FIELDS` and `DRAFT_FIELDS` are frozensets defined
+   at module level for easy extension.
+
+### Files produced
+- `backend/app/lib/ulid.py` — 26-char Crockford base32 monotonic ULID (96 LOC)
+- `backend/app/lib/time.py` — now_ms / from_iso / to_iso (40 LOC)
+- `backend/app/lib/audit.py` — write_audit + verify_chain (115 LOC)
+- `backend/app/lib/idempotency.py` — IdempotencyKey model + ensure_table + check_and_record (72 LOC)
+- `backend/app/lib/serialize.py` — visibility + review_status serializer (88 LOC)
+- `backend/tests/test_audit.py` — 5 tests: single append, 3-event chain, tamper, empty, per-org isolation
+- `backend/tests/test_idempotency.py` — 4 tests: first insert, duplicate, different external_ids, different sources
+
+### Verification
+```
+docker compose run --rm -e PYTHONPATH=/app backend sh -c \
+  "pip install pytest -q && python -m pytest tests/test_audit.py tests/test_idempotency.py -v"
+→ 9 passed, 1 warning in 0.60s (exit 0)
+```
