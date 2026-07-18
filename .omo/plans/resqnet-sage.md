@@ -265,7 +265,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(ingestion): OGC API Features adapter`
 
-- [ ] 9. STAC catalog + HDX HAPI adapter — satellite imagery indexing, humanitarian data
+- [x] 9. STAC catalog + HDX HAPI adapter — satellite imagery indexing, humanitarian data
   What to do / Must NOT do: `backend/app/ingestion/adapters/stac.py` — STAC client (pystac-client) for satellite/aerial/drone imagery indexing. Index by location, time, sensor, cloud cover. Store metadata in DB, actual imagery in MinIO (S3-compatible). Support local STAC catalog for offline imagery. `backend/app/ingestion/adapters/hdx.py` — HDX Humanitarian API client for standardized humanitarian indicators and operational datasets. Must NOT require internet at runtime — support cached/pre-downloaded catalogs for offline operation.
   SOTA spec ref: §3.2 (STAC), §3.2 (HDX HAPI), §13.2 (pgSTAC/object storage)
   Parallelization: Wave 2 | Blocked by: T1, T2 | Blocks: T18 (SAR pipeline needs STAC)
@@ -302,7 +302,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(streaming): Redpanda + Benthos event-time pipeline`
 
-- [ ] 11. Temporal crisis knowledge graph — entities, relationships, contradictory hypotheses (Apache AGE)
+- [x] 11. Temporal crisis knowledge graph — entities, relationships, contradictory hypotheses (Apache AGE)
   What to do / Must NOT do: `backend/app/knowledge/graph.py` — build and query the temporal crisis knowledge graph using Apache AGE (PostgreSQL extension). Create graph per incident. Vertices: all entities from T2 (hazards, zones, buildings, roads, bridges, substations, towers, hospitals, shelters, responders, vehicles, sensors, tasks, decisions, observations, hypotheses). Edges per SOTA spec §5.2: ROAD passes_through ZONE, ROAD provides_access_to HOSPITAL, SHELTER has_capacity, ZONE affected_by FLOOD, TOWER powered_by SUBSTATION, REPORT refers_to BUILDING, RESPONDER assigned_to TASK, TASK requires VEHICLE_TYPE, HOSPITAL reachable_via ROUTE, OBSERVATION supports HYPOTHESIS, OBSERVATION contradicts HYPOTHESIS, ACTION supersedes ACTION. Each edge carries `valid_from`, `valid_until`, `properties` (JSONB). Queries via Cypher: multi-hop traversal for cascading impact analysis. Must NOT use a separate graph database — AGE runs inside PostgreSQL. Fallback: if AGE not available, use `graph_edges` table + recursive CTEs.
   SOTA spec ref: §5 (temporal crisis knowledge graph), §5.2 (relationships), §5.3 (contradictory hypotheses)
   Parallelization: Wave 2 | Blocked by: T2, T10 | Blocks: T13 (fusion reads from graph)

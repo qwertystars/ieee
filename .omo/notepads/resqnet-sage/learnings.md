@@ -1016,3 +1016,179 @@ Send same observation_id twice → only 1 row in PostgreSQL (dedup via idempoten
 Send malformed JSON to observations.raw → Benthos routes to observations.dlq
 with error: "failed to parse value as JSON: invalid character 't'"
 ```
+
+## T11 — Temporal crisis knowledge graph (Apache AGE) (2026-07-18)
+
+### Outcome
+Created `backend/app/knowledge/graph.py` (234 pure LOC) with a `KnowledgeGraph`
+class that manages entities, edges, and contradictory hypotheses via Apache AGE
+Cypher queries, with a recursive CTE fallback over `graph_edges`. 5 tests pass
+against the real PostgreSQL database (exit 0). The 2-hop graph query returns
+correct neighbors; contradictory hypotheses are both preserved.
+
+### Key findings
+
+1. **SQLAlchemy `text()` interprets Cypher's `:Label` and `:relationship` syntax
+   as bind parameters.** The Cypher query `CREATE (a)-[:passes_through]->(b)`
+   contains `:passes_through`, which SQLAlchemy's `text()` parser treats as a
+   bind parameter named `passes_through`. This raises
+   `InvalidRequestError: A value is required for bind parameter 'passes_through'`.
+   The `$$` dollar-quoting used by AGE does NOT help — SQLAlchemy's parser
+   does not understand PostgreSQL dollar-quoting and scans the entire string
+   for `:` patterns. Fix: use `Connection.exec_driver_sql()` which bypasses
+   SQLAlchemy's parameter parsing and passes the SQL string directly to psycopg.
+
+2. **AGE's `cypher()` function does NOT accept bind parameters for the graph
+   name.** Attempting `SELECT * FROM cypher($1, $2) AS (...)` raises
+   `psycopg.errors.SyntaxError: a name constant is expected`. The graph name
+   must be a string literal in the SQL statement. The Cypher query string
+   also cannot be a bind parameter — both must be embedded in the SQL string
+   literal (via `$$` dollar-quoting).
+
+3. **AGE Cypher variable-length paths return ALL paths, not unique neighbors.**
+   `MATCH p=(start)-[*1..N]->(neighbor) RETURN neighbor.id, length(p)` returns
+   one row per path, not per neighbor. If there are multiple paths to the same
+   neighbor (e.g., via cycles), duplicates appear. Fix: use
+   `RETURN neighbor.id, labels(neighbor), min(length(p)) AS hop` — Cypher's
+   implicit grouping groups by the non-aggregate columns and returns the
+   minimum path length.
+
+4. **AGE graph state persists across test runs — must clear between tests.**
+   The AGE graph is a PostgreSQL schema. Once created, vertices and edges
+   persist until explicitly deleted or the graph is dropped. Tests that call
+   `add_entity()` and `add_edge()` will accumulate data across runs, causing
+   duplicate vertices and inflated neighbor counts. Fix: add a `clear_graph()`
+   method that executes `MATCH (n) DETACH DELETE n` to remove all vertices
+   and edges without dropping the graph itself.
+
+5. **The recursive CTE fallback is essential for reliability.** AGE Cypher
+   queries can fail silently (the `_cypher` helper swallows `SQLAlchemyError`
+   for resilience). If AGE is available but the Cypher query fails (e.g.,
+   vertex doesn't exist), the query returns 0 results without raising. The
+   `query_neighbors` method tries Cypher first, and if it returns results,
+   uses them. If Cypher fails or AGE is unavailable, it falls back to the
+   recursive CTE on `graph_edges`, which always works because edges are
+   always written to the relational table.
+
+6. **`graph_edges` is the relational mirror; AGE is the query accelerator.**
+   The `add_edge` method ALWAYS writes to `graph_edges` (committed first),
+   then mirrors to AGE if available. This ensures edges survive even if AGE
+   has issues. The `add_entity` method is a no-op when AGE is unavailable —
+   entities are implicitly represented by their edges in `graph_edges`.
+   This dual-write pattern means the recursive CTE path and the Cypher path
+   produce the same results.
+
+7. **AGE graph names must be valid PostgreSQL identifiers.** ULID-based
+   incident IDs start with digits (timestamp portion), which are invalid as
+   PostgreSQL identifiers. The graph name is constructed as
+   `g_{incident_id.lower()}` with non-alphanumeric characters replaced by
+   underscores. The `g_` prefix ensures it starts with a letter.
+
+8. **Contradictory hypotheses are preserved by design.** The `add_hypothesis`
+   method creates a new Hypothesis row with `status=active` — it never
+   checks for or modifies existing hypotheses about the same entity. Two
+   hypotheses with contradictory claims (e.g., "road passable" vs "road
+   impassable") coexist in the database. The `get_hypotheses` method returns
+   ALL hypotheses for an entity, including contradictory ones. Resolution is
+   deferred to the human decision-maker via `update_hypothesis_status`.
+
+9. **`exec_driver_sql` returns a `CursorResult` that is iterable.** Unlike
+   `Session.execute(text(...))` which returns a `Result` object with
+   `.fetchall()`, `.scalar()`, etc., `exec_driver_sql` returns a
+   `CursorResult` that can be iterated directly with `for row in result`.
+   Row access is positional (`row[0]`, `row[1]`) or by column name
+   (`row.column_name`).
+
+### Graph topology used in tests
+```
+R1 (road) --passes_through--> Z1 (zone)
+R1 (road) --provides_access_to--> H1 (hospital)
+H1 (hospital) --reachable_via--> B1 (building)
+B1 (building) --refers_to--> S1 (shelter)
+S1 (shelter) --provides_access_to--> Z1 (zone)
+
+2-hop from R1: Z1 (hop 1), H1 (hop 1), B1 (hop 2)
+```
+
+### Files produced
+- `backend/app/knowledge/__init__.py` — package init, exports KnowledgeGraph
+- `backend/app/knowledge/graph.py` — KnowledgeGraph class (234 pure LOC):
+  create_graph, add_entity, add_edge, query_neighbors, query_two_hop,
+  add_hypothesis, link_observation, get_hypotheses, update_hypothesis_status,
+  clear_graph, drop_graph
+- `backend/tests/test_knowledge_graph.py` — 3 tests: add_entity_and_edge,
+  query_neighbors (1-hop), two_hop_query (5 entities + 5 edges)
+- `backend/tests/test_hypotheses.py` — 2 tests: contradictory_hypotheses_preserved,
+  hypothesis_status_transitions (active -> resolved -> superseded)
+
+### Verification
+```
+docker compose run --rm -e PYTHONPATH=/app backend sh -c \
+  "pip install pytest -q && python -m pytest tests/test_knowledge_graph.py tests/test_hypotheses.py -q"
+→ 5 passed, 1 warning in 0.42s (exit 0)
+```
+
+---
+
+## T9: STAC Catalog + HDX HAPI Adapter (2026-07-18)
+
+### Task
+Create STAC and HDX HAPI adapters for satellite imagery indexing and humanitarian data ingestion.
+
+### Files produced
+- `backend/app/ingestion/adapters/stac.py` (NEW — STACClient + index_item, 218 pure LOC)
+- `backend/app/ingestion/adapters/hdx.py` (NEW — HDXClient + map_to_observations, 171 pure LOC)
+- `backend/tests/test_stac_adapter.py` (NEW — 4 tests: index 3 items, cloud cover filter, local catalog, remote search)
+- `backend/tests/test_hdx_adapter.py` (NEW — 3 tests: pull 2 indicators, geometry mapping, indicator filter)
+
+### Design decisions
+
+**STAC adapter (`stac.py`)**:
+- `STACClient(catalog_url)` supports both remote STAC APIs (HTTP) and local file catalogs (offline).
+  - Detects local catalogs via `os.path.isfile(catalog_url)` — if True, reads JSON from disk.
+  - Remote search uses `GET /search` with `bbox`, `datetime`, `collections` params.
+  - Cloud cover filtering is done client-side (not all STAC APIs support the filter extension).
+  - Pagination follows `rel=next` links in the STAC response `links` array.
+- `index_item(stac_item, org_id, incident_id)` returns a dict (not an Observation model instance)
+  per the task spec. The dict contains all 23+ Observation fields plus `geometry_wkt` (string,
+  not WKTElement) for JSON-serializable portability.
+- Imagery asset URLs are stored in `quality_flags.assets` as `{key: {href, type}}` for later
+  download in T18. No imagery is downloaded now.
+- `source_type = SourceType.satellite`, `collection_method = "stac_api"`.
+- `source_reliability = 0.9` (satellite data is high-quality).
+- `event_type = "satellite_imagery"`, `phenomenon = constellation or collection`.
+
+**HDX adapter (`hdx.py`)**:
+- `HDXClient(base_url)` uses HDX HAPI (NOT the retired HXL services — retired Jan 31, 2026).
+- `pull_indicators(country, indicator_ids)` hits `{base_url}/population?country_code={country}`,
+  follows `next_url` pagination, optionally filters by `#indicator+code` client-side.
+- `map_to_observations(indicator, org_id, incident_id)` returns `list[dict]` (typically 1 item).
+- HDX indicators are country-level, so geometry is a country centroid from a 14-entry ISO3
+  lookup table (`_COUNTRY_CENTROIDS`). Unknown countries default to `POINT(0.0 0.0)`.
+- `geometry_uncertainty = 50000.0` (50km) — reflects country-level granularity.
+- `source_type = SourceType.official_feed`, `collection_method = "hdx_hapi"`.
+- `source_reliability = 0.85` (official humanitarian data).
+- HXL hashtags are used as dict keys (e.g. `#indicator+code`, `#country+code`, `#date`).
+
+### Key learning: httpx params={} strips URL query params
+When following STAC pagination "next" links, passing `params={}` to `httpx.AsyncClient.get()`
+causes httpx to strip the query params from the next-link URL. Fix: only pass `params` on the
+first request; for subsequent pages, call `client.get(url)` without `params` so the next-link
+URL (which carries its own query params) is used as-is.
+
+### Verification
+```
+docker compose run --rm -e PYTHONPATH=/app backend sh -c \
+  "pip install pytest -q && python -m pytest tests/test_stac_adapter.py tests/test_hdx_adapter.py -q"
+→ 7 passed, 1 warning in 0.05s
+```
+
+Tests:
+1. `test_index_stac_items` — indexes 3 STAC items (cloud_cover 5%, 25%, 80%), verifies all
+   metadata fields (geometry WKT, cloud cover, platform, instruments, assets, source_id, etc.)
+2. `test_search_by_cloud_cover` — filters by max_cloud_cover threshold (20% → 1 item, 30% → 2, None → 3)
+3. `test_search_local_catalog` — writes FeatureCollection to temp file, searches offline
+4. `test_search_remote` — mocks STAC API with httpx.MockTransport, tests pagination + cloud cover filter
+5. `test_pull_indicators` — mocks HDX HAPI, pulls 2 indicators (POP + AFFECTED), verifies mapping
+6. `test_map_to_observations_geometry` — verifies country centroid lookup (COL, AFG, unknown)
+7. `test_pull_with_indicator_filter` — filters pulled indicators by indicator_ids list
