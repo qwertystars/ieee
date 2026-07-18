@@ -343,7 +343,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
 <!-- WAVE 3: PROBABILISTIC EVIDENCE FUSION — SOTA spec §6 -->
 <!-- ════════════════════════════════════════════════════════════════════════════ -->
 
-- [ ] 13. Confidence vector computation (6 dimensions: source reliability, corroboration, freshness, geo precision, model uncertainty, conflict)
+- [x] 13. Confidence vector computation (6 dimensions: source reliability, corroboration, freshness, geo precision, model uncertainty, conflict)
   What to do / Must NOT do: `backend/app/fusion/confidence.py` — compute confidence vector `q_i = [S_i, C_i, F_i, G_i, M_i, K_i]` for each observation per SOTA spec §6.1. `S_i` (source reliability): from Beta model (T14). `C_i` (corroboration strength): count of other observations within spatial+temporal window supporting same claim, normalized 0-1. `F_i` (freshness): exponential decay `F_i(t) = exp(-(t-t_i)/tau_k)` per phenomenon type (T15). `G_i` (geographic precision): based on source type (exact GPS=1.0, road segment=0.7, ward=0.3, vague text=0.1). `M_i` (model uncertainty): from ML model confidence or None for direct observations. `K_i` (conflict level): 0 if no contradictions, increases with number/strength of contradicting observations. Store all 6 dimensions per observation in `quality_flags` JSONB. Compute display confidence as weighted sum only for UI, but NEVER compress for the reasoning engine. Must NOT reduce to single scalar internally.
   SOTA spec ref: §6.1 (confidence vector), §6.2 (freshness), §6.3 (source reliability), §6.4 (probabilistic world state)
   Parallelization: Wave 3 | Blocked by: T2, T11 | Blocks: T16, T26
@@ -359,7 +359,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(fusion): confidence vector computation (6D)`
 
-- [ ] 14. Source reliability Beta model — updates with field verification, conditioned on report type
+- [x] 14. Source reliability Beta model — updates with field verification, conditioned on report type
   What to do / Must NOT do: `backend/app/fusion/reliability.py` — `SourceReliabilityTracker` class with Beta(α, β) per source. Initialize with prior Beta(2, 2). On field verification: `α += 1` if verified correct, `β += 1` if disproved. Apply time decay so old performance doesn't dominate: `α_eff = α * decay_factor`, `β_eff = β * decay_factor`. Condition on report type: a source can be reliable for road observations but poor at flood depth — store separate (α, β) per (source_id, phenomenon_type). Expected reliability = α/(α+β). 95% credible interval via scipy.stats.beta.ppf. Must NOT assign permanent credibility — always updatable.
   SOTA spec ref: §6.3 (source reliability should update over time)
   Parallelization: Wave 3 | Blocked by: T2 | Blocks: T13
@@ -493,7 +493,7 @@ Your next move: approve the plan, or run a high-accuracy review first. Full exec
   ```
   Commit: Y | `feat(perception): multilingual NLP pipeline + geolocation + duplicate clustering`
 
-- [ ] 22. ML model serving infrastructure — ONNX Runtime, model registry, lazy loading for local hardware
+- [x] 22. ML model serving infrastructure — ONNX Runtime, model registry, lazy loading for local hardware
   What to do / Must NOT do: `backend/app/perception/serving.py` — model serving layer for local hardware with limited resources. (1) ONNX Runtime for CPU-optimized inference (`onnxruntime.InferenceSession` with CPU execution provider). (2) Model registry: `models` table (`id`, `name`, `version`, `framework` (pytorch/onnx), `task` (flood_mapping/damage/nlp), `r2_key`, `input_schema`, `output_schema`, `calibration_metrics` JSONB, `created_at`). (3) Lazy loading: models loaded on first request, cached in memory, unloaded after idle timeout. (4) Pre-download script: `scripts/download_models.py` — downloads all required model weights + sample SAR data when internet is available, stores in MinIO + local cache. (5) Model versioning: every inference records model_version in observation's `model_version` field for provenance. Must NOT require internet at runtime for model inference — all models cached locally.
   SOTA spec ref: §13.4 (ML stack: ONNX Runtime at edge), §12.4 (model versions in provenance)
   Parallelization: Wave 4 | Blocked by: T1 | Blocks: T18-T21 (all ML todos use serving layer)
