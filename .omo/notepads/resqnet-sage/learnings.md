@@ -2290,3 +2290,94 @@ Enum types after upgrade: 0 (all 6 dropped)
 Enum columns after upgrade: all character varying (VARCHAR)
 Indexes created: 14 (13 composite + 1 time-series)
 ```
+
+## T6-config — Harden configuration: safe health, CORS, JWT, test endpoint (2026-07-26)
+
+### Outcome
+Hardened `backend/app/main.py` and `backend/app/config.py` to prevent credential
+leaks in health endpoints, enforce JWT secret strength in non-dev environments,
+disable CORS credentials for wildcard origins, and gate the test error endpoint
+behind development mode. All 6 acceptance criteria verified via FastAPI
+TestClient.
+
+### Key findings
+
+1. **`/healthz` was leaking the full `DATABASE_URL` connection string.** The
+   shallow health check returned `settings.DATABASE_URL` (containing
+   `disaster:disaster@db:5432`) in the `bindings` dict. Replaced with a
+   `services` dict mapping service names to `"configured"` — no URLs, no
+   credentials. The `environment` field is retained for operational visibility.
+
+2. **`/healthz/deep` was leaking exception details via `str(exc)`.** The deep
+   health check returned `{"ok": False, "error": str(exc)}` per service.
+   Exception messages from SQLAlchemy/Redis/MinIO can contain connection
+   strings, hostnames, and credential fragments. Replaced with simple
+   `True`/`False` booleans per service. Added Redpanda TCP connect check
+   (was missing — criterion (b) lists database, redis, redpanda, minio).
+
+3. **`/api/_test/error` was accessible in all environments.** The test endpoint
+   that raises a `RuntimeError` for error-handler verification had no
+   environment gate. Added `if settings.ENVIRONMENT != "development": raise
+   HTTPException(status_code=404)` at the top. In dev: returns 500 (RuntimeError
+   caught by error handler). In non-dev: returns 404 (endpoint hidden).
+
+4. **CORS wildcard with `allow_credentials=True` is a browser security
+   violation.** The W3C CORS spec forbids `Access-Control-Allow-Credentials:
+   true` when `Access-Control-Allow-Origin: *`. Browsers reject credentialed
+   requests to wildcard-origin servers. Fix: when `CORS_ORIGINS == "*"`, set
+   `allow_credentials=False` and log a warning. When specific origins are
+   provided, `allow_credentials=True` is safe. Verified: wildcard origin →
+   `access-control-allow-credentials` header absent; specific origin → header
+   is `true`.
+
+5. **Pydantic v2 `@model_validator(mode="after")` is the correct tool for
+   cross-field validation.** `@field_validator("JWT_SECRET")` cannot access
+   `ENVIRONMENT` because field validators receive only the field value, not
+   `self`. The `@model_validator(mode="after")` runs after all fields are
+   validated and receives `self`, allowing cross-field checks. The validator
+   raises `ValueError` when `ENVIRONMENT != "development"` and
+   `len(JWT_SECRET) < 32`, which causes pydantic to reject the Settings
+   instantiation — the app refuses to start.
+
+6. **MinIO credential defaults in `config.py` were `minioadmin/minioadmin`**
+   while `docker-compose.yml` and `.env.example` use `minio/minio123`. The
+   defaults now match: `MINIO_ACCESS_KEY: str = "minio"` and
+   `MINIO_SECRET_KEY: str = "minio123"`. This ensures the app can connect to
+   MinIO out of the box when using docker-compose defaults.
+
+### Files modified
+- `backend/app/config.py` — added `model_validator` import, fixed MinIO creds,
+  added `_validate_jwt_secret` model validator (55 LOC, 32 pure LOC)
+- `backend/app/main.py` — hardened `/healthz`, `/healthz/deep`,
+  `/api/_test/error`, and CORS setup (219 LOC, 161 pure LOC)
+
+### Verification
+```
+# /healthz — no credentials
+GET /healthz → {"ok": true, "services": {"database": "configured", ...}}
+No 'postgresql', 'redis://', 'minio123', 'dev-secret' in response: PASS
+
+# /healthz/deep — ok/false per service, no error strings
+GET /healthz/deep → {"ok": false, "checks": {"database": true, "redis": false, "redpanda": false, "minio": false}}
+No 'error' key, all values are bool: PASS
+
+# /api/_test/error — dev mode (500) vs prod mode (404)
+dev:  GET /api/_test/error → 500 (RuntimeError caught by error handler)
+prod: GET /api/_test/error → 404 (HTTPException)
+PASS
+
+# CORS — wildcard origin
+CORS_ORIGINS=* → allow_credentials=False, warning logged
+CORS_ORIGINS=http://localhost:5173 → allow_credentials=true
+PASS
+
+# JWT_SECRET validator
+ENVIRONMENT=development, JWT_SECRET=short → OK (dev exempt)
+ENVIRONMENT=production, JWT_SECRET=short → ValueError (app refuses to start)
+ENVIRONMENT=production, JWT_SECRET=32chars → OK
+PASS
+
+# MinIO creds
+MINIO_ACCESS_KEY=minio, MINIO_SECRET_KEY=minio123 (matches docker-compose.yml)
+PASS
+```
