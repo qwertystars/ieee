@@ -4,12 +4,16 @@
 import type {
   AlertList,
   AuditLogList,
+  AuditVerifyResponse,
   CreateTaskRequest,
   EntityFeatureCollection,
   HypothesisList,
   IncidentList,
+  InjectFaultRequest,
+  InjectFaultResponse,
   ModifyAlertRequest,
   ObservationCollection,
+  ProvenanceResponse,
   SimulatorStartRequest,
   SimulatorStartResponse,
   SimulatorStatus,
@@ -17,6 +21,7 @@ import type {
   Task,
   TaskList,
   TokenResponse,
+  UpdateEntityRequest,
   UpdateTaskStatusRequest,
   User,
 } from './types'
@@ -222,6 +227,33 @@ export const api = {
     return request<void>('/api/simulator/stop', { method: 'POST', signal })
   },
 
+  async simulatorPause(signal?: AbortSignal): Promise<void> {
+    return request<void>('/api/simulator/pause', { method: 'POST', signal })
+  },
+
+  async simulatorResume(signal?: AbortSignal): Promise<void> {
+    return request<void>('/api/simulator/resume', { method: 'POST', signal })
+  },
+
+  async simulatorSetSpeed(speed: number, signal?: AbortSignal): Promise<void> {
+    return request<void>('/api/simulator/set-speed', {
+      method: 'POST',
+      body: { speed },
+      signal,
+    })
+  },
+
+  async simulatorInjectFault(
+    body: InjectFaultRequest,
+    signal?: AbortSignal,
+  ): Promise<InjectFaultResponse> {
+    return request<InjectFaultResponse>('/api/simulator/inject-fault', {
+      method: 'POST',
+      body,
+      signal,
+    })
+  },
+
   // --- Alert review -------------------------------------------------------
 
   async approveAlert(
@@ -292,6 +324,37 @@ export const api = {
     return request<Task>(
       `/api/tasks/${encodeURIComponent(taskId)}`,
       { method: 'PATCH', body, signal },
+    )
+  },
+
+  // --- Entities ----------------------------------------------------------
+
+  async updateEntity(
+    incidentId: string,
+    entityType: string,
+    entityId: string,
+    body: UpdateEntityRequest,
+    signal?: AbortSignal,
+  ): Promise<unknown> {
+    return request<unknown>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/entities/${encodeURIComponent(entityType)}/${encodeURIComponent(entityId)}`,
+      { method: 'PATCH', body, signal },
+    )
+  },
+
+  // --- Audit / provenance ------------------------------------------------
+
+  async getAuditVerify(signal?: AbortSignal): Promise<AuditVerifyResponse> {
+    return request<AuditVerifyResponse>('/api/audit/verify', { signal })
+  },
+
+  async getDecisionProvenance(
+    recordId: string,
+    signal?: AbortSignal,
+  ): Promise<ProvenanceResponse> {
+    return request<ProvenanceResponse>(
+      `/api/decisions/${encodeURIComponent(recordId)}/provenance`,
+      { signal },
     )
   },
 } as const

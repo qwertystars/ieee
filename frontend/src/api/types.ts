@@ -213,20 +213,12 @@ export interface AuditLogList {
 }
 
 export interface SimulatorStatus {
-  running: boolean
+  state: 'stopped' | 'running' | 'paused'
   device_count: number
-  devices: SimulatorDevice[]
-  started_at?: number | null
-  [key: string]: unknown
-}
-
-export interface SimulatorDevice {
-  id: string
-  type: string
-  status: string
-  battery?: number
-  last_seen?: number
-  [key: string]: unknown
+  speed: number
+  seed: number
+  sim_time_ms: number
+  device_ids: string[]
 }
 
 export interface SimulatorStartRequest {
@@ -240,6 +232,47 @@ export interface SimulatorStartResponse {
   device_ids: string[]
   seed: number
   started_by: string
+}
+
+export interface InjectFaultRequest {
+  device_id: string
+  fault_type: string
+  kwargs?: Record<string, unknown>
+}
+
+export interface InjectFaultResponse {
+  device_id: string
+  fault_type: string
+  injected_by: string
+}
+
+export interface AuditVerifyResponse {
+  valid: boolean
+  first_broken_index?: number
+}
+
+export interface ProvenanceEntry {
+  id: string
+  ts: number
+  prev_hash: string
+  hash: string
+  [key: string]: unknown
+}
+
+export interface ProvenanceResponse {
+  recommendation_id: string
+  entries: ProvenanceEntry[]
+  verified: boolean
+}
+
+export interface UpdateEntityRequest {
+  status?: string
+  name?: string
+  severity?: string
+  priority?: string
+  capacity?: number
+  occupancy?: number
+  properties?: Record<string, unknown>
 }
 
 export interface CreateTaskRequest {

@@ -3876,3 +3876,82 @@ list updates. `cd frontend && npm run build` and `npm run typecheck` both pass.
 cd frontend && npm run build    → ✓ built in 10.61s (exit 0)
 cd frontend && npm run typecheck → ✓ tsc --noEmit (exit 0, no errors)
 ```
+
+## T23 — Simulation, field responder, device detail, and audit views (2026-07-26)
+
+### Outcome
+Implemented 4 frontend pages (SimulationPage, FieldPage/FieldResponder, DeviceDetailPage,
+AuditPage) plus a QuickReportForm component. All pages use TanStack Query with
+loading/empty/error/stale/offline states and ARIA labels. `cd frontend && npm run build`
+succeeds. All files under 250 pure LOC.
+
+### Key findings
+
+1. **SimulatorStatus type mismatch between frontend and backend.** The frontend
+   `types.ts` had `SimulatorStatus` with `running: boolean` and `devices: SimulatorDevice[]`,
+   but the backend `engine.py status()` returns `{state: "stopped"|"running"|"paused",
+   device_count, speed, seed, sim_time_ms, device_ids: string[]}`. Updated the frontend
+   type to match the actual backend response. The old `SimulatorDevice` interface was
+   removed since the backend never returns device objects — only device ID strings.
+
+2. **Backend simulator routes are incomplete — pause/resume/set-speed not exposed.** The
+   `SimulationEngine` class has `pause()`, `resume()`, and `set_speed()` methods, but the
+   backend `routes/simulator.py` only exposes start/stop/status/inject-fault. Added
+   frontend API methods (`simulatorPause`, `simulatorResume`, `simulatorSetSpeed`) that
+   call the expected endpoints. If the backend returns 404, the error toast handles it
+   gracefully. This is forward-compatible — when the backend adds these routes, the UI
+   will work automatically.
+
+3. **Device telemetry requires observation filtering, not a device API.** The backend
+   doesn't expose a device detail endpoint. The simulator publishes observations with
+   `source_id = "simulator:{device_id}"` to Kafka, which the consumer inserts into the
+   observations table. To show device telemetry (battery, signal, temperature, position),
+   the frontend fetches all observations for the incident and filters by `source_id`.
+   This works but could be slow with many observations — a dedicated device telemetry
+   endpoint would be more efficient.
+
+4. **Optimistic UI with TanStack Query requires `onMutate` + `onError` rollback.** The
+   field responder page uses optimistic updates for task status and road status changes.
+   The pattern: `onMutate` cancels in-flight queries, reads the current cache, writes the
+   optimistic update, and returns the previous state as context. `onError` rolls back
+   using the context. `onSuccess` invalidates to refetch the truth. This gives instant
+   feedback while maintaining consistency.
+
+5. **TypeScript generic `>>` parsing issue.** When writing
+   `getQueryData<{ features: Array<{ properties: { id: string } }> }>(key)`, TypeScript
+   parses `>>` as a right-shift operator. Fix: extract the type to a local type alias
+   (`type RoadFC = { features: Array<...> }`) and use `getQueryData<RoadFC>(key)`.
+
+6. **Mobile-first design constraints at 375px.** The field responder page uses
+   `max-w-md` (28rem = 448px) to constrain width, `min-h-[44px]` on all interactive
+   elements for touch targets, and `grid-cols-2` for side-by-side inputs that fit at
+   375px. No horizontal scroll because all content is within the max-width container.
+
+7. **Audit provenance chain uses entity IDs, not decision record IDs.** The backend
+   `GET /api/decisions/{record_id}/provenance` endpoint looks up provenance by record ID.
+   The audit log entries have an `entity` field that can be used as the record ID. The
+   audit page lets users select an entity from the audit log to view its provenance chain.
+   Not all entities have provenance chains — the error state handles 404s gracefully.
+
+8. **File LOC management via component extraction.** The FieldPage initially exceeded
+   250 pure LOC (315). Extracted the quick report form into a separate
+   `QuickReportForm` component (114 pure LOC), bringing FieldPage down to 212 pure LOC.
+   This follows the existing codebase pattern of extracting components (ActionCard,
+   MapView, PagePlaceholder).
+
+### Files produced/modified
+- `frontend/src/api/types.ts` (MODIFY — fixed SimulatorStatus, added InjectFaultRequest/Response, AuditVerifyResponse, ProvenanceEntry/Response, UpdateEntityRequest)
+- `frontend/src/api/client.ts` (MODIFY — added simulatorPause/Resume/SetSpeed/InjectFault, getAuditVerify, updateEntity, getDecisionProvenance)
+- `frontend/src/pages/SimulationPage.tsx` (MODIFY — full simulation control view, 220 pure LOC)
+- `frontend/src/pages/FieldPage.tsx` (MODIFY — mobile-first field responder view, 212 pure LOC)
+- `frontend/src/pages/DeviceDetailPage.tsx` (MODIFY — device telemetry view, 183 pure LOC)
+- `frontend/src/pages/AuditPage.tsx` (MODIFY — audit log + provenance viewer, 241 pure LOC)
+- `frontend/src/components/QuickReportForm.tsx` (NEW — extracted report form component, 114 pure LOC)
+
+### Verification
+```
+cd frontend && npm run build
+→ ✓ 960 modules transformed
+→ ✓ built in 10.68s
+→ exit 0
+```
