@@ -85,7 +85,7 @@ export function useOutbox(): UseOutboxResult {
       }
     }
     await refreshCount()
-  }, [])
+  }, [refreshCount])
 
   useEffect(() => {
     refreshCount()

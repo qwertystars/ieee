@@ -54,7 +54,7 @@ export function useMapLayers() {
     new Set(['flood', 'roads', 'responders', 'shelters', 'hospitals', 'hazardZones', 'observations'])
   )
   const [bbox, setBbox] = useState<Bbox | null>(null)
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(() => Date.now())
 
   // Refresh "now" every 30s so freshness badges update in real time.
   useEffect(() => {
