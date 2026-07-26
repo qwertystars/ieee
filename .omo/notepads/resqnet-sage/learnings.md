@@ -4435,3 +4435,84 @@ in `conftest.py`. Multiple test files had workarounds for missing schema:
 Migrations 0002a and 0002b (added in prior tasks) made all `ensure_table` and
 `ALTER TABLE` workarounds obsolete. The test infrastructure now relies entirely
 on Alembic migrations for schema creation, matching production behavior.
+
+## T35 — Event detection + unified communication adapters (2026-07-26)
+
+### Outcome
+Created three new ingestion adapters: `event_registry.py` (186 LOC),
+`ayrshare.py` (162 LOC), `unipile.py` (172 LOC). All under the 250 LOC ceiling.
+19 tests pass (5 event_registry, 6 ayrshare, 8 unipile) with mocked HTTP
+endpoints via `httpx.MockTransport`.
+
+### Key findings
+
+1. **The eventregistry / social-post-api / unipile Python SDKs are NOT in
+   requirements.txt.** The task mentioned SDKs ("eventregistry SDK",
+   "social-post-api Python package") but the existing codebase convention is
+   that ALL adapters use `httpx` directly — no SDKs. Following this pattern
+   avoids adding three new dependencies and keeps the adapter behavior
+   inspectable. The API semantics (GetRecentArticles, mandatorySourceLocation,
+   POST /api/post, X-API-KEY header) are preserved via direct REST calls.
+
+2. **Event Registry API response nesting.** The `minuteStreamArticles` endpoint
+   may return articles either at the top level (`data["articles"]`) or nested
+   under `data["recentActivity"]["articles"]`. The adapter checks both paths
+   to handle API version differences gracefully.
+
+3. **Unipile PII redaction uses the existing NLP pipeline.** The
+   `CitizenReportProcessor.process_report()` method handles PII redaction
+   (phone, email, Aadhaar, person names) before the text is stored. The
+   adapter stores `report.redacted_text` in `quality_flags.text`, never the
+   raw message text. The `raw_data_hash` is a SHA-256 of the raw message
+   dict (for dedup), not the text itself — so PII is never stored in
+   plaintext in the observation.
+
+4. **PHONE_RE only matches Indian phone format (+91).** The NLP pipeline's
+   `PHONE_RE = re.compile(r"(?:\+91[\-\s]?)?[6-9]\d{9}")` matches Indian
+   phone numbers, not US/international formats. Tests must use Indian-format
+   numbers (`+91-9876543210`) to exercise the redaction path. This is a
+   domain-specific constraint — the platform's primary deployment is India.
+
+5. **Mock transport header testing requires manual header injection.** When
+   tests create `client._client = httpx.AsyncClient(transport=MockTransport(...))`
+   directly, they bypass the adapter's `_get_client()` method that normally
+   sets auth headers (Bearer token, X-API-KEY). Tests that assert on request
+   headers must pass `headers={...}` to the mock AsyncClient constructor,
+   matching what `_get_client()` would set.
+
+6. **Ayrshare broadcasts to exactly 13 social networks.** The
+   `_DEFAULT_PLATFORMS` list enumerates all 13: twitter, facebook, instagram,
+   linkedin, youtube, tiktok, telegram, reddit, pinterest, googlebusiness,
+   threads, discord, tumblr. The `build_alert_payload` helper formats an
+   approved Alert dict into a text-first post with severity prefix, area
+   description, message, and recommended action — suitable for simultaneous
+   broadcast across all networks.
+
+7. **Unipile webhook dedup uses the existing idempotency table.** The
+   `check_and_record(db, "unipile", message_id)` call inserts into the
+   `idempotency_keys` table with `(source="unipile", external_id=message_id)`.
+   Duplicate webhook deliveries (same message_id) return False and are
+   silently skipped. This follows the same pattern as the Twitter, Reddit,
+   and Instagram adapters.
+
+8. **All three adapters degrade gracefully without credentials.** Each
+   adapter checks for the API key in `__init__` and short-circuits in the
+   pull/send methods if missing — returning an empty list (inbound) or a
+   `{"status": "skipped", "reason": "api_key_missing"}` descriptor (outbound).
+   No exceptions are raised on missing credentials or network errors.
+
+### Files produced
+- `backend/app/ingestion/adapters/event_registry.py` — EventRegistryAdapter (186 LOC)
+- `backend/app/ingestion/adapters/ayrshare.py` — AyrshareClient (162 LOC)
+- `backend/app/ingestion/adapters/unipile.py` — UnipileClient (172 LOC)
+- `backend/tests/test_event_registry_adapter.py` — 5 tests
+- `backend/tests/test_ayrshare_adapter.py` — 6 tests
+- `backend/tests/test_unipile_adapter.py` — 8 tests
+
+### Verification
+```
+cd backend && PYTHONPATH=/root/srijan/ieee/backend .venv/bin/python -m pytest \
+  tests/test_event_registry_adapter.py tests/test_ayrshare_adapter.py \
+  tests/test_unipile_adapter.py -v
+→ 19 passed, 1 warning in 1.80s (exit 0)
+```
