@@ -2507,3 +2507,90 @@ python -c "from app.main import app; print('OK')"
 → All modules imported successfully
 ```
 
+## T4-domain — Incident, Alert, Recommendation models + migration 0003 (2026-07-26)
+
+### Outcome
+Created 3 new domain models (Incident, Alert, Recommendation) and migration
+0003 that creates the corresponding tables with GiST spatial indexes and
+composite (org_id, incident_id) indexes. `alembic upgrade head` reaches
+0003 (head); `alembic downgrade 0002b` drops all 3 tables cleanly;
+re-apply succeeds. All model imports work from both direct module path and
+package `__init__.py` exports. Event model and events table untouched.
+
+### Key findings
+
+1. **Incident is the top-level container — it does NOT carry incident_id.**
+   Unlike every other entity in the platform (which uses the `_EntityMixin`
+   with `org_id` + `incident_id`), Incident IS the incident. It has only
+   `org_id` for tenancy and `id` as its own primary key. The composite
+   `(org_id, incident_id)` index pattern used on alerts and recommendations
+   does not apply to incidents — a simple `org_id` index suffices.
+
+2. **FK ordering dictates table creation/drop order in the migration.**
+   Alerts has FK to incidents; recommendations has FK to both incidents and
+   alerts. Creation order must be incidents → alerts → recommendations.
+   Drop order is the reverse: recommendations → alerts → incidents. Getting
+   this wrong causes `relation does not exist` errors on FK creation.
+
+3. **GeoAlchemy2 Geometry creates a duplicate GiST index.** When a
+   `Geometry` column is created in a table, GeoAlchemy2 automatically
+   creates a GiST index named `idx_<table>_<column>`. The explicit
+   `op.create_index(..., postgresql_using="gist")` in the migration creates
+   a second index named `ix_<table>_<column>`. This is the same pattern
+   used by the existing `observations` table (which has both
+   `idx_observations_geometry` and `ix_observations_geometry`). Both indexes
+   are functionally identical; the explicit one is kept for naming
+   consistency with the ORM's `__table_args__` Index declarations.
+
+4. **`default=` in mapped_column is Python-side only — no server_default
+   in migration.** The Incident `status` column has `default="active"` in
+   the ORM model, and Alert/Recommendation have `default="draft"`. These
+   are SQLAlchemy Python-side defaults (applied at INSERT time by the ORM).
+   The migration does NOT set `server_default` — this matches the existing
+   pattern (e.g., `sources.status` in 0002b has no server_default). The
+   application layer is responsible for providing default values when
+   inserting raw SQL.
+
+5. **`confidence_vector` is JSONB, not ARRAY(Float).** The 6D confidence
+   vector [S,C,F,G,M,K] is stored as JSONB (a list of 6 floats). This
+   matches the existing pattern for `supporting_evidence`,
+   `contradicting_evidence`, and other JSONB columns. Using PG ARRAY would
+   require a separate type and is less flexible for future schema changes.
+
+6. **Recommendation.alert_id is nullable — recommendations can exist
+   without an alert.** The FK to alerts is `nullable=True`, allowing
+   recommendations generated from observations or scenarios directly
+   (not tied to a specific alert). The FK constraint still enforces
+   referential integrity when alert_id is present.
+
+### Files produced
+- `backend/app/models/incident.py` — Incident model (36 pure LOC)
+- `backend/app/models/alert.py` — Alert model (42 pure LOC)
+- `backend/app/models/recommendation.py` — Recommendation model (40 pure LOC)
+- `backend/alembic/versions/0003_incidents_alerts.py` — Migration (123 pure LOC)
+
+### Files modified
+- `backend/app/models/__init__.py` — added Incident, Alert, Recommendation
+  imports and `__all__` exports
+
+### Verification
+```
+alembic upgrade head → 0003 (head)
+alembic downgrade 0002b → 0002b (all 3 tables dropped)
+alembic upgrade head → 0003 (head) (re-applied cleanly)
+
+python3 -c "from app.models.incident import Incident; \
+  from app.models.alert import Alert; \
+  from app.models.recommendation import Recommendation; \
+  print('OK')"
+→ OK
+
+python3 -c "from app.models import Incident, Alert, Recommendation; print('OK')"
+→ OK
+
+# Tables in DB after upgrade:
+incidents, alerts, recommendations (all 3 present)
+# Indexes: GiST on geometry/area, composite (org_id, incident_id) on
+# alerts and recommendations, plus status/severity/urgency indexes
+```
+

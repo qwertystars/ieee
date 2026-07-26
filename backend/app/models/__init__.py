@@ -47,6 +47,9 @@ from app.models.hypotheses import Hypothesis  # noqa: E402, F401
 from app.models.scenarios import Scenario  # noqa: E402, F401
 from app.models.events import Event  # noqa: E402, F401
 from app.models.user import User  # noqa: E402, F401
+from app.models.incident import Incident  # noqa: E402, F401
+from app.models.alert import Alert  # noqa: E402, F401
+from app.models.recommendation import Recommendation  # noqa: E402, F401
 
 __all__ = [
     "Base",
@@ -72,4 +75,7 @@ __all__ = [
     "Scenario",
     "Event",
     "User",
+    "Incident",
+    "Alert",
+    "Recommendation",
 ]
