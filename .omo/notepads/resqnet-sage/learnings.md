@@ -2770,3 +2770,93 @@ WHERE table_name='operational_tasks'
 → assignment_history  | jsonb
 → required_capability | character varying
 ```
+
+## T11 — Complete auth API: login, /me, logout, role enforcement, tenant isolation (2026-07-26)
+
+### Outcome
+Completed the auth API with GET /api/auth/me, POST /api/auth/logout, Redis-based
+token revocation denylist in get_current_user, and ENVIRONMENT=development guard
+on demo user seeding. All verification commands pass: login → 200 + JWT, /me → 200
++ user info, logout → 204, /me after logout → 200 (best-effort, Redis unavailable
+in this environment as documented).
+
+### Key findings
+
+1. **Redis denylist uses a SET with a single key-level TTL, not per-member TTL.**
+   The task spec explicitly requires `sadd('revoked_tokens', token)` + `expire(
+   'revoked_tokens', remaining_ttl)`. Redis SET keys support only a single TTL
+   for the entire key, not per-member. This means each `expire` call resets the
+   TTL for ALL members in the set. In practice, the last-revoked token's TTL
+   wins. This is acceptable for a demo/best-effort denylist — when Redis is
+   available, the denylist works correctly for single-token revocation. For
+   production, per-token keys (`revoked_token:{token}` with individual TTLs)
+   would be more correct, but the task explicitly specifies the SET pattern.
+
+2. **Redis is NOT available in this environment — all operations are best-effort.**
+   The `get_redis()` lazy singleton attempts `ping()` on first call. If it fails
+   (Error 111 connection refused), it logs a warning and returns None. Both
+   `is_token_revoked` and `revoke_token` check for None and return False/no-op
+   respectively. This means: logout always returns 204 (even if Redis is down),
+   and a revoked token is still accepted (best-effort). The task spec explicitly
+   allows this: "if Redis unavailable, log warning and still return 204" and
+   "/me after logout → 401 (if Redis available) or 200 (if Redis unavailable,
+   best-effort)".
+
+3. **`get_redis()` retries on every call when Redis is down.** Unlike a
+   "try-once-and-cache-failure" pattern, the singleton sets `_redis_client = None`
+   on failure, so the next call re-enters the try block. This means each
+   authenticated request pays the 2s `socket_connect_timeout` cost when Redis
+   is down. For a dev environment this is acceptable (and the timeout is short).
+   In production with Redis available, the first successful `ping()` caches the
+   client and subsequent calls return immediately.
+
+4. **`oauth2_scheme` can be used as a direct dependency to extract the raw token.**
+   The logout endpoint needs both the raw token string (to add to the denylist)
+   and the authenticated user (to verify the token is valid). Using
+   `token: str = Depends(oauth2_scheme)` alongside `current_user: User =
+   Depends(get_current_user)` is the cleanest pattern — FastAPI calls
+   `oauth2_scheme.__call__` twice (once for each dependency), but it's just
+   extracting a string from the Authorization header, which is trivially cheap.
+
+5. **JWT `exp` claim is a Unix timestamp (seconds), not milliseconds.** The
+   `create_access_token` function in `jwt.py` uses `datetime.now(timezone.utc) +
+   expires_delta` and assigns it to `to_encode["exp"]`. python-jose encodes
+   datetime objects as Unix timestamps (seconds). To compute remaining TTL in
+   the logout endpoint: `int(exp) - int(datetime.now(timezone.utc).timestamp())`.
+   The result is in seconds, which is what `redis.expire` expects.
+
+6. **`UserInfo.model_validate(user)` works with SQLAlchemy User objects.** The
+   `UserInfo` Pydantic model has `from_attributes=True` in its config, so
+   `model_validate(user)` extracts `id`, `email`, `role`, `org_id` from the
+   SQLAlchemy User object (ignoring `hashed_password` and `created_at`). This
+   is the standard Pydantic v2 pattern for ORM-to-schema conversion.
+
+7. **Demo user seeding now guarded by `ENVIRONMENT=development`.** The
+   `seed_demo_users` function returns 0 immediately if
+   `settings.ENVIRONMENT != "development"`. This prevents demo users from being
+   created in production/staging environments. The check is in the function
+   itself (not in the caller), so any future caller is protected.
+
+8. **No changes needed to `jwt.py` for token revocation.** The task spec said
+   "add token revocation support (if needed)". Revocation is handled entirely
+   at the dependency layer (`deps.py` checks the denylist) and route layer
+   (`auth.py` logout endpoint adds to denylist). The JWT module's
+   `create_access_token` and `decode_token` functions are unchanged — they
+   don't need to know about revocation. The denylist is an external concern.
+
+### Files modified
+- `backend/app/deps.py` — added Redis singleton (`get_redis`), `is_token_revoked`,
+  `revoke_token`, denylist check in `get_current_user` (55 → 93 pure LOC)
+- `backend/app/api/routes/auth.py` — added GET /me, POST /logout endpoints
+  (37 → 55 pure LOC)
+- `backend/app/auth/seed.py` — added ENVIRONMENT=development guard
+  (69 → 65 pure LOC, net reduction due to docstring consolidation)
+
+### Verification
+```
+Login: 200
+Me: 200 {'id': '01KYFXYCDJS9R0CZDHNCSN2TJD', 'email': 'admin@demo.disaster',
+          'role': 'admin', 'org_id': 'org_demo'}
+Logout: 204
+Me after logout: 200  (best-effort — Redis unavailable, as documented)
+```

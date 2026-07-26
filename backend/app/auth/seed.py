@@ -3,6 +3,8 @@
 Creates 6 demo users with password 'demo1234':
   admin, emergency_manager, responder_coordinator,
   field_responder, shelter_manager, viewer
+
+Only runs when ENVIRONMENT=development.
 """
 
 import time
@@ -10,6 +12,7 @@ import time
 from sqlalchemy.orm import Session
 
 from app.auth.passwords import hash_password
+from app.config import settings
 from app.lib.ulid import generate_ulid
 from app.models.user import User
 
@@ -45,7 +48,12 @@ DEMO_USERS: list[dict] = [
 
 
 def seed_demo_users(db: Session) -> int:
-    """Seed demo users if they don't exist. Returns count of users created."""
+    """Seed demo users if they don't exist. Returns count of users created.
+
+    Skipped entirely when ENVIRONMENT != 'development'.
+    """
+    if settings.ENVIRONMENT != "development":
+        return 0
     now_ms = int(time.time() * 1000)
     created = 0
     for entry in DEMO_USERS:
