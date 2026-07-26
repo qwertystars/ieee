@@ -2210,3 +2210,83 @@ docker compose run --rm -e PYTHONPATH=/app backend sh -c \
     `docker_compose_config.txt`, `environment.txt`, `stub_routes.txt`,
     `ensure_table_usage.txt`
 - Branch `codex/resqnet-phase1-completion` created and checked out
+
+## Migration 0002a — Add missing entity columns + fix enum types (2026-07-26)
+
+### Outcome
+Created `backend/alembic/versions/0002a_entity_columns.py` (105 pure LOC).
+Migration adds 33 missing ORM-defined columns across 13 entity tables, converts
+6 native PG ENUM columns to VARCHAR (matching ORM's `native_enum=False`),
+drops the 6 unused enum types, and adds 14 indexes (13 composite
+`(org_id, incident_id)` + 1 time-series `observations(observed_at, org_id)`).
+`alembic upgrade head` succeeds from 0001 state. Downgrade + re-upgrade both
+verified clean. All 13 entity tables have ORM column count == DB column count.
+
+### Key findings
+
+1. **The `db_setup.py:16-43` list of 26 missing columns was incomplete.**
+   Cross-referencing `entities.py` ORM models against migration 0001 revealed
+   33 missing columns (7 additional): `hazards.hazard_type`,
+   `hazards.severity`, `bridges.name`, `bridges.status`,
+   `operational_tasks.title`, `operational_tasks.status`,
+   `operational_tasks.priority`. The `db_setup.py` list was a partial
+   workaround, not a complete inventory. Always cross-reference the ORM
+   `__table__.columns` against `information_schema.columns` to find ALL
+   missing fields.
+
+2. **`op.execute("ALTER TABLE ... ALTER COLUMN ... TYPE VARCHAR USING col::text")`
+   is the cleanest way to convert PG enum to VARCHAR.** Using `op.alter_column`
+   with `type_=sa.String()` works but generates DDL that references the enum
+   type during the cast. Raw SQL with an explicit `USING col::text` clause is
+   unambiguous and matches the task's instruction to use `op.execute()` for
+   enum type operations.
+
+3. **Enum type drops must come AFTER all columns using the type are altered.**
+   PostgreSQL refuses `DROP TYPE` if any column still references it. The
+   migration alters all 6 enum columns to VARCHAR first, then drops the 6
+   types. The order is enforced by the sequential `_ENUM_COLUMNS` list —
+   both loops iterate in the same order.
+
+4. **Downgrade recreates enum types via `CREATE TYPE ... AS ENUM (...)` with
+   values from the Python enum class.** The expression
+   `", ".join(f"'{v.value}'" for v in enum_cls)` produces the SQL enum literal
+   list. This works because all 6 Python enums are `str` subclasses with
+   `name == value` (e.g., `satellite = "satellite"`), so the VARCHAR values
+   stored by the ORM are valid enum values when converting back.
+
+5. **NOT NULL columns can be added to empty tables without `server_default`.**
+   All 13 entity tables had 0 rows at migration time (seed data is added
+   separately by `db_setup.py` / `seed_demo`). PostgreSQL allows
+   `ALTER TABLE ... ADD COLUMN ... NOT NULL` on empty tables. If the tables
+   had data, a `server_default` would be required for the NOT NULL columns
+   (`hazards.hazard_type`, `zones.name`, `hospitals.name`, `shelters.name`,
+   `operational_tasks.title`).
+
+6. **Composite index naming: `ix_{table}_org_incident` avoids collision with
+   existing single-column indexes.** Migration 0001 created
+   `ix_{table}_org_id` and `ix_{table}_incident_id`. The composite index name
+   `ix_{table}_org_incident` is distinct and follows the same prefix
+   convention.
+
+7. **The `decisions` table is NOT one of the 13 entity tables.** The task
+   explicitly lists 13 tables; `decisions` is excluded because migration 0001
+   already created it with all ORM-defined columns (`title`, `rationale`).
+   The composite `(org_id, incident_id)` index is only added to the 13
+   listed entity tables, not to `decisions`.
+
+### Verification
+```
+alembic upgrade head   → 0002a (head), exit 0
+alembic downgrade 0001 → 0001, 6 enum types recreated, exit 0
+alembic upgrade head   → 0002a (head), exit 0
+
+ORM vs DB column count (all 13 entity tables):
+  hazards=9, zones=9, buildings=9, road_segments=9, bridges=9,
+  power_substations=9, cell_towers=9, hospitals=10, shelters=11,
+  responders=10, vehicles=10, sensors=10, operational_tasks=10
+  → ALL TABLES MATCH
+
+Enum types after upgrade: 0 (all 6 dropped)
+Enum columns after upgrade: all character varying (VARCHAR)
+Indexes created: 14 (13 composite + 1 time-series)
+```
