@@ -1,25 +1,18 @@
 """Tests for idempotency dedup via (source, external_id) unique constraint.
 
-Uses the real PostgreSQL database via SessionLocal. The idempotency_keys table
-is created on demand via ensure_table() since it is not in the Alembic
-migration. All test rows are cleaned up after each test.
+Uses the real PostgreSQL database via SessionLocal. The idempotency_keys
+table is created by Alembic migrations. All test rows are cleaned up after
+each test.
 """
 
 import pytest
 from sqlalchemy import delete, text
 
-from app.db import SessionLocal, engine
-from app.lib.idempotency import IdempotencyKey, check_and_record, ensure_table
+from app.db import SessionLocal
+from app.lib.idempotency import IdempotencyKey, check_and_record
 
 SOURCE = "test_source"
 EXTERNAL_ID = "ext_test_001"
-
-
-@pytest.fixture(scope="module", autouse=True)
-def _table():
-    """Create the idempotency_keys table once for the test module."""
-    ensure_table(engine)
-    yield
 
 
 @pytest.fixture

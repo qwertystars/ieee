@@ -4239,3 +4239,199 @@ python3 -c "from fastapi.testclient import TestClient; from app.main import app;
 cd frontend && npm run build
 → ✓ built in 9.94s (exit 0)
 ```
+
+## Social media ingestion adapters (Twitter, Reddit, Instagram, YouTube) (2026-07-26)
+
+### Outcome
+Created four social media ingestion adapters in
+`backend/app/ingestion/adapters/`: `twitter.py` (218 LOC), `reddit.py`
+(204 LOC), `instagram.py` (193 LOC), `youtube.py` (210 LOC). All under the
+250 LOC ceiling. Each adapter pulls posts from its platform API, processes
+text through `CitizenReportProcessor` for urgency/category/PII redaction,
+deduplicates via `check_and_record`, and publishes observation dicts to
+`observations.raw` via `ProducerManager.send()`. All observations land as
+`access_policy=sensitive`, `corroboration_state=uncorroborated`. Graceful
+degradation verified: all four return empty lists (with logged warnings)
+when credentials are missing.
+
+### Key findings
+
+1. **tweepy and PRAW are NOT in requirements.txt and NOT installed.** The
+   task mentioned "tweepy or GET /2/tweets/search/recent" and "PRAW" —
+   chose the direct HTTP approach with `httpx.AsyncClient` for all four
+   adapters. This is consistent with the existing adapter pattern
+   (sensorthings, hdx, ogc_features all use httpx directly). No new
+   dependencies were added to requirements.txt.
+
+2. **Twitter API v2 returns place data in `includes.places`, not inline.**
+   The `expansions=geo.place_id` parameter causes the API to return a
+   separate `includes.places` array alongside `data`. The adapter
+   accumulates these into a `self._places` lookup dict during
+   `pull_observations()`, then `map_to_observation()` uses it to resolve
+   the place bounding box for geometry. The bounding box `bbox` format is
+   `[west, south, east, north]`; the centroid is `((west+east)/2,
+   (south+north)/2)`.
+
+3. **Observation.geometry is NOT NULL — social media posts without
+   geometry use a sentinel `POINT(0 0)` with `geometry_uncertainty=
+   9999999.0`.** Reddit, Instagram (geo removed in Graph API v22), and
+   YouTube (search.list doesn't return location in response) all use this
+   sentinel. The high uncertainty signals downstream consumers that the
+   location is unknown. NLP-extracted `place_names` are stored in
+   `quality_flags` for downstream gazetteer resolution. YouTube uses the
+   configured search `location` as the geometry centroid when provided
+   (since all results are within `locationRadius` of that point).
+
+4. **PII redaction uses the NLP pipeline's `CitizenReportProcessor`.** The
+   processor's `_detect_pii` + `_redact_pii` methods handle phone, email,
+   Aadhaar, and person name redaction. The `PHONE_RE` pattern
+   (`(?:\+91[\-\s]?)?[6-9]\d{9}`) matches Indian phone numbers (10 digits
+   starting with 6-9, optionally prefixed with +91). US-style phone
+   numbers like "555-123-4567" do NOT match — this is by design (the
+   platform is India-focused). The redacted text is stored in
+   `quality_flags.text`, never in `provenance_chain` or raw fields.
+
+5. **Adapters publish observation dicts (not Observation model instances)
+   to Kafka.** This follows the hdx.py pattern: the dict has
+   `geometry_wkt` (a string) instead of a `WKTElement` object. The
+   downstream Benthos pipeline + async consumer (from T10) converts the
+   dict to an Observation model instance and inserts into PostgreSQL.
+   This decouples the adapter from the DB — the adapter only needs a DB
+   session for idempotency checks (`check_and_record`), not for
+   observation insertion.
+
+6. **Idempotency uses `check_and_record(db, source, external_id)` from
+   `lib/idempotency.py`.** The `source` is the platform name
+   ("twitter", "reddit", "instagram", "youtube") and `external_id` is the
+   platform-specific post ID (tweet_id, post_id, media_id, video_id).
+   This is separate from the Observation's `source_id` field (which is
+   formatted as `platform:post_id`). The idempotency check happens BEFORE
+   NLP processing and Kafka publish — if the post was already processed,
+   it's skipped entirely, saving NLP and Kafka costs.
+
+7. **Reddit OAuth2 uses client_credentials grant (no user context).** The
+   adapter POSTs to `https://www.reddit.com/api/v1/access_token` with
+   Basic auth (client_id:client_secret) and `grant_type=
+   client_credentials`. The resulting access token is used as a Bearer
+   token for subsequent API calls to `oauth.reddit.com`. This is
+   sufficient for read-only subreddit monitoring — no user-level
+   permissions needed.
+
+8. **Instagram Graph API v22 requires a two-step hashtag search.** First,
+   resolve the hashtag name to an ID via `GET /ig_hashtag_search`. Then,
+   fetch recent media via `GET /{hashtag_id}/recent_media`. Both calls
+   require `user_id` and `access_token` parameters. The adapter handles
+   both steps in `pull_observations()`, accumulating media across all
+   configured hashtags.
+
+9. **YouTube search.list `location` parameter filters but doesn't return
+   location.** The `location` + `locationRadius` parameters filter
+   results to videos geotagged within the radius of the point, but the
+   response does not include the video's actual location. The adapter
+   uses the configured search location as the geometry centroid, with
+   `geometry_uncertainty` set to the radius in meters. This is an
+   approximation — the actual video location could be anywhere within the
+   radius.
+
+10. **All four adapters follow the same class structure for consistency.**
+    Each has: `__init__` (reads config, creates NLP processor),
+    `_get_client`/`close`/`__aenter__`/`__aexit__` (async httpx client
+    lifecycle), `pull_observations` (platform-specific API call, returns
+    empty on missing credentials), `map_to_observation` (NLP processing +
+    observation dict construction), `sync` (orchestrates pull → NLP →
+    idempotency → Kafka publish). The `source_reliability` is 0.5 for
+    all social media (lower than official feeds at 0.85-0.95).
+
+### Files produced
+- `backend/app/ingestion/adapters/twitter.py` — TwitterAdapter (218 LOC)
+- `backend/app/ingestion/adapters/reddit.py` — RedditAdapter (204 LOC)
+- `backend/app/ingestion/adapters/instagram.py` — InstagramAdapter (193 LOC)
+- `backend/app/ingestion/adapters/youtube.py` — YouTubeAdapter (210 LOC)
+
+### Verification
+```
+# Import + graceful degradation (no credentials)
+PYTHONPATH=backend backend/.venv/bin/python -c "
+from app.ingestion.adapters.twitter import TwitterAdapter
+from app.ingestion.adapters.reddit import RedditAdapter
+from app.ingestion.adapters.instagram import InstagramAdapter
+from app.ingestion.adapters.youtube import YouTubeAdapter
+# All return [] when credentials missing
+"
+→ All imports OK, all degrade gracefully
+
+# NLP + PII redaction + mapping
+# Twitter: phone 9876543210 → [PHONE], urgency=high
+# Reddit/Instagram/YouTube: same NLP pipeline, correct fields
+
+# Sync + idempotency (mocked HTTP + real PostgreSQL)
+# Twitter: 2 tweets published, re-run returns 0
+# YouTube: 1 video published, re-run returns 0
+# Reddit: 1 post published, re-run returns 0
+# Instagram: 1 media published, re-run returns 0
+
+# Existing tests still pass
+python -m pytest tests/test_sensorthings_adapter.py tests/test_cap_adapter.py tests/test_hdx_adapter.py -q
+→ 15 passed
+```
+
+---
+
+## Task: Replace SQLite test infrastructure with PostgreSQL/PostGIS
+
+### Date: 2026-07-26
+
+### Context
+The test suite used SQLite (`sqlite:///./test.db`) with `Base.metadata.create_all()`
+in `conftest.py`. Multiple test files had workarounds for missing schema:
+- `test_ogc_adapter.py` had 19 `ALTER TABLE ADD COLUMN IF NOT EXISTS` statements
+  for columns missing from migration 0001 (now added by migration 0002a).
+- 8 test files imported `ensure_table`/`ensure_tables` from production modules
+  (removed in Task 3), causing `ImportError` at collection time.
+- `test_serving.py` and `test_confidence_vector.py` created their own in-memory
+  SQLite engines, bypassing the shared test DB entirely.
+
+### Changes
+1. **`backend/tests/conftest.py`** — rewrote to use PostgreSQL via `DATABASE_URL`
+   env var. Session-scoped fixture drops the public schema (`DROP SCHEMA public
+   CASCADE; CREATE SCHEMA public;`), re-creates PostGIS/AGE/h3 extensions, then
+   runs `alembic upgrade head` to build the full schema from migrations. No
+   `create_all`, no `ensure_table`, no `ALTER TABLE` workarounds.
+
+2. **`backend/pytest.ini`** — new file. Configures `asyncio_mode = auto` for
+   pytest-asyncio and sets `testpaths = tests`.
+
+3. **`backend/tests/test_ogc_adapter.py`** — removed `_MISSING_COLUMNS` list
+   (19 tuples) and `_ensure_columns` module-scoped fixture. Columns are now
+   added by migration 0002a.
+
+4. **8 test files** — removed `ensure_table`/`ensure_tables` imports and their
+   module-scoped `_table`/`_tables`/`_ensure_table` fixtures:
+   - `test_confidence_vector.py` — switched from in-memory SQLite to PostgreSQL
+     `SessionLocal`.
+   - `test_edge_sync.py` — removed `ensure_tables` import + fixture.
+   - `test_serving.py` — switched from in-memory SQLite engine to shared
+     PostgreSQL `engine` from `app.db`.
+   - `test_federation.py` — removed `ensure_tables` import + fixture.
+   - `test_sync.py` — removed both `ensure_edge_tables` and `ensure_sync_tables`
+     imports + fixture.
+   - `test_provenance.py` — removed `ensure_table` import + fixture.
+   - `test_idempotency.py` — removed `ensure_table` import + fixture.
+   - `test_reliability.py` — removed `ensure_table` import + fixture.
+
+5. **`backend/tests/test_seed.py`** — updated stale comment referencing
+   `ALTER TABLE` (the seed no longer runs ALTER TABLE).
+
+### Verification
+- `grep -r "create_all\|ensure_table\|ALTER TABLE" backend/tests/` → zero results.
+- `pytest -q --co | head -20` → 274 tests collected (up from 243 before; 5
+  collection errors fixed by removing broken `ensure_table` imports).
+- 36 tests across all modified files pass (7 scipy-dependent tests fail due
+  to pre-existing missing `scipy` dependency — not caused by this change).
+- Remaining 6 collection errors are pre-existing missing dependencies
+  (`torch`, `sklearn`, `pgmpy`) and a pre-existing `run_seed` import issue.
+
+### Key insight
+Migrations 0002a and 0002b (added in prior tasks) made all `ensure_table` and
+`ALTER TABLE` workarounds obsolete. The test infrastructure now relies entirely
+on Alembic migrations for schema creation, matching production behavior.

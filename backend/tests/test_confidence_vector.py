@@ -1,6 +1,6 @@
 """Tests for confidence vector computation (T13).
 
-Uses in-memory SQLite for the source_reliability table (via ensure_table)
+Uses the real PostgreSQL DB (source_reliability table created by Alembic)
 and dataclass observation doubles for the observation data. The candidates
 list is passed directly to compute_corroboration/compute_conflict, avoiding
 the need for a PostGIS-backed observations table in tests.
@@ -10,12 +10,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+from app.db import SessionLocal
 from app.fusion.confidence import ConfidenceVector, ConfidenceVectorCalculator
 from app.fusion.freshness import FreshnessCalculator
-from app.fusion.reliability import SourceReliabilityTracker, ensure_table
+from app.fusion.reliability import SourceReliabilityTracker
 from app.models.enums import SourceType
 
 BASE_TIME_MS = 1_700_000_000_000
@@ -141,9 +141,8 @@ def test_freshness_from_calculator() -> None:
 
 def test_source_reliability_from_beta() -> None:
     """S matches SourceReliabilityTracker output."""
-    engine = create_engine("sqlite://")
-    ensure_table(engine)
-    with Session(engine) as session:
+    session = SessionLocal()
+    try:
         tracker = SourceReliabilityTracker(session)
         tracker.update("src_1", True, "road_passability")
         tracker.update("src_1", True, "road_passability")
@@ -159,6 +158,8 @@ def test_source_reliability_from_beta() -> None:
             candidates=[],
         )
         assert abs(v.s - expected) < 1e-9
+    finally:
+        session.close()
 
 
 def test_model_uncertainty_none_for_direct() -> None:
