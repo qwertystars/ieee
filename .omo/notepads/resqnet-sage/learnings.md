@@ -3359,3 +3359,92 @@ python3 -c "from fastapi.testclient import TestClient; ..."
 - Below-threshold obs (s=0.3, c=0.1) → no alert
 - Second run → 0 new alerts (idempotent)
 ```
+
+## T15 — Response tasks + deterministic team assignment (2026-07-26)
+
+### Outcome
+Created `backend/app/api/routes/tasks.py` (220 pure LOC) with 4 endpoints:
+GET /api/incidents/{incident_id}/tasks (list with status filter),
+POST /api/incidents/{incident_id}/tasks (create),
+PATCH /api/tasks/{task_id} (update status),
+POST /api/incidents/{incident_id}/tasks/{task_id}/assign (deterministic assignment).
+Registered both `router` and `task_router` in `main.py`. All endpoints verified
+with TestClient against real PostgreSQL. Assignment correctly picks the eligible
+responder with lowest combined travel-cost + workload factor, creates audit
+entries, and updates assignment_history.
+
+### Key findings
+
+1. **Two routers needed for mixed prefix patterns.** The task spec requires
+   `/api/incidents/{incident_id}/tasks` for list/create/assign but
+   `/api/tasks/{task_id}` for PATCH (no incident_id). A single APIRouter can't
+   serve both prefixes cleanly. Solution: two routers — `router` with
+   `prefix="/incidents/{incident_id}/tasks"` and `task_router` with
+   `prefix="/tasks"`, both registered in `api_router` (prefix="/api").
+
+2. **Responder `role` column maps to task `required_capability`.** The
+   Responder model has no `capability` column — the `role` field (team_lead,
+   medic, engineer, rescuer, driver) IS the capability. The deterministic
+   assignment matches `Responder.role == OperationalTask.required_capability`.
+   This is a direct string equality check, not a set intersection.
+
+3. **RouteReliabilityEngine.compute_cost() works with synthetic single-segment
+   routes.** The engine expects a `Route` object with `RouteSegment` tuples.
+   For deterministic assignment, we construct a single-segment route from
+   responder to task using `ST_DistanceSphere` for the length and a default
+   urban emergency speed (11.176 m/s ≈ 40 km/h). With no scenarios, the cost
+   simplifies to `E[T] = length_m / speed_mps` (variance=0, failure_prob=0,
+   risk=0). This is the correct initial deterministic method — the CVaR
+   optimizer (Task 17) will add scenario-aware risk.
+
+4. **Workload factor: `cost + active_count * 300.0` (seconds).** Each active
+   assignment (task with `assigned_team_id=responder.id` and status not in
+   ['completed', 'cancelled']) adds 300 seconds (5 minutes) of equivalent
+   travel cost. This means a responder with 1 active assignment is preferred
+   over one with 0 only if they're >5 minutes closer. The weight is
+   configurable via `_WORKLOAD_WEIGHT`.
+
+5. **Blocked road exclusion uses spatial join with `ST_DWithin`.** The query
+   joins `responders` to `road_segments` on `ST_DWithin(resp.geometry,
+   road.geometry, 0.0018)` (~200m in degrees for SRID 4326). Responders within
+   200m of any blocked/dangerous road are excluded. This is a rough heuristic —
+   a true routing graph would check if the blocked road is ON the path, not
+   just near the responder. Sufficient for the initial deterministic method.
+
+6. **Pre-existing org_id mismatch between auth seed and entity seed.** The auth
+   seed (`app/auth/seed.py`) uses `DEMO_ORG_ID = "org_demo"` while the entity
+   seed (`app/seed/ids.py`) uses `ORG_ID = "demo_org"`. This means the JWT
+   org_id doesn't match the seed data's org_id, causing all org-scoped queries
+   to return empty. For testing, aligned the seed data org_id to `org_demo`.
+   This is a pre-existing issue that should be fixed in the seed scripts.
+
+7. **`assignment_history` JSONB column accepts list assignment without
+   `flag_modified`.** Assigning a new list (`task.assignment_history = history`)
+   is detected by SQLAlchemy's change tracking. In-place mutation (e.g.,
+   `task.assignment_history.append(...)`) would require `flag_modified`, but
+   reassignment does not. The code creates a new list from the existing one
+   (`list(task.assignment_history or [])`), appends, and reassigns.
+
+8. **Seed data road_segments have no 'blocked' or 'dangerous' status.** The
+   seed uses statuses: passable (10), flooded (6), damaged (4). The blocked
+   road exclusion code checks for `status IN ('blocked', 'dangerous')`, so no
+   responders are excluded with the current seed data. To test exclusion,
+   manually update a road_segment status to 'blocked' near a responder.
+
+### Files produced/modified
+- `backend/app/api/routes/tasks.py` (NEW — 220 pure LOC, 4 endpoints + deterministic assignment)
+- `backend/app/main.py` (MODIFIED — registered tasks_router + task_item_router)
+
+### Verification
+```
+GET /api/incidents/test_incident/tasks → 200 {'tasks': [...], 'count': N}
+POST /api/incidents/{id}/tasks → 201 with task data
+PATCH /api/tasks/{id} → 200 with updated status
+POST /api/incidents/{id}/tasks/{id}/assign → 200 with assignment details
+  - assigned_team_id set
+  - assignment_history appended
+  - responder status changed to 'assigned'
+  - audit entries: task.created, task.assigned
+  - method: 'deterministic'
+Edge cases: 409 (no eligible responders), 422 (no required_capability), 409 (already assigned)
+```
