@@ -1,0 +1,175 @@
+=== git log --oneline -10 ===
+6087040 chore(omo): mark T16, T17, T18, T20, T21 complete + update learnings
+abf8da2 feat(perception): multilingual NLP pipeline + geolocation + duplicate clustering (T21)
+739fb8f feat(perception): building/road damage assessment + vehicle-class passability (T20)
+07b0652 feat(perception): SAR flood mapping pipeline with DOFA (T18)
+6b06589 feat(fusion): conformal calibration layer with MAPIE (T17)
+757ea71 feat(fusion): pgmpy DBN probabilistic world state estimation (T16)
+e11efc4 chore(omo): mark T13, T14, T22 complete + update learnings
+4ea70a4 feat(perception): ONNX model serving + registry + lazy loading (T22)
+4206abf feat(fusion): 6D confidence vector computation (T13)
+730e596 feat(fusion): Beta source reliability tests (T14)
+
+=== git status ===
+On branch codex/resqnet-phase1-completion
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	deleted:    .claude/CLAUDE.md
+	deleted:    .claude/CLAUDE.md.backup.2026-06-03_201931
+	deleted:    .claude/settings.json
+	deleted:    .claude/skills/omc-reference/SKILL.md
+	modified:   .omo/boulder.json
+	deleted:    .omo/drafts/disaster-cf-replatform.md
+	deleted:    .omo/drafts/opencode-brief.md
+	modified:   .omo/drafts/resqnet-sage.md
+	deleted:    .omo/evidence/task-0a-resqnet-sage.txt
+	deleted:    .omo/evidence/task-1-disaster-cf-replatform.txt
+	deleted:    .omo/evidence/task-1-resqnet-sage.txt
+	deleted:    .omo/evidence/task-2-disaster-cf-replatform.txt
+	deleted:    .omo/evidence/task-3-disaster-cf-replatform.txt
+	deleted:    .omo/evidence/task-4-disaster-cf-replatform.txt
+	deleted:    .omo/evidence/task-5-disaster-cf-replatform.txt
+	deleted:    .omo/evidence/task-6-disaster-cf-replatform.txt
+	deleted:    .omo/evidence/task-7-disaster-cf-replatform.txt
+	deleted:    .omo/evidence/task-8-disaster-cf-replatform.txt
+	deleted:    .omo/evidence/task-9-disaster-cf-replatform.txt
+	modified:   .omo/notepads/resqnet-sage/issues.md
+	modified:   .omo/notepads/resqnet-sage/learnings.md
+	deleted:    .omo/plans/disaster-cf-replatform.md
+	modified:   .omo/plans/resqnet-sage.md
+	deleted:    .omo/ulw-loop/evidence/basedpyright-changed-files-backend-cwd.txt
+	deleted:    .omo/ulw-loop/evidence/basedpyright-changed-files-pythonpath.txt
+	deleted:    .omo/ulw-loop/evidence/basedpyright-changed-files.txt
+	deleted:    .omo/ulw-loop/evidence/browser-dashboard-actions.txt
+	deleted:    .omo/ulw-loop/evidence/browser-dashboard-playwright.txt
+	deleted:    .omo/ulw-loop/evidence/browser-dashboard.png
+	deleted:    .omo/ulw-loop/evidence/cleanup.txt
+	deleted:    .omo/ulw-loop/evidence/final-backend-tests.txt
+	deleted:    .omo/ulw-loop/evidence/final-basedpyright-errors.txt
+	deleted:    .omo/ulw-loop/evidence/final-frontend-build.txt
+	deleted:    .omo/ulw-loop/evidence/frontend-build-after-compact.txt
+	deleted:    .omo/ulw-loop/evidence/frontend-build.txt
+	deleted:    .omo/ulw-loop/evidence/green-backend-full-after-compact.txt
+	deleted:    .omo/ulw-loop/evidence/green-backend-full-post-types.txt
+	deleted:    .omo/ulw-loop/evidence/green-backend-full.txt
+	deleted:    .omo/ulw-loop/evidence/green-demo-workflow.txt
+	deleted:    .omo/ulw-loop/evidence/http-manual-qa.txt
+	deleted:    .omo/ulw-loop/evidence/red-demo-workflow.txt
+	modified:   backend/app/api/routes/optimize.py
+	modified:   backend/app/auth/jwt.py
+	modified:   backend/app/auth/roles.py
+	modified:   backend/app/eval/__init__.py
+	modified:   backend/app/fusion/calibration.py
+	modified:   backend/app/fusion/confidence.py
+	modified:   backend/app/fusion/reliability.py
+	modified:   backend/app/ingestion/adapters/cap.py
+	modified:   backend/app/ingestion/adapters/hdx.py
+	modified:   backend/app/ingestion/adapters/ogc_features.py
+	modified:   backend/app/ingestion/adapters/sensorthings.py
+	modified:   backend/app/ingestion/adapters/stac.py
+	modified:   backend/app/ingestion/federation.py
+	modified:   backend/app/knowledge/graph.py
+	modified:   backend/app/lib/idempotency.py
+	modified:   backend/app/lib/serialize.py
+	modified:   backend/app/lib/telemetry.py
+	modified:   backend/app/main.py
+	modified:   backend/app/middleware/error_handler.py
+	modified:   backend/app/middleware/org_context.py
+	modified:   backend/app/middleware/request_id.py
+	modified:   backend/app/perception/damage.py
+	modified:   backend/app/perception/flood_mapping.py
+	modified:   backend/app/perception/models.py
+	modified:   backend/app/perception/nlp_clustering.py
+	modified:   backend/app/perception/serving.py
+	modified:   frontend/package-lock.json
+	modified:   frontend/package.json
+	modified:   frontend/src/App.tsx
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.omo/notepads/resqnet-sage/decisions.md
+	.omo/notepads/resqnet-sage/problems.md
+	backend/app/api/routes/health.py
+	backend/app/audit/provenance.py
+	backend/app/audit/provenance_types.py
+	backend/app/auth/abac.py
+	backend/app/auth/abac_types.py
+	backend/app/comms/
+	backend/app/eval/ablation.py
+	backend/app/eval/baselines.py
+	backend/app/eval/failures.py
+	backend/app/eval/metrics.py
+	backend/app/eval/testbed.py
+	backend/app/eval/testbed_helpers.py
+	backend/app/eval/testbed_types.py
+	backend/app/lib/privacy.py
+	backend/app/optimizer/api.py
+	backend/app/optimizer/constraints.py
+	backend/app/optimizer/engine.py
+	backend/app/optimizer/fairness.py
+	backend/app/optimizer/fairness_types.py
+	backend/app/optimizer/optimizer_types.py
+	backend/app/optimizer/replan.py
+	backend/app/optimizer/routing.py
+	backend/app/optimizer/routing_types.py
+	backend/app/perception/ensemble.py
+	backend/app/perception/ensemble_types.py
+	backend/app/perception/llm.py
+	backend/app/perception/llm_safety.py
+	backend/app/perception/llm_types.py
+	backend/app/realtime/
+	backend/app/seed/
+	backend/app/sensing/catalog.py
+	backend/app/sensing/catalog_types.py
+	backend/app/sensing/evi.py
+	backend/app/sensing/evi_types.py
+	backend/app/twin/cascading.py
+	backend/app/twin/cascading_types.py
+	backend/app/twin/scenario_types.py
+	backend/app/twin/scenarios.py
+	backend/app/twin/silence.py
+	backend/app/twin/silence_types.py
+	backend/test_sensing_catalog.db
+	backend/tests/fixtures/
+	backend/tests/test_abac.py
+	backend/tests/test_ablation.py
+	backend/tests/test_baselines.py
+	backend/tests/test_cascading.py
+	backend/tests/test_degradation.py
+	backend/tests/test_edge_sync.py
+	backend/tests/test_ensemble.py
+	backend/tests/test_evi.py
+	backend/tests/test_failures.py
+	backend/tests/test_fairness.py
+	backend/tests/test_fallback.py
+	backend/tests/test_llm.py
+	backend/tests/test_llm_safety.py
+	backend/tests/test_metrics.py
+	backend/tests/test_optimizer.py
+	backend/tests/test_privacy.py
+	backend/tests/test_provenance.py
+	backend/tests/test_realtime.py
+	backend/tests/test_replan.py
+	backend/tests/test_routing.py
+	backend/tests/test_scenarios.py
+	backend/tests/test_seed.py
+	backend/tests/test_sensing_catalog.py
+	backend/tests/test_silence.py
+	backend/tests/test_sync.py
+	backend/tests/test_testbed.py
+	evidence/
+	frontend/playwright.config.ts
+	frontend/src/components/
+	frontend/src/hooks/
+	frontend/src/types/
+	frontend/test-results/
+	frontend/tests/
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+=== current branch ===
+codex/resqnet-phase1-completion
+
+=== git branch --list codex/resqnet-phase1-completion ===
+* codex/resqnet-phase1-completion

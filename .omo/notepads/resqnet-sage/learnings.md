@@ -2140,3 +2140,73 @@ docker compose run --rm -e PYTHONPATH=/app backend sh -c \
   "pip install pytest -q && python -m pytest tests/test_flood_mapping.py -q"
 → 5 passed, 1 warning in 4.95s (exit 0)
 ```
+
+## 2026-07-26 — Todo 1: Implementation audit + execution plan
+
+### Environment constraints
+- Docker is NOT available in this audit environment — all "implemented but
+  unverified" classifications require Gate A (Docker + PostgreSQL) for runtime
+  confirmation. Documented in `evidence/baseline/2026-07-26/environment.txt`.
+- Python venv at `backend/.venv/` not yet ready — could not run pytest.
+- Node/npm available but frontend deps not installed.
+
+### Key findings from source-code audit (37 capabilities)
+1. **Engine layer is remarkably complete** — ~60 real engine files (fusion,
+   perception, optimizer, twin, knowledge, sensing, eval, streaming, realtime,
+   auth, ABAC). The gap is integration wiring, not engine development.
+2. **5 of 9 registered API routes are STUBS** returning `{"status":"ok"}`:
+   observations, hypotheses, scenarios, sensing, eval. See
+   `evidence/baseline/2026-07-26/stub_routes.txt`.
+3. **Two real routers NOT registered in main.py**: `health.router`
+   (FeedHealthTracker at `backend/app/api/routes/health.py`) and
+   `manager.router` (WebSocketManager at `backend/app/realtime/manager.py`).
+   These must be added in todos 16 and 27.
+4. **Migration drift is severe**: 13 entity tables missing columns; 8+ tables
+   created at runtime via `ensure_table()`/`create_all()`. See
+   `evidence/baseline/2026-07-26/ensure_table_usage.txt` for full grep output.
+5. **Native PG ENUM vs VARCHAR mismatch**: migration 0001 creates native ENUM
+   types (`sourcetype`, `corroborationstate`, etc.) but ORM uses
+   `native_enum=False` (VARCHAR). Must reconcile in migration 0002a.
+6. **`sources` table is completely orphaned** — defined in ORM
+   (`backend/app/models/source.py`) but NOWHERE in migration AND has no
+   `ensure_table()` call. Table doesn't exist after `alembic upgrade head`.
+7. **ORG_ID mismatch**: `seed/ids.py:39` has `ORG_ID = "demo_org"` but
+   `auth/seed.py:18` has `DEMO_ORG_ID = "org_demo"`. Demo users and demo
+   observations are in DIFFERENT orgs. Must reconcile to `"org_demo"` in todo 17.
+8. **Security weaknesses**: `/healthz` leaks full DATABASE_URL (`main.py:106`);
+   CORS defaults to `*` with `allow_credentials=True`; JWT_SECRET defaults to
+   `dev-secret-change-me` with no prod validator; `/api/_test/error`
+   unrestricted outside dev.
+9. **No worker container** — ConsumerManager exists (`consumer.py:28-171`) but
+   is never started; no `backend/app/worker/main.py`; no worker service in
+   docker-compose.
+10. **Frontend is near-empty**: `App.tsx` is 5 lines (just `<MapView />`);
+    react-router-dom, @tanstack/react-query, i18next in package.json but NEVER
+    imported; no typecheck/lint/test scripts.
+
+### Patterns observed
+- `ensure_table()` pattern is used in 7 modules: idempotency.py, reliability.py,
+  federation.py, edge_sync.py, sync.py, perception/models.py, llm_types.py,
+  provenance_types.py. All must be removed after migration 0002b.
+- `ensure_columns()` in `seed/db_setup.py` is a runtime ALTER TABLE workaround
+  listing 26 missing columns (incomplete — cross-reference against entities.py
+  found additional missing: `hazards.hazard_type`, `hazards.severity`,
+  `bridges.name`, `bridges.status`, `operational_tasks.title`,
+  `operational_tasks.status`, `operational_tasks.priority`).
+- Audit chain (`lib/audit.py`) is per-org_id, not per-incident — `verify_chain`
+  queries by org_id only.
+- Confidence vector (`fusion/confidence.py`) stores vector in
+  `quality_flags["confidence_vector"]` — display confidence is weighted sum for
+  UI ONLY; reasoning engine must use full 6D vector.
+- `routing.py:130` has `compute_cost()` method (NOT line 210 as draft said).
+- MinIO credentials mismatch: docker-compose uses `minio/minio123`,
+  config.py defaults to `minioadmin/minioadmin`.
+
+### Deliverables created
+- `docs/IMPLEMENTATION_AUDIT.md` — 37-row capability table with classifications
+- `docs/EXECUTION_PLAN.md` — 5 waves + 4 final verification tasks, gate definitions
+- `evidence/baseline/2026-07-26/` — 7 dated baseline files:
+  - `git_state.txt`, `migration_state.txt`, `test_count.txt`,
+    `docker_compose_config.txt`, `environment.txt`, `stub_routes.txt`,
+    `ensure_table_usage.txt`
+- Branch `codex/resqnet-phase1-completion` created and checked out
