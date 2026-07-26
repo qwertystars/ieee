@@ -3955,3 +3955,88 @@ cd frontend && npm run build
 → ✓ built in 10.68s
 → exit 0
 ```
+
+## T25 — PWA manifest, service worker, app-shell caching (2026-07-26)
+
+### Outcome
+Created `frontend/public/manifest.json`, `frontend/public/sw.js`, and two SVG
+icons (`icon.svg`, `icon-maskable.svg`). Registered the service worker in
+`frontend/src/main.tsx` and linked the manifest in `frontend/index.html`.
+`npm run build` succeeds; `dist/manifest.json`, `dist/sw.js`, and both icons
+are present in the build output. Typecheck passes (`tsc --noEmit`, exit 0).
+
+### Key findings
+
+1. **Manual SW + runtime caching is simpler than vite-plugin-pwa for this
+   codebase.** The task allowed either a hand-written `public/sw.js` or
+   `vite-plugin-pwa`. Chose the manual approach because: (a) the task
+   explicitly lists `frontend/public/sw.js` as a required file, (b) it adds
+   zero dependencies, (c) the app shell is small (single HTML + one JS chunk
+   + one CSS chunk), and (d) vite-plugin-pwa's Workbox precache would
+   over-engineer a 3-file shell.
+
+2. **Vite's content-hashed asset names break static precache lists.** Built
+   assets are named `index-DY2vkBgH.js` (hash changes every build). A static
+   `APP_SHELL` array in `sw.js` cannot know these names at authoring time.
+   Solution: precache only the known static files (`/`, `/index.html`,
+   `/manifest.json`, `/icon.svg`, `/icon-maskable.svg`) at install time, and
+   use runtime cache-first for all other same-origin GET requests. Hashed
+   JS/CSS assets are cached on first fetch and served from cache on
+   subsequent loads (including offline).
+
+3. **SVG icons are valid in PWA manifests.** Modern browsers support
+   `"type": "image/svg+xml"` with `"sizes": "any"` in the manifest icons
+   array. Created two icons: `icon.svg` (purpose: "any") and
+   `icon-maskable.svg` (purpose: "maskable") with full-bleed background fill
+   so Android adaptive icons render correctly. No PNG generation needed —
+   SVG scales to all densities.
+
+4. **The "local basemap" is the inline FALLBACK_STYLE, not a separate
+   file.** `MapView.tsx` uses an inline `FALLBACK_STYLE` object (solid dark
+   background, no external tiles). There is no separate basemap file to
+   cache — the map rendering code is part of the JS bundle, which the SW
+   caches via runtime cache-first. The SW's app-shell caching covers this
+   implicitly.
+
+5. **Service worker registration must happen after `load`, not at module
+   top-level.** Registering on `window.addEventListener('load', ...)` ensures
+   the SW registration does not compete with initial resource fetching for
+   bandwidth. The `'serviceWorker' in navigator` guard prevents errors in
+   non-supporting environments (and during SSR if ever added).
+
+6. **Cache versioning via prefix, not exact-name match.** The SW uses
+   `CACHE_VERSION = 'resqnet-v1'` and `CACHE_NAME = '${CACHE_VERSION}-shell'`.
+   On activate, it deletes any cache whose name does NOT start with the
+   current version prefix. Bumping `CACHE_VERSION` to `resqnet-v2` on the
+   next deploy invalidates all old caches in one pass. This is the standard
+   cache-versioning pattern that avoids enumerating every historical cache
+   name.
+
+7. **Navigation requests get an offline fallback to cached `/index.html`.**
+   When a `navigate` request fails (offline) and there's no cached match,
+   the SW serves the cached `/index.html` — enabling SPA route rendering
+   offline. Non-navigation requests that fail offline return `undefined`
+   (browser handles the error).
+
+### Files produced/modified
+- `frontend/public/manifest.json` (NEW — PWA manifest, 25 LOC)
+- `frontend/public/sw.js` (NEW — service worker, 76 LOC)
+- `frontend/public/icon.svg` (NEW — SVG icon, purpose: any)
+- `frontend/public/icon-maskable.svg` (NEW — SVG icon, purpose: maskable)
+- `frontend/src/main.tsx` (MODIFY — SW registration on page load)
+- `frontend/index.html` (MODIFY — manifest link, theme-color, icon links)
+
+### Verification
+```
+cd frontend && npm run build
+→ ✓ 960 modules transformed
+→ ✓ built in 11.79s
+→ exit 0
+
+ls dist/manifest.json dist/sw.js dist/icon.svg dist/icon-maskable.svg
+→ all present
+
+npm run typecheck
+→ tsc --noEmit
+→ exit 0
+```
