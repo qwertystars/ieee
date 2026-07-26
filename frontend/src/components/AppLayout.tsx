@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { useOutbox } from '../hooks/useOutbox'
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -12,6 +13,7 @@ const NAV_ITEMS = [
 
 export function AppLayout() {
   const { user, logout } = useAuth()
+  const { pendingCount, isOnline } = useOutbox()
   const navigate = useNavigate()
 
   async function handleLogout() {
@@ -44,6 +46,26 @@ export function AppLayout() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
+          <span
+            role="status"
+            aria-label={isOnline ? 'Network online' : 'Network offline'}
+            className={`flex items-center gap-1.5 text-xs ${isOnline ? 'text-green-400' : 'text-red-400'}`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${isOnline ? 'bg-green-400' : 'bg-red-400'}`}
+              aria-hidden="true"
+            />
+            {isOnline ? 'Online' : 'Offline'}
+          </span>
+          {pendingCount > 0 && (
+            <span
+              role="status"
+              aria-label={`${pendingCount} pending offline change${pendingCount === 1 ? '' : 's'} queued for sync`}
+              className="rounded-full bg-amber-600 px-2 py-0.5 text-[10px] font-medium text-white"
+            >
+              {pendingCount} pending
+            </span>
+          )}
           {user && (
             <span className="text-xs text-gray-500" aria-label="Current user">
               {user.email}

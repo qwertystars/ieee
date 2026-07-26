@@ -4040,3 +4040,101 @@ npm run typecheck
 → tsc --noEmit
 → exit 0
 ```
+
+## T26 — IndexedDB outbox and conflict-aware replay (2026-07-26)
+
+### Outcome
+Created `frontend/src/lib/outbox.ts` (221 pure LOC) and `frontend/src/hooks/useOutbox.ts`
+(97 pure LOC). Modified `frontend/src/api/client.ts` to route mutations to the outbox
+when offline, and `frontend/src/components/AppLayout.tsx` to show a pending count badge
+and online/offline indicator. `npm run build` and `npm run typecheck` both pass.
+
+### Key findings
+
+1. **TypeScript 5.9 `Uint8Array` is generic over the buffer type.** `new Uint8Array(10)`
+   infers `Uint8Array<ArrayBuffer>`, but `crypto.getRandomValues()` returns
+   `Uint8Array<ArrayBufferLike>`. Assigning the latter to a variable typed as the former
+   fails with TS2322. Fix: explicitly annotate module-level `let lastRand: Uint8Array`
+   (without the type parameter) so it defaults to `Uint8Array<ArrayBufferLike>`, which
+   accepts both `ArrayBuffer` and `SharedArrayBuffer` backed arrays.
+
+2. **ULID monotonicity in the browser requires process-level state.** The backend's
+   Python ULID uses `threading.Lock` + `time.time_ns()`. The browser equivalent uses
+   module-level `let lastTs`/`lastRand` with a carry-increment on the 10-byte random
+   portion when `Date.now()` hasn't advanced. BigInt is used for the Crockford base32
+   encoding because JS bitwise operators are 32-bit — the 80-bit random portion
+   overflows `>>>` after 4 bytes.
+
+3. **IndexedDB singleton connection avoids per-operation open/close overhead.** A
+   module-level `dbPromise: Promise<IDBDatabase> | null` caches the connection. On error,
+   it's reset to `null` so the next call retries. The database is never explicitly closed
+   — the browser closes it on page unload. Multiple transactions on the same connection
+   are serialized by IndexedDB automatically.
+
+4. **`withTx` / `withTxResult` helpers reduce IndexedDB boilerplate.** Every IndexedDB
+   operation needs: open transaction, issue request(s), wait for `oncomplete` (writes)
+   or `onsuccess` (reads), handle `onerror`/`onabort`. Two generic helpers — one for
+   fire-and-forget writes (resolves on `oncomplete`) and one for single-request reads
+   (resolves on `onsuccess` with the result) — cover all outbox operations. Read-modify-
+   write patterns (like `updateItem`) use `withTx` with a nested `getReq.onsuccess` that
+   issues `store.put()` — IndexedDB keeps the transaction alive while requests are pending.
+
+5. **Auth endpoints must be excluded from the outbox.** Login (`POST /api/auth/login`)
+   uses `URLSearchParams` (form-encoded), not JSON. If queued to the outbox, the replay
+   would send JSON instead of form data, and the server would reject it. More importantly,
+   authentication can't work offline — the user needs a real-time JWT. The `request()`
+   function throws `ApiError(0, 'offline — authentication required', path)` for auth
+   endpoints when offline, rather than queueing them.
+
+6. **Conflict policy: last-write-wins marks as synced, manual keeps in outbox.** On HTTP
+   409, non-critical items (priority 1-3) are marked `synced` with
+   `conflict_resolution: 'last_write_wins'` — the client's data is considered authoritative
+   and the item is resolved from the outbox's perspective. Critical items (priority 4:
+   imagery) are marked `conflict` with `conflict_resolution: 'manual'` and stay in the
+   outbox for human review. Both resolutions are recorded in a separate `audit` object
+   store via `recordConflictAudit()`. `clearSynced()` only removes items with
+   `status === 'synced' && !conflict_resolution` — items with a conflict resolution stay
+   as part of the audit trail.
+
+7. **`_skipOutbox` flag prevents re-queueing during replay.** When `syncOutbox()` replays
+   items, it calls `request()` with `_skipOutbox: true`. Without this, if the connection
+   drops mid-sync, the `request()` function would re-queue the item being replayed,
+   creating a duplicate. The flag bypasses the offline routing check.
+
+8. **`getPendingItems` includes `syncing` status to handle crash recovery.** If the page
+   closes during sync, items may be stuck in `syncing` status. By including `syncing` in
+   `getPendingItems()`, the next sync attempt retries them. The idempotency key prevents
+   duplicate server-side processing if the original request actually succeeded.
+
+9. **`inferPriority` uses URL pattern matching, not explicit per-call specification.**
+   The API client's `request()` function calls `inferPriority(path, method)` to determine
+   the outbox priority: `/imagery`, `/upload`, `/media` → 4 (critical); `PATCH /tasks/:id`
+   → 3 (task_state); `/entities/` → 2 (coordinates); everything else → 1 (text). This
+   matches the sync order: text > coordinates > task_state > imagery. Callers can also
+   use `useOutbox().addToOutbox()` directly with an explicit priority.
+
+### Files produced/modified
+- `frontend/src/lib/outbox.ts` (NEW — 221 pure LOC) — IndexedDB outbox with ULID, SHA-256
+  content hash, priority, idempotency keys, conflict audit store, and all required
+  functions: `addToOutbox`, `getPendingItems`, `markSynced`, `markFailed`, `markConflict`,
+  `getPendingCount`, `clearSynced`, `recordConflictAudit`, `getConflictAudit`,
+  `inferPriority`.
+- `frontend/src/hooks/useOutbox.ts` (NEW — 97 pure LOC) — React hook with `pendingCount`,
+  `isOnline`, `addToOutbox`, `syncOutbox`. Listens for `online`/`offline` events, auto-
+  syncs on mount if online, applies conflict policy (last-write-wins for priority 1-3,
+  manual for priority 4), records audit entries.
+- `frontend/src/api/client.ts` (MODIFY) — exported `request()`, added `headers` and
+  `_skipOutbox` to `RequestOptions`, added offline routing for mutations (excludes GETs
+  and auth endpoints).
+- `frontend/src/components/AppLayout.tsx` (MODIFY) — added online/offline indicator (green/
+  red dot with "Online"/"Offline" text) and pending count badge (amber "X pending" pill),
+  both with ARIA labels and `role="status"`.
+
+### Verification
+```
+cd frontend && npm run build
+→ ✓ built in 10.27s (exit 0)
+
+cd frontend && npm run typecheck
+→ tsc --noEmit (exit 0)
+```

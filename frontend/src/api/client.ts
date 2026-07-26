@@ -26,6 +26,7 @@ import type {
   User,
 } from './types'
 import { clearToken, getToken, setToken } from './token'
+import { addToOutbox, inferPriority } from '../lib/outbox'
 
 const DEFAULT_BASE = 'http://localhost:8000'
 
@@ -65,11 +66,29 @@ interface RequestOptions {
   query?: Query
   form?: URLSearchParams
   signal?: AbortSignal
+  headers?: Record<string, string>
+  _skipOutbox?: boolean
 }
 
-async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, query, form, signal } = opts
+export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  const { method = 'GET', body, query, form, signal, headers: extraHeaders, _skipOutbox } = opts
+
+  // Route mutations to outbox when offline (GETs and auth excluded).
+  if (!_skipOutbox && method !== 'GET' && typeof navigator !== 'undefined' && !navigator.onLine) {
+    if (path.startsWith('/api/auth/')) {
+      throw new ApiError(0, 'offline — authentication required', path)
+    }
+    try {
+      const priority = inferPriority(path, method)
+      await addToOutbox(path, method, body, priority)
+      return undefined as T
+    } catch {
+      throw new ApiError(0, 'offline and outbox unavailable', path)
+    }
+  }
+
   const headers: Record<string, string> = { Accept: 'application/json' }
+  if (extraHeaders) Object.assign(headers, extraHeaders)
   const token = getToken()
   if (token) headers['Authorization'] = `Bearer ${token}`
 
