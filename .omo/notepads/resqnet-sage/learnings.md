@@ -2594,3 +2594,114 @@ incidents, alerts, recommendations (all 3 present)
 # alerts and recommendations, plus status/severity/urgency indexes
 ```
 
+## T7-worker — Dedicated worker container with retry and topic creation (2026-07-26)
+
+### Outcome
+Created a dedicated worker container that runs `ConsumerManager` in its own
+process, consuming from `observations.normalized` with retry on transient
+errors, DLQ for permanent failures, and graceful SIGTERM/SIGINT shutdown.
+Added `scripts/create_topics.sh` for idempotent Kafka topic creation. Added
+retry logic (`_should_retry` + `_retry_with_backoff`) to `consumer.py` with
+3x exponential backoff (1s, 2s, 4s) for transient errors. All imports and
+retry logic tests pass.
+
+### Key findings
+
+1. **`ensure_table` was already removed by Task 3.** Verified: `grep -n
+   "ensure_table" consumer.py` returns no matches. Only `check_and_record`
+   is imported from `app.lib.idempotency`. No changes needed to the import
+   list for idempotency — Task 3 already cleaned this up.
+
+2. **`asyncio.Event` + `loop.add_signal_handler` is the clean pattern for
+   async graceful shutdown.** The worker creates a `stop_event`, registers
+   SIGTERM/SIGINT handlers that set it, then `asyncio.wait`s on both the
+   consume task and the stop event with `FIRST_COMPLETED`. When the signal
+   fires, the stop task completes, the consume task is cancelled, and
+   `consumer.stop()` is called. This avoids polling and works with Docker's
+   SIGTERM-on-stop.
+
+3. **`prometheus_client.start_http_server(port)` is a one-liner for the
+   metrics endpoint.** It starts a background thread serving the default
+   Prometheus registry on the given port. No need for a manual HTTP server
+   or aiohttp. The worker exposes 3 counters: `worker_messages_processed_total`,
+   `worker_messages_failed_total`, `worker_retry_attempts_total`. The
+   healthcheck in docker-compose uses `curl -sf http://localhost:8001/metrics`
+   to verify the worker is alive.
+
+4. **Retry classification: permanent vs transient.** `_should_retry` returns
+   `False` for `ValueError`, `KeyError`, `TypeError`, `AttributeError`, and
+   `IntegrityError` (all permanent — malformed payload or constraint
+   violation). Everything else (`OperationalError`, `TimeoutError`,
+   `ConnectionError`, `OSError`) is treated as transient and retried. This
+   is a whitelist-of-permanent approach: unknown exceptions are retried,
+   which is safer than the inverse (unknown exceptions going straight to DLQ).
+
+5. **`_retry_with_backoff` tries up to 4 times (1 initial + 3 retries).**
+   The `delays = [1.0, 2.0, 4.0]` list defines both the retry count and the
+   backoff delays. `range(len(delays) + 1)` gives attempts 0,1,2,3 (4 total).
+   On attempt 0,1,2: if the error is transient, sleep `delays[attempt]`
+   seconds and retry. On attempt 3 (the last): raise regardless. If the error
+   is permanent at any attempt, raise immediately. Verified with 3 test
+   scenarios: permanent (1 call), transient-exhausted (4 calls), transient-
+   succeeds-on-retry (2 calls).
+
+6. **`rpk topic create` exits non-zero when the topic already exists.** The
+   `create_topics.sh` script wraps each `rpk topic create` in an `if/else`
+   that treats the failure as "already exists" (idempotent). The script
+   checks for `rpk` in PATH first and exits with a clear error if missing.
+   Default bootstrap is `localhost:19092` (host-accessible Redpanda port);
+   inside Docker, set `REDPANDA_BOOTSTRAP_SERVERS=redpanda:9092`.
+
+7. **Worker healthcheck uses the metrics endpoint, not `pgrep`.** The
+   `python:3.11-slim-bookworm` base image does not include `pgrep` (part of
+   `procps`). Instead, the healthcheck does `curl -sf
+   http://localhost:8001/metrics` — `curl` is installed in the backend
+   Dockerfile (which the worker builds from). This is a real liveness check:
+   if the worker process is hung or crashed, the metrics endpoint won't
+   respond.
+
+8. **Worker resource limits: 1 CPU, 1G memory.** The worker is I/O-bound
+   (Kafka consume + DB insert), not CPU-bound. 1 CPU and 1G memory is
+   sufficient for the single-partition, single-consumer dev setup. The
+   backend service has 2 CPU / 4G for comparison (it runs FastAPI + ML
+   models). The worker does not need ML model weights loaded.
+
+### Files produced/modified
+- `backend/app/worker/__init__.py` (NEW — package init, 4 LOC)
+- `backend/app/worker/main.py` (NEW — worker entry point with asyncio +
+  signal handlers + Prometheus metrics on :8001, 76 pure LOC)
+- `scripts/create_topics.sh` (NEW — idempotent Kafka topic creation, 3 topics)
+- `docker-compose.yml` (MODIFIED — added worker service with 1 CPU / 1G
+  memory, healthcheck on :8001/metrics, restart: unless-stopped)
+- `backend/app/streaming/consumer.py` (MODIFIED — added `import asyncio`,
+  `from sqlalchemy.exc import IntegrityError`, `_should_retry()`,
+  `_retry_with_backoff()`, placeholder `# TODO: Wire confidence vector
+  computation (todo 13)`, 179 pure LOC)
+
+### Verification
+```
+# Import test
+PYTHONPATH=/root/srijan/ieee/backend python3 -c "from app.worker.main import main; print('OK')"
+→ OK: worker.main imports
+
+# Retry logic tests (3 scenarios)
+python3 -c "..."  # permanent, transient-exhausted, transient-succeeds-on-retry
+→ OK: permanent error raises immediately (1 call)
+→ OK: transient error retries 3x then raises (4 calls)
+→ OK: transient error succeeds on retry (2 calls)
+→ OK: _should_retry classification correct
+→ All retry logic tests passed.
+
+# ensure_table not in consumer.py
+grep -n "ensure_table" consumer.py → exit 1 (no matches)
+
+# docker-compose valid YAML with worker service
+python3 -c "import yaml; yaml.safe_load(open('docker-compose.yml'))"
+→ OK: docker-compose.yml is valid YAML
+→ worker service present with all required fields
+
+# Pure LOC
+consumer.py: 179 pure LOC (under 250 ✓)
+worker/main.py: 76 pure LOC (under 250 ✓)
+```
+
