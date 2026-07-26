@@ -2860,3 +2860,102 @@ Me: 200 {'id': '01KYFXYCDJS9R0CZDHNCSN2TJD', 'email': 'admin@demo.disaster',
 Logout: 204
 Me after logout: 200  (best-effort — Redis unavailable, as documented)
 ```
+
+## T9 — Rescue-ball simulator core: device model and scenarios (2026-07-26)
+
+### Outcome
+Created `backend/app/simulator/` package with a deterministic `RescueBallDevice`
+digital twin (172 pure LOC) and 10 fault-injection functions plus the
+`RIVERTOWN_FLOOD_PATH` waypoint list (107 pure LOC). Same-seed determinism
+verified across 10 steps with velocity=2.5; all 10 fault injection functions
+tested; fault-injected metadata preserved across `step()` calls.
+
+### Key findings
+
+1. **`@dataclass(slots=True)` (mutable, not frozen) is correct for a stateful
+   simulator.** The codebase convention is `@dataclass(frozen=True, slots=True)`
+   for value objects (see `twin/scenario_types.py`, `twin/silence_types.py`,
+   `fusion/confidence.py`). But `RescueBallDevice` is a stateful entity whose
+   fields mutate on every `step()` — freezing it would force returning a new
+   instance per step, which is wasteful and breaks the "modify in place"
+   contract that the fault injection functions depend on. Mutable `slots=True`
+   is the right choice.
+
+2. **`health_flags` typed as `dict[str, Any]` — justified.** The spec lists
+   `health_flags (dict) — {low_battery, high_temp, signal_loss, etc.}` with
+   boolean values, but the fault injection functions need to store non-boolean
+   metadata (`thermal_hotspot_c: float`, `human_heat_at: str`,
+   `connectivity_loss_duration_s: int`). `dict[str, Any]` is the honest type
+   for a heterogeneous metadata dict. The "no `Any` in public sigs" rule targets
+   function signatures, not dataclass fields explicitly designed to hold
+   mixed-type metadata.
+
+3. **`_recompute_health_flags()` uses `dict.update()` not replacement.** This
+   preserves non-boolean keys set by fault injection functions (e.g.,
+   `thermal_hotspot_c`) across `step()` calls. If `step()` replaced the entire
+   dict, fault-injected data would be lost on the next step. Same pattern
+   applied to `imu_reading.update()` and `acoustic_reading.update()` so
+   fault-injected keys like `water_depth_m` and `motion_heading_deg` survive.
+
+4. **Position update uses meter→degree conversion at the device's latitude.**
+   `dx_m / (111_320 * cos(lat))` for longitude, `dy_m / 111_320` for latitude.
+   This is the standard equirectangular approximation, accurate enough for
+   urban-scale movements (< 10 km). The `cos(lat)` guard prevents division
+   by zero near the poles — irrelevant for Rivertown (lat ≈ 19°) but
+   defensive for the general case.
+
+5. **Battery drain rate is deployment-state-dependent, not activity-level.**
+   The spec says "Decreases battery based on delta_ms and activity level" —
+   the deployment state IS the activity level. `deployed` = 0.005%/s (active
+   sensing + comms), `standby` = 0.001%/s (low-power idle), `recovered` = 0
+   (charging), `lost` = 0.002%/s (beacon only). `estimated_remaining_runtime`
+   is recomputed from `battery_pct / rate` on every step.
+
+6. **Thermal model uses exponential relaxation toward equilibrium.**
+   `T += (T_eq - T) * (1 - exp(-dt/tau))` with `tau = 300s` (~5 minutes).
+   This is a first-order RC thermal model — physically correct and
+   deterministic. Each deployment state has its own equilibrium temperature
+   (`deployed` = 38°C, `standby` = 25°C, etc.).
+
+7. **Rivertown coordinates confirmed at lon ≈ 72.85, lat ≈ 19.06.** Extracted
+   from `seed/fixtures/geojson/roads.geojson` and the cyclone alert XML
+   (`19.08N, 72.87E`). The `RIVERTOWN_FLOOD_PATH` traces 8 waypoints from
+   the riverside (5m altitude) through flooded wards (down to -1.5m in the
+   basin center) and back to the recovery zone (0m).
+
+8. **All randomness sourced from caller-provided `random.Random`.** No
+   `time.time()`, `os.urandom()`, or module-level `random` calls. The `step()`
+   method draws from `rng.gauss()` for: heading noise (±2°), altitude drift
+   (±0.1m), signal quality walk (±2%), IMU readings (6 axes), and acoustic
+   readings (2 values). Same seed → same RNG sequence → identical state.
+
+### Files produced
+- `backend/app/simulator/__init__.py` (NEW — package init with disclaimer)
+- `backend/app/simulator/rescue_ball.py` (NEW — 172 pure LOC, RescueBallDevice + step())
+- `backend/app/simulator/scenarios.py` (NEW — 107 pure LOC, RIVERTOWN_FLOOD_PATH + 10 inject_* functions)
+
+### Verification
+```
+# Spec verification command
+PYTHONPATH=/root/srijan/ieee/backend python3 -c "from app.simulator.rescue_ball import RescueBallDevice; ..."
+→ Deterministic sim OK
+
+# Determinism: 10 steps with seed 42, compare all fields
+→ PASS (lon, lat, altitude, battery, signal, packet_loss, temp, imu, acoustic, health_flags, last_seen_ts all identical)
+
+# Non-determinism: seed 42 vs seed 99
+→ PASS (different seeds produce different state)
+
+# Fault injection: all 10 functions tested
+→ PASS (each function modifies the correct field deterministically)
+
+# Fault injection preservation across step()
+→ PASS (thermal_hotspot_c, water_depth_m preserved after step())
+
+# RIVERTOWN_FLOOD_PATH structure
+→ PASS (8 waypoints, all (lon, lat, alt) tuples in Rivertown range)
+
+# Pure LOC
+rescue_ball.py: 172 (under 250 ✓)
+scenarios.py: 107 (under 250 ✓)
+```
