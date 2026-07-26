@@ -2959,3 +2959,78 @@ PYTHONPATH=/root/srijan/ieee/backend python3 -c "from app.simulator.rescue_ball 
 rescue_ball.py: 172 (under 250 ✓)
 scenarios.py: 107 (under 250 ✓)
 ```
+
+## T12-obs — Real Observation API (replace stub) (2026-07-26)
+
+### Outcome
+Replaced the 14-line stub in `backend/app/api/routes/observations.py` with a real
+implementation: POST /api/observations (create from GeoJSON Feature), GET
+/api/observations (list with 8 filters + pagination), GET /api/observations/{id}
+(detail). All responses are GeoJSON Feature/FeatureCollection — never WKT. Split
+filter logic into `observations_queries.py` to keep both files under 250 LOC.
+
+### Key findings
+
+1. **`func.ST_AsGeoJSON` returns a text string, not a JSON object.** The query
+   `select(Observation, func.ST_AsGeoJSON(Observation.geometry).label("geojson"))`
+   returns the geometry as a JSON-encoded string. Must `json.loads(geojson_str)`
+   to get a dict for the GeoJSON Feature response. Null geometries return None.
+
+2. **JSONB path access for confidence_vector filter works with chained `[]` +
+   `.as_float()`.** The expression
+   `Observation.quality_flags["confidence_vector"]["s"].as_float() >= value`
+   compiles to `(observations.quality_flags -> 'confidence_vector' ->> 's')::FLOAT`
+   in PostgreSQL. Rows without `confidence_vector` in quality_flags evaluate to
+   NULL and are correctly excluded by the `>=` comparison.
+
+3. **`func.ST_MakeEnvelope(minx, miny, maxx, maxy, 4326)` + `func.ST_Intersects`**
+   is the correct PostGIS pattern for bbox filtering. The SRID argument (4326)
+   is required to match the observation geometry's SRID. Without it, PostGIS
+   raises an SRID mismatch error.
+
+4. **`func.ST_SetSRID(func.ST_GeomFromGeoJSON(json.dumps(geometry)), 4326)`** is
+   the correct pattern for inserting GeoJSON geometry. `ST_GeomFromGeoJSON` does
+   not set an SRID by default, so `ST_SetSRID(..., 4326)` is required for the
+   geometry to be queryable with `ST_Intersects` against other 4326 geometries.
+
+5. **Role-based visibility filtering uses a static `_ROLE_VISIBILITY` dict.**
+   admin/emergency_manager/responder_coordinator see all (public+internal+
+   sensitive); field_responder/shelter_manager see public+internal; viewer sees
+   public only. Unknown roles default to public-only. The filter is applied as
+   `Observation.access_policy.in_(policies)` in the list query, and as a
+   post-fetch check in the detail endpoint (returns 404, not 403, to avoid
+   leaking existence of sensitive observations).
+
+6. **`incident_id` for POST comes from a query param, not the body.** The body
+   is the GeoJSON Feature, so adding `incident_id` as a `Query(...)` parameter
+   keeps the body clean and matches the GeoJSON convention (properties carry
+   observation attributes, not routing metadata). org_id is always from
+   `request.state.org_id` (JWT-derived), never from the body.
+
+7. **`IntegrityError` on commit returns 409, not 500.** The POST endpoint catches
+   `IntegrityError` (e.g., duplicate observation_id, FK violation on
+   supersedes) and returns 409 Conflict. This is a legitimate boundary catch —
+   the constraint violation is a real error condition the caller can act on.
+
+8. **The confidence vector placeholder is a single comment.** Per the task spec,
+   `# TODO: Wire confidence vector computation (todo 13)` is placed after the
+   commit and before `write_audit`. Task 13 will replace this with a call to
+   `ConfidenceVectorCalculator.compute_vector()` and store the result in
+   `quality_flags["confidence_vector"]`.
+
+### Files produced/modified
+- `backend/app/api/routes/observations.py` (MODIFY — stub replaced, 211 pure LOC)
+- `backend/app/api/routes/observations_queries.py` (NEW — filters + GeoJSON
+  serialization, 121 pure LOC)
+
+### Verification
+```
+GET /api/observations → 200 FeatureCollection (empty or with features)
+POST /api/observations?incident_id=X → 201 GeoJSON Feature
+GET /api/observations/{id} → 200 GeoJSON Feature
+GET /api/observations/{nonexistent} → 404
+POST as viewer → 403 (require_roles enforced)
+GET sensitive obs as viewer → 404 (visibility enforced)
+Filters: incident_id, source_id, phenomenon, observed_start/end, recent_ms,
+  bbox, confidence_s — all verified working
+```
