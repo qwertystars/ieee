@@ -199,9 +199,12 @@ async def metrics() -> Response:
 # ── API routes ───────────────────────────────────────────────────────────────
 
 from app.api.routes.alerts import router as alerts_router  # noqa: E402
+from app.api.routes.audit_routes import router as audit_router  # noqa: E402
 from app.api.routes.auth import router as auth_router  # noqa: E402
+from app.api.routes.entities import router as entities_router  # noqa: E402
 from app.api.routes.eval import router as eval_router  # noqa: E402
 from app.api.routes.hypotheses import router as hypotheses_router  # noqa: E402
+from app.api.routes.incidents import router as incidents_router  # noqa: E402
 from app.api.routes.observations import router as observations_router  # noqa: E402
 from app.api.routes.optimize import router as optimize_router  # noqa: E402
 from app.api.routes.scenarios import router as scenarios_router  # noqa: E402
@@ -215,6 +218,7 @@ from fastapi import APIRouter  # noqa: E402
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(auth_router)
+api_router.include_router(incidents_router)
 api_router.include_router(observations_router)
 api_router.include_router(hypotheses_router)
 api_router.include_router(scenarios_router)
@@ -225,6 +229,8 @@ api_router.include_router(eval_router)
 api_router.include_router(alerts_router)
 api_router.include_router(tasks_router)
 api_router.include_router(task_item_router)
+api_router.include_router(entities_router)
+api_router.include_router(audit_router)
 
 app.include_router(api_router)
 app.include_router(ws_router)
