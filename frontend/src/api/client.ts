@@ -1,0 +1,297 @@
+// Typed API client — JWT in memory + localStorage, automatic header injection.
+// Endpoints mirror DESIGN.md §8 and backend/app/api/routes/.
+
+import type {
+  AlertList,
+  AuditLogList,
+  CreateTaskRequest,
+  EntityFeatureCollection,
+  HypothesisList,
+  IncidentList,
+  ModifyAlertRequest,
+  ObservationCollection,
+  SimulatorStartRequest,
+  SimulatorStartResponse,
+  SimulatorStatus,
+  SituationReport,
+  Task,
+  TaskList,
+  TokenResponse,
+  UpdateTaskStatusRequest,
+  User,
+} from './types'
+import { clearToken, getToken, setToken } from './token'
+
+const DEFAULT_BASE = 'http://localhost:8000'
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    public detail: string,
+    public path: string,
+  ) {
+    super(`[${status}] ${detail}`)
+    this.name = 'ApiError'
+  }
+}
+
+export { clearToken, getToken, setToken }
+
+function baseUrl(): string {
+  const env = import.meta.env.VITE_API_BASE
+  return typeof env === 'string' && env.length > 0 ? env : DEFAULT_BASE
+}
+
+type Query = Record<string, string | number | boolean | undefined | null>
+
+function buildUrl(path: string, query?: Query): string {
+  const url = new URL(baseUrl() + path)
+  if (query) {
+    for (const [k, v] of Object.entries(query)) {
+      if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v))
+    }
+  }
+  return url.toString()
+}
+
+interface RequestOptions {
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT'
+  body?: unknown
+  query?: Query
+  form?: URLSearchParams
+  signal?: AbortSignal
+}
+
+async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  const { method = 'GET', body, query, form, signal } = opts
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  const token = getToken()
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  let payload: BodyInit | undefined
+  if (form) {
+    headers['Content-Type'] = 'application/x-www-form-urlencoded'
+    payload = form
+  } else if (body !== undefined) {
+    headers['Content-Type'] = 'application/json'
+    payload = JSON.stringify(body)
+  }
+
+  let res: Response
+  try {
+    res = await fetch(buildUrl(path, query), { method, headers, body: payload, signal })
+  } catch (err) {
+    throw new ApiError(0, err instanceof Error ? err.message : 'network error', path)
+  }
+
+  if (res.status === 204) return undefined as T
+
+  const text = await res.text()
+  const data = text ? safeParse(text) : null
+
+  if (!res.ok) {
+    const detail = extractDetail(data) ?? res.statusText ?? 'request failed'
+    throw new ApiError(res.status, detail, path)
+  }
+  return data as T
+}
+
+function safeParse(text: string): unknown {
+  try { return JSON.parse(text) } catch { return text }
+}
+
+function extractDetail(data: unknown): string | null {
+  if (data && typeof data === 'object' && 'detail' in data) {
+    const d = (data as { detail: unknown }).detail
+    if (typeof d === 'string') return d
+    if (Array.isArray(d)) return d.map(String).join('; ')
+  }
+  return typeof data === 'string' && data.length > 0 ? data : null
+}
+
+// --- Auth -----------------------------------------------------------------
+
+export const api = {
+  async login(email: string, password: string): Promise<TokenResponse> {
+    const form = new URLSearchParams()
+    form.set('username', email)
+    form.set('password', password)
+    const res = await request<TokenResponse>('/api/auth/login', {
+      method: 'POST',
+      form,
+    })
+    setToken(res.access_token)
+    return res
+  },
+
+  async getMe(signal?: AbortSignal): Promise<User> {
+    return request<User>('/api/auth/me', { signal })
+  },
+
+  async logout(): Promise<void> {
+    try {
+      await request<void>('/api/auth/logout', { method: 'POST' })
+    } finally {
+      clearToken()
+    }
+  },
+
+  // --- Incidents / observations -------------------------------------------
+
+  async getIncidents(signal?: AbortSignal): Promise<IncidentList> {
+    return request<IncidentList>('/api/incidents', { signal })
+  },
+
+  async getObservations(
+    incidentId: string,
+    signal?: AbortSignal,
+  ): Promise<ObservationCollection> {
+    return request<ObservationCollection>('/api/observations', {
+      query: { incident_id: incidentId },
+      signal,
+    })
+  },
+
+  async getHypotheses(incidentId: string, signal?: AbortSignal): Promise<HypothesisList> {
+    return request<HypothesisList>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/hypotheses`,
+      { signal },
+    )
+  },
+
+  async getAlerts(incidentId: string, signal?: AbortSignal): Promise<AlertList> {
+    return request<AlertList>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/alerts`,
+      { signal },
+    )
+  },
+
+  async getTasks(incidentId: string, signal?: AbortSignal): Promise<TaskList> {
+    return request<TaskList>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/tasks`,
+      { signal },
+    )
+  },
+
+  async getSituationReport(
+    incidentId: string,
+    signal?: AbortSignal,
+  ): Promise<SituationReport> {
+    return request<SituationReport>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/situation-report`,
+      { signal },
+    )
+  },
+
+  async getEntities(
+    incidentId: string,
+    type?: string,
+    signal?: AbortSignal,
+  ): Promise<EntityFeatureCollection> {
+    return request<EntityFeatureCollection>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/entities`,
+      { query: { type }, signal },
+    )
+  },
+
+  async getAuditLogs(incidentId: string, signal?: AbortSignal): Promise<AuditLogList> {
+    return request<AuditLogList>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/audit-logs`,
+      { signal },
+    )
+  },
+
+  // --- Simulator ----------------------------------------------------------
+
+  async simulatorStatus(signal?: AbortSignal): Promise<SimulatorStatus> {
+    return request<SimulatorStatus>('/api/simulator/status', { signal })
+  },
+
+  async simulatorStart(
+    body: SimulatorStartRequest,
+    signal?: AbortSignal,
+  ): Promise<SimulatorStartResponse> {
+    return request<SimulatorStartResponse>('/api/simulator/start', {
+      method: 'POST',
+      body,
+      signal,
+    })
+  },
+
+  async simulatorStop(signal?: AbortSignal): Promise<void> {
+    return request<void>('/api/simulator/stop', { method: 'POST', signal })
+  },
+
+  // --- Alert review -------------------------------------------------------
+
+  async approveAlert(
+    incidentId: string,
+    alertId: string,
+    signal?: AbortSignal,
+  ): Promise<unknown> {
+    return request<unknown>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/alerts/${encodeURIComponent(alertId)}/approve`,
+      { method: 'POST', signal },
+    )
+  },
+
+  async dismissAlert(
+    incidentId: string,
+    alertId: string,
+    signal?: AbortSignal,
+  ): Promise<unknown> {
+    return request<unknown>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/alerts/${encodeURIComponent(alertId)}/dismiss`,
+      { method: 'POST', signal },
+    )
+  },
+
+  async modifyAlert(
+    incidentId: string,
+    alertId: string,
+    body: ModifyAlertRequest,
+    signal?: AbortSignal,
+  ): Promise<unknown> {
+    return request<unknown>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/alerts/${encodeURIComponent(alertId)}/modify`,
+      { method: 'POST', body, signal },
+    )
+  },
+
+  // --- Tasks --------------------------------------------------------------
+
+  async createTask(
+    incidentId: string,
+    body: CreateTaskRequest,
+    signal?: AbortSignal,
+  ): Promise<Task> {
+    return request<Task>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/tasks`,
+      { method: 'POST', body, signal },
+    )
+  },
+
+  async assignTask(
+    incidentId: string,
+    taskId: string,
+    signal?: AbortSignal,
+  ): Promise<Task> {
+    return request<Task>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/tasks/${encodeURIComponent(taskId)}/assign`,
+      { method: 'POST', signal },
+    )
+  },
+
+  async updateTaskStatus(
+    taskId: string,
+    body: UpdateTaskStatusRequest,
+    signal?: AbortSignal,
+  ): Promise<Task> {
+    return request<Task>(
+      `/api/tasks/${encodeURIComponent(taskId)}`,
+      { method: 'PATCH', body, signal },
+    )
+  },
+} as const
+
+export type Api = typeof api

@@ -3618,3 +3618,91 @@ vehicles: 3, sensors: 2, observations: 50, hypotheses: 5, scenarios: 3,
 alerts: 1, recommendations: 1, operational_tasks: 1
 → Run 1 == Run 2 == Run 3: True (IDEMPOTENT)
 ```
+
+## Task 20 — Frontend routing, auth context, typed API client, TanStack Query (2026-07-26)
+
+### Outcome
+Built the frontend application shell: React Router with 8 routes (7 protected + login),
+typed API client with JWT auth, AuthContext with useAuth() hook, TanStack Query provider,
+and 5 reusable state components. `npm ci && npm run build` and `npm run typecheck` both
+pass clean (exit 0). 24 files created/modified.
+
+### Key findings
+
+1. **`@types/geojson` is NOT installed.** The existing `frontend/src/types/map.ts` defines
+   its own minimal position/feature types. To avoid adding a dependency, the new
+   `src/api/types.ts` defines minimal `GeoJSONGeometry`, `GeoJSONFeature`, and
+   `GeoJSONFeatureCollection` types inline. If `@types/geojson` is added later, these can
+   be replaced with the standard types.
+
+2. **`import.meta.env` was untyped.** No `vite-env.d.ts` existed, so
+   `import.meta.env.VITE_API_BASE` had no type. Created `src/vite-env.d.ts` with
+   `/// <reference types="vite/client" />` plus an `ImportMetaEnv` interface declaring
+   `VITE_API_BASE?: string`.
+
+3. **Backend login is OAuth2 form-encoded, not JSON.** `POST /api/auth/login` uses
+   FastAPI's `OAuth2PasswordRequestForm` — the body must be
+   `application/x-www-form-urlencoded` with `username` and `password` fields (not JSON).
+   The API client's `login()` method uses `URLSearchParams` and sets the correct
+   Content-Type header.
+
+4. **`modifyAlert` is POST, not PATCH.** The backend route
+   `POST /api/incidents/{id}/alerts/{id}/modify` accepts a JSON body with
+   `recommended_action`. The task spec listed `modifyAlert` as a method but the endpoint
+   shape was confirmed from `backend/app/api/routes/alerts.py:226`.
+
+5. **Token storage split into `src/api/token.ts`.** The original `client.ts` exceeded
+   250 pure LOC (274). Splitting JWT token management (getToken/setToken/clearToken with
+   in-memory + localStorage fallback) into `token.ts` brought `client.ts` to 248 pure
+   LOC. The token functions are re-exported from `client.ts` for backward compatibility.
+
+6. **`Navigate` is from `react-router-dom`, not `react`.** Initial import
+   `import { Navigate, type ReactNode } from 'react'` failed typecheck with TS2305.
+   Fixed to `import { type ReactNode } from 'react'` + `import { Navigate, ... } from 'react-router-dom'`.
+
+7. **Existing map components (MapView, ActionCard, etc.) are NOT imported by the new
+   App.tsx.** They remain in `src/components/` and still typecheck. Task 21 will wire
+   MapView into the Dashboard page. The new App.tsx uses a layout route pattern
+   (`<AppLayout />` with `<Outlet />`) so protected pages share a nav bar.
+
+8. **eslint and vitest are NOT in devDependencies.** The `lint` and `test` scripts were
+   added to package.json as specified, but they will fail with "command not found" until
+   eslint/vitest are installed. The `typecheck` script (`tsc --noEmit`) works and is the
+   primary verification gate.
+
+### Files created
+- `src/api/types.ts` (187 LOC) — TS mirrors of all backend schemas
+- `src/api/client.ts` (248 LOC) — typed fetch client with JWT, 20 endpoint methods
+- `src/api/token.ts` (23 LOC) — JWT in-memory + localStorage management
+- `src/auth/AuthContext.tsx` (72 LOC) — AuthProvider + useAuth() hook
+- `src/components/AppLayout.tsx` (65 LOC) — nav bar + Outlet for protected routes
+- `src/components/PagePlaceholder.tsx` (27 LOC) — reusable placeholder for stub pages
+- `src/components/state/LoadingState.tsx` (35 LOC) — spinner with ARIA status
+- `src/components/state/EmptyState.tsx` (31 LOC) — empty icon with message
+- `src/components/state/ErrorState.tsx` (47 LOC) — error icon + retry button
+- `src/components/state/StaleState.tsx` (37 LOC) — stale data badge
+- `src/components/state/OfflineState.tsx` (29 LOC) — offline indicator
+- `src/components/state/index.ts` — barrel export
+- `src/pages/LoginPage.tsx` (104 LOC) — email/password form with error handling
+- `src/pages/DashboardPage.tsx`, `HypothesesPage.tsx`, `PlanningPage.tsx`,
+  `SimulationPage.tsx`, `FieldPage.tsx`, `DeviceDetailPage.tsx`, `AuditPage.tsx`,
+  `NotFoundPage.tsx` — placeholder pages
+- `src/vite-env.d.ts` — Vite env type declarations
+
+### Files modified
+- `src/App.tsx` — replaced `<MapView />` with React Router (52 LOC)
+- `src/main.tsx` — wrapped in BrowserRouter + QueryClientProvider + AuthProvider (27 LOC)
+- `package.json` — added typecheck/lint/test scripts
+
+### Verification
+```
+cd frontend && npm ci && npm run build   → exit 0 (96 modules, 206 KB JS)
+cd frontend && npm run typecheck         → exit 0 (no errors)
+```
+
+### Design system notes
+- Dark theme matching existing MapView: bg-gray-900/950, border-gray-700/800,
+  text-gray-100/200/400/500, blue-600 primary, green/amber/red status colors.
+- All interactive elements have aria-label attributes.
+- State components use role="status"/"alert" + aria-live for screen readers.
+- SVG icons only (no emojis). Tailwind utility classes throughout.

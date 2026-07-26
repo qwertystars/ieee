@@ -1,26 +1,56 @@
-import { useEffect, useState } from 'react'
+import { type ReactNode } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { useAuth } from './auth/AuthContext'
+import { AppLayout } from './components/AppLayout'
+import { LoadingState } from './components/state/LoadingState'
+import AuditPage from './pages/AuditPage'
+import DashboardPage from './pages/DashboardPage'
+import DeviceDetailPage from './pages/DeviceDetailPage'
+import FieldPage from './pages/FieldPage'
+import HypothesesPage from './pages/HypothesesPage'
+import LoginPage from './pages/LoginPage'
+import NotFoundPage from './pages/NotFoundPage'
+import PlanningPage from './pages/PlanningPage'
+import SimulationPage from './pages/SimulationPage'
 
-export default function App() {
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1000)
-    return () => clearTimeout(timer)
-  }, [])
-
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { isAuthenticated, loading } = useAuth()
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-xl font-semibold text-gray-700">
-          Loading ResQNet-SAGE...
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-gray-950">
+        <LoadingState message="Authenticating…" />
       </div>
     )
   }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+  return <>{children}</>
+}
 
+export default function App() {
   return (
-    <div className="flex h-screen items-center justify-center">
-      <h1 className="text-4xl font-bold text-gray-900">ResQNet-SAGE</h1>
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/hypotheses" element={<HypothesesPage />} />
+        <Route path="/planning" element={<PlanningPage />} />
+        <Route path="/simulation" element={<SimulationPage />} />
+        <Route path="/field" element={<FieldPage />} />
+        <Route path="/devices/:id" element={<DeviceDetailPage />} />
+        <Route path="/audit" element={<AuditPage />} />
+      </Route>
+
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
   )
 }
