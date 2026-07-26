@@ -7,12 +7,14 @@ from the signed JWT), never from the request body or query params.
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.api.routes.observations_queries import (
     apply_filters,
@@ -21,12 +23,16 @@ from app.api.routes.observations_queries import (
     visible_policies,
 )
 from app.deps import get_current_user, get_db, require_roles
+from app.fusion.confidence import ConfidenceVectorCalculator
+from app.fusion.hypothesis_update import update_hypotheses_for_observation
 from app.lib.audit import write_audit
 from app.lib.time import now_ms
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
 from app.models.observation import Observation
 from app.models.user import User
+
+logger = logging.getLogger("app.api.routes.observations")
 
 router = APIRouter(prefix="/observations", tags=["observations"])
 
@@ -140,7 +146,31 @@ def create_observation(
         ) from None
     db.refresh(obs)
 
-    # TODO: Wire confidence vector computation (todo 13)
+    try:
+        calc = ConfidenceVectorCalculator()
+        vector = calc.compute_vector(obs, db_session=db)
+        calc.attach_to_observation(obs, vector)
+        obs.quality_flags["display_confidence"] = (
+            calc.compute_display_confidence(vector)
+        )
+        flag_modified(obs, "quality_flags")
+        db.commit()
+        db.refresh(obs)
+    except Exception as exc:
+        logger.warning(
+            "Confidence vector computation failed for %s: %s",
+            observation_id,
+            exc,
+        )
+        db.rollback()
+
+    try:
+        update_hypotheses_for_observation(db, obs)
+    except Exception as exc:
+        logger.warning(
+            "Hypothesis update failed for %s: %s", observation_id, exc
+        )
+        db.rollback()
 
     write_audit(
         db,

@@ -3127,3 +3127,146 @@ python3 -c "from app.api.routes.simulator import router; print('Router import OK
 python3 -m scripts.run_rescue_ball_demo --seed 42 --duration 2.5
 → 24 observation IDs, identical across runs with same seed
 ```
+
+## T13-wire — Wire confidence vector and hypothesis engine to API and streaming (2026-07-26)
+
+### Outcome
+Wired `ConfidenceVectorCalculator` into POST /api/observations and the Kafka
+consumer's `_process()`. Replaced the hypotheses stub with real GET/POST
+endpoints at /api/incidents/{incident_id}/hypotheses. Created
+`update_hypotheses_for_observation()` to update active hypothesis evidence
+arrays + probability when new observations arrive. All verification commands
+pass: POST observation returns 201 with 6D confidence_vector in
+quality_flags; GET/POST hypotheses return 200/201; contradicting observations
+correctly decrease probability and append to contradicting_evidence.
+
+### Key findings
+
+1. **`flag_modified` is in `sqlalchemy.orm.attributes`, not `sqlalchemy.orm`,
+   in SQLAlchemy 2.0.51.** The `attach_to_observation` method mutates the
+   JSONB `quality_flags` dict in-place (`observation.quality_flags["confidence_vector"]
+   = vector.to_dict()`). SQLAlchemy does not detect in-place mutations to
+   JSONB columns by default — `flag_modified(obs, "quality_flags")` is required
+   to mark the attribute as dirty so `db.commit()` persists the change. Without
+   it, the confidence vector is computed but never stored. The import path
+   `from sqlalchemy.orm import flag_modified` works in SQLAlchemy 2.0.36+ but
+   NOT in 2.0.51 (which is installed). Use `from sqlalchemy.orm.attributes
+   import flag_modified` for compatibility.
+
+2. **The confidence vector must be computed AFTER the observation is committed,
+   not before.** The `compute_vector` method accesses `obs.geometry`, which is
+   a SQL function expression (`func.ST_SetSRID(func.ST_GeomFromGeoJSON(...))`)
+   before commit. After commit + refresh, it becomes a WKBElement that
+   `_extract_coords` can convert via `geoalchemy2.shape.to_shape`. The flow is:
+   `db.add(obs)` → `db.commit()` → `db.refresh(obs)` → `compute_vector(obs,
+   db_session=db)` → `attach_to_observation(obs, vector)` → `flag_modified` →
+   `db.commit()`. The task's "before commit" refers to the second commit (the
+   one persisting the vector), not the first (the one inserting the observation).
+
+3. **`compute_vector` signature is `compute_vector(observation, db_session=None,
+   candidates=None)`, NOT `compute_vector(db, observation_id)`.** The task
+   description's API was slightly inaccurate. The actual API takes an
+   `_ObsLike`-protocol observation object (the ORM model satisfies this
+   structurally) and an optional db_session for querying nearby observations.
+   The db_session is used by `_query_nearby` to find same-phenomenon
+   observations in a temporal window for corroboration (C) and conflict (K)
+   computation.
+
+4. **Hypothesis matching uses `entity_type == observation.phenomenon`.** The
+   Hypothesis model has `entity_type`/`entity_id` (the entity the hypothesis
+   is about), while the Observation model has `phenomenon` (the type of
+   measurement). The simplest matching strategy: an observation with
+   `phenomenon="road_passability"` matches active hypotheses with
+   `entity_type="road_passability"`. This is a loose match — a more
+   sophisticated approach would use spatial proximity or entity linkage, but
+   the task says "keep it simple."
+
+5. **Corroboration heuristic: value-based with claim text matching.** The
+   `_corroborates(claim, value)` function checks if the claim contains
+   "passable" or "impassable" and compares the observation value against 0.5.
+   If `value >= 0.5` and claim contains "passable" (but not "impassable"),
+   the observation corroborates. If `value < 0.5` and claim contains
+   "impassable", it corroborates. Otherwise, it contradicts. If the claim
+   doesn't contain either keyword or value is None, the result is
+   "undetermined" and the hypothesis is not updated. This is deliberately
+   simple — the task says "don't over-engineer."
+
+6. **Probability adjustment is ±0.1 per evidence item, clamped to [0, 1].**
+   Each corroborating observation increases probability by 0.1 (max 1.0);
+   each contradicting observation decreases it by 0.1 (min 0.0). With the
+   test scenario: hypothesis starts at 0.6, corroborating obs (value=1.0)
+   → 0.70, then contradicting obs (value=0.0) → 0.60. The hypothesis is
+   never deleted or marked as disproved — it remains active with both
+   supporting and contradicting evidence arrays populated.
+
+7. **The hypotheses router prefix changed from `/hypotheses` to
+   `/incidents/{incident_id}/hypotheses`.** The old stub was at
+   `/api/hypotheses` (no incident scoping). The new routes are at
+   `/api/incidents/{incident_id}/hypotheses` with `incident_id` as a path
+   parameter. This is a RESTful nested resource pattern. No existing
+   `incidents` router conflicts with this prefix.
+
+8. **`KnowledgeGraph.add_hypothesis` does NOT require `create_graph()`.**
+   The `add_hypothesis` method only inserts into the `hypotheses` table
+   (via `self.db.add(h)` + `self.db.commit()`). It does not use Apache AGE
+   Cypher at all. The `create_graph()` method is only needed for AGE vertex/
+   edge operations (`add_entity`, `add_edge` with AGE mirroring). Since the
+   POST route only calls `add_hypothesis` (not `link_observation` or
+   `add_edge`), `create_graph()` is not needed.
+
+9. **Display confidence is stored alongside the 6D vector in
+   `quality_flags`.** The `quality_flags["confidence_vector"]` dict holds
+   the 6D vector `{s, c, f, g, m, k}` (source of truth for reasoning).
+   The `quality_flags["display_confidence"]` float holds the scalar weighted
+   sum (for UI only). Both are computed once at insert time and stored,
+   avoiding recomputation on every read. The reasoning engine always uses
+   the full vector; the scalar is never used for reasoning decisions.
+
+10. **Error isolation: confidence computation failure does not crash the
+    consumer or the API.** Both the consumer and the observations API wrap
+    confidence computation and hypothesis update in separate try/except
+    blocks. If confidence computation fails, the observation is still
+    created (201) without the vector — the error is logged as a warning.
+    If hypothesis update fails, the observation (with vector) is still
+    returned. The two operations are independent: confidence computation
+    failure does not prevent hypothesis update, and vice versa.
+
+### Files produced/modified
+- `backend/app/fusion/hypothesis_update.py` (NEW —
+  `update_hypotheses_for_observation()`, 79 pure LOC)
+- `backend/app/api/routes/hypotheses.py` (MODIFIED — replaced stub with
+  real GET/POST, 125 pure LOC)
+- `backend/app/api/routes/observations.py` (MODIFIED — wired
+  ConfidenceVectorCalculator + hypothesis update in POST, 239 pure LOC)
+- `backend/app/streaming/consumer.py` (MODIFIED — wired
+  ConfidenceVectorCalculator + hypothesis update in _process, 207 pure LOC)
+
+### Verification
+```
+# GET hypotheses (empty list)
+GET /api/incidents/test_incident/hypotheses → 200 {"hypotheses": [], "count": 0}
+
+# POST hypothesis
+POST /api/incidents/test_incident/hypotheses → 201 with id, probability, evidence
+
+# POST observation (with confidence vector)
+POST /api/observations?incident_id=test_incident → 201
+  quality_flags.confidence_vector = {s: 0.5, c: 0.0, f: 0.9999, g: 1.0, m: null, k: 0.0}
+  quality_flags.display_confidence = 0.425
+
+# Hypothesis auto-update (corroborating: value=1.0, "passable" in claim)
+  probability: 0.6 → 0.70
+  supporting_evidence.observations: [{value: 1.0, source_type: sensor, ...}]
+
+# Hypothesis auto-update (contradicting: value=0.0)
+  probability: 0.70 → 0.60
+  contradicting_evidence.observations: [{value: 0.0, source_type: citizen_report, ...}]
+  K dimension increased: 0.0 → 0.632 (conflict detected)
+
+# Status filter
+GET /api/incidents/test_incident/hypotheses?status=active → 200 count: 1
+GET /api/incidents/test_incident/hypotheses?status=invalid → 422
+
+# Existing tests still pass
+python3 -m pytest tests/test_hypotheses.py -q → 2 passed
+```

@@ -13,9 +13,12 @@ import logging
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.config import settings
 from app.db import SessionLocal
+from app.fusion.confidence import ConfidenceVectorCalculator
+from app.fusion.hypothesis_update import update_hypotheses_for_observation
 from app.lib.audit import write_audit
 from app.lib.idempotency import check_and_record
 from app.lib.time import now_ms
@@ -128,7 +131,32 @@ class ConsumerManager:
             db.add(obs)
             db.commit()
 
-            # TODO: Wire confidence vector computation (todo 13)
+            try:
+                calc = ConfidenceVectorCalculator()
+                vector = calc.compute_vector(obs, db_session=db)
+                calc.attach_to_observation(obs, vector)
+                obs.quality_flags["display_confidence"] = (
+                    calc.compute_display_confidence(vector)
+                )
+                flag_modified(obs, "quality_flags")
+                db.commit()
+            except Exception as exc:
+                logger.warning(
+                    "Confidence vector computation failed for %s: %s",
+                    observation_id,
+                    exc,
+                )
+                db.rollback()
+
+            try:
+                update_hypotheses_for_observation(db, obs)
+            except Exception as exc:
+                logger.warning(
+                    "Hypothesis update failed for %s: %s",
+                    observation_id,
+                    exc,
+                )
+                db.rollback()
 
             write_audit(
                 db,
