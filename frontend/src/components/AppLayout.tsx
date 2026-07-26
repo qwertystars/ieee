@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useOutbox } from '../hooks/useOutbox'
+import { LowBandwidthToggle } from './LowBandwidthToggle'
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -46,6 +47,7 @@ export function AppLayout() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
+          <LowBandwidthToggle />
           <span
             role="status"
             aria-label={isOnline ? 'Network online' : 'Network offline'}

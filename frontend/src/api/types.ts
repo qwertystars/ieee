@@ -291,3 +291,42 @@ export interface UpdateTaskStatusRequest {
 export interface ModifyAlertRequest {
   recommended_action: string
 }
+
+// --- Feed health / degradation ---------------------------------------------
+
+export type FeedStatus = 'healthy' | 'degraded' | 'down'
+
+export interface FeedHealth {
+  feed_name: string
+  source_id: string
+  phenomenon: string
+  status: FeedStatus
+  data_age_seconds: number
+  last_update_ms: number
+  coverage_pct: number
+  queue_backlog: number
+  sync_state: string
+  tau_seconds: number
+  uncertainty_multiplier: number
+}
+
+export interface FeedHealthResponse {
+  incident_id: string
+  feeds: FeedHealth[]
+  total_feeds: number
+  healthy_feeds: number
+  coverage_pct: number
+}
+
+export type DegradationLevel = 'nominal' | 'degraded' | 'severe' | 'unknown'
+
+export interface DegradationSummary {
+  incident_id: string
+  degradation_level: DegradationLevel
+  lost_feeds: string[]
+  degraded_feeds: string[]
+  unavailable_capabilities: string[]
+  coverage_pct: number
+  total_feeds: number
+  healthy_feeds: number
+}

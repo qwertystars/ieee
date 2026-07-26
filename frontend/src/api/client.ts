@@ -6,7 +6,9 @@ import type {
   AuditLogList,
   AuditVerifyResponse,
   CreateTaskRequest,
+  DegradationSummary,
   EntityFeatureCollection,
+  FeedHealthResponse,
   HypothesisList,
   IncidentList,
   InjectFaultRequest,
@@ -373,6 +375,26 @@ export const api = {
   ): Promise<ProvenanceResponse> {
     return request<ProvenanceResponse>(
       `/api/decisions/${encodeURIComponent(recordId)}/provenance`,
+      { signal },
+    )
+  },
+
+  async getFeedHealth(
+    incidentId: string,
+    signal?: AbortSignal,
+  ): Promise<FeedHealthResponse> {
+    return request<FeedHealthResponse>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/feed-health`,
+      { signal },
+    )
+  },
+
+  async getDegradationSummary(
+    incidentId: string,
+    signal?: AbortSignal,
+  ): Promise<DegradationSummary> {
+    return request<DegradationSummary>(
+      `/api/incidents/${encodeURIComponent(incidentId)}/degradation-summary`,
       { signal },
     )
   },

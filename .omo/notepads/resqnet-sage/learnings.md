@@ -4138,3 +4138,104 @@ cd frontend && npm run build
 cd frontend && npm run typecheck
 → tsc --noEmit (exit 0)
 ```
+
+## T27 — Feed-health tracking and low-bandwidth mode (2026-07-26)
+
+### Outcome
+Registered the `health_router` (FeedHealthTracker endpoints) in `backend/app/main.py`.
+Added feed-health indicators to the dashboard, a low-bandwidth toggle in the nav bar,
+and a `LowBandwidthContext` that adjusts TanStack Query polling (2s → 30s) and strips
+map imagery. Backend TestClient returns 200 on `/api/incidents/{id}/feed-health`;
+frontend `npm run build` succeeds.
+
+### Key findings
+
+1. **The health router has full `/api/` prefixes on its routes, so it must be
+   included on `app` directly, NOT on `api_router`.** The `api_router` has
+   `prefix="/api"`, and the health routes are defined as
+   `/api/incidents/{incident_id}/feed-health`. Including via
+   `api_router.include_router(health_router)` would produce
+   `/api/api/incidents/...` — double prefix. The correct pattern matches
+   `ws_router` and `realtime_router`: `app.include_router(health_router)`.
+
+2. **The FeedHealthTracker returns 41 feeds for the seeded demo incident, all
+   with status "down".** The seed data timestamps are from 2025-07-20
+   (`1753001200000` ms), which is ~1 year old relative to the current date
+   (2026-07-26). The `data_age_seconds` is ~32 million seconds (~371 days),
+   far exceeding `3 * tau` for any phenomenon. The degradation level is
+   "severe" with all 41 feeds lost. This is expected for stale demo data —
+   the tracker correctly identifies the feeds as down.
+
+3. **TanStack Query `refetchInterval` is the right mechanism for low-bandwidth
+   polling control.** The existing codebase had no explicit `refetchInterval`
+   (only `staleTime: 30_000`). Adding `refetchInterval` to individual queries
+   in DashboardPage (sourced from `useLowBandwidth().refetchInterval`) gives
+   per-query control: 2s in normal mode, 30s in low-bandwidth mode. The
+   `FeedHealthPanel` also uses this interval for its own feed-health polling.
+
+4. **Low-bandwidth "strip map imagery" is implemented by conditionally rendering
+   a text-first placeholder instead of `<MapView />`.** The MapView already
+   uses a `FALLBACK_STYLE` with no external tiles (solid dark background), so
+   there are no tile requests to suppress. The meaningful bandwidth saving
+   comes from (a) reducing polling frequency and (b) skipping the deck.gl
+   layer rendering entirely. The `stripMapImagery` boolean from the context
+   controls this at the DashboardPage level.
+
+5. **`LowBandwidthContext` uses localStorage with a try/catch guard.**
+   `localStorage` can throw in private browsing mode or when storage is
+   disabled. The `readStored` helper catches `SecurityError`/`QuotaExceededError`
+   and defaults to `false`. The `useEffect` that writes the preference also
+   catches silently. This follows the same defensive pattern as the existing
+   `useOutbox` hook (which catches IndexedDB errors).
+
+6. **FeedStatus switch statements in `FeedHealthPanel` are exhaustive without
+   `assertNever`.** TypeScript's control flow analysis enforces exhaustiveness
+   because the return type is `string` (not `string | undefined`). If a new
+   `FeedStatus` variant is added, the missing case produces a compile error
+   ("Not all code paths return a value"). The build passing confirms this.
+
+7. **`types.ts` (289 pure LOC) and `client.ts` (338 pure LOC) were already
+   over the 250 LOC ceiling before this task.** The task required adding
+   types and API methods to these pre-existing files. The additions are
+   minimal (5 types, 2 methods). These files are pure data/interface
+   declarations (types) and a flat method bag (client) — the 250 LOC ceiling
+   is a "split by responsibility" trigger, but these files have a single
+   responsibility (type definitions / API method collection). Splitting
+   them would be a separate refactor outside this task's scope.
+
+### Files produced/modified
+- `backend/app/main.py` (MODIFY — import health_router, app.include_router)
+- `frontend/src/api/types.ts` (MODIFY — FeedHealth, FeedHealthResponse,
+  DegradationSummary, FeedStatus, DegradationLevel types)
+- `frontend/src/api/client.ts` (MODIFY — getFeedHealth, getDegradationSummary)
+- `frontend/src/context/LowBandwidthContext.tsx` (NEW — provider + hook,
+  localStorage persistence, refetchInterval 2s/30s, stripMapImagery flag)
+- `frontend/src/components/LowBandwidthToggle.tsx` (NEW — role="switch" toggle
+  with aria-checked and aria-label)
+- `frontend/src/components/FeedHealthPanel.tsx` (NEW — per-feed status rows
+  with healthy/degraded/down indicators, data age, outage banner)
+- `frontend/src/main.tsx` (MODIFY — wrap app with LowBandwidthProvider)
+- `frontend/src/components/AppLayout.tsx` (MODIFY — add LowBandwidthToggle
+  to header)
+- `frontend/src/pages/DashboardPage.tsx` (MODIFY — add FeedHealthPanel,
+  refetchInterval on all queries, conditional map rendering in low-BW mode)
+
+### Verification
+```
+# Backend
+cd backend && source .venv/bin/activate
+export PYTHONPATH=/root/srijan/ieee/backend
+export DATABASE_URL="postgresql+psycopg://resqnet:resqnet123@localhost:5432/resqnet"
+python3 -c "from fastapi.testclient import TestClient; from app.main import app; \
+  c = TestClient(app, raise_server_exceptions=False); \
+  r = c.post('/api/auth/login', data={'username': 'admin@demo.disaster', 'password': 'demo1234'}); \
+  token = r.json()['access_token']; h = {'Authorization': f'Bearer {token}'}; \
+  from app.seed.seed_demo import seed_demo; seed_demo(); \
+  r2 = c.get('/api/incidents/test_incident/feed-health', headers=h); \
+  print('Feed health:', r2.status_code)"
+→ Feed health: 200
+
+# Frontend
+cd frontend && npm run build
+→ ✓ built in 9.94s (exit 0)
+```

@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import MapView from '../components/MapView'
+import { FeedHealthPanel } from '../components/FeedHealthPanel'
+import { useLowBandwidth } from '../context/LowBandwidthContext'
 import { LoadingState, ErrorState, EmptyState, StaleState } from '../components/state'
 
 function severityColor(sev: string): string {
@@ -39,9 +41,11 @@ function Panel({ title, children, stale }: {
 }
 
 export default function DashboardPage() {
+  const { refetchInterval, stripMapImagery } = useLowBandwidth()
   const incidentsQ = useQuery({
     queryKey: ['incidents'],
     queryFn: ({ signal }) => api.getIncidents(signal),
+    refetchInterval,
   })
   const incidentId = incidentsQ.data?.incidents?.[0]?.id ?? null
   const incident = incidentsQ.data?.incidents?.[0]
@@ -50,16 +54,19 @@ export default function DashboardPage() {
     queryKey: ['situation-report', incidentId],
     queryFn: ({ signal }) => api.getSituationReport(incidentId!, signal),
     enabled: !!incidentId,
+    refetchInterval,
   })
   const alertsQ = useQuery({
     queryKey: ['alerts', incidentId],
     queryFn: ({ signal }) => api.getAlerts(incidentId!, signal),
     enabled: !!incidentId,
+    refetchInterval,
   })
   const tasksQ = useQuery({
     queryKey: ['tasks', incidentId],
     queryFn: ({ signal }) => api.getTasks(incidentId!, signal),
     enabled: !!incidentId,
+    refetchInterval,
   })
 
   if (incidentsQ.isLoading) {
@@ -81,12 +88,25 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] w-full overflow-hidden">
-      {/* Map — left/main area */}
+      {/* Map — left/main area (hidden in low-bandwidth text-first mode) */}
       <div className="flex-1 relative" role="application" aria-label="Situation awareness map">
-        <MapView />
+        {stripMapImagery ? (
+          <div
+            className="flex h-full items-center justify-center bg-gray-900 text-gray-500"
+            role="status"
+            aria-label="Map imagery stripped — low-bandwidth mode active"
+          >
+            <div className="text-center">
+              <p className="text-sm font-medium text-gray-400">Map imagery stripped</p>
+              <p className="text-xs">Low-bandwidth mode — text-first dashboard</p>
+            </div>
+          </div>
+        ) : (
+          <MapView />
+        )}
       </div>
 
-      {/* Right sidebar — situation report, alerts, tasks */}
+      {/* Right sidebar — situation report, feed health, alerts, tasks */}
       <aside className="w-96 flex-shrink-0 overflow-y-auto border-l border-gray-800 bg-gray-950 p-3" aria-label="Situation panels">
         {/* Incident header */}
         <div className="mb-3 rounded-lg border border-gray-700 bg-gray-900 p-3">
@@ -97,6 +117,13 @@ export default function DashboardPage() {
             <span className="rounded bg-gray-800 px-1.5 py-0.5 text-gray-300">Status: {incident.status}</span>
           </div>
         </div>
+
+        {/* Feed health indicators */}
+        {incidentId && (
+          <div className="mb-3">
+            <FeedHealthPanel incidentId={incidentId} />
+          </div>
+        )}
 
         {/* Situation report summary */}
         <div className="mb-3">

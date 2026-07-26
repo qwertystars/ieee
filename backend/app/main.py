@@ -203,6 +203,7 @@ from app.api.routes.audit_routes import router as audit_router  # noqa: E402
 from app.api.routes.auth import router as auth_router  # noqa: E402
 from app.api.routes.entities import router as entities_router  # noqa: E402
 from app.api.routes.eval import router as eval_router  # noqa: E402
+from app.api.routes.health import router as health_router  # noqa: E402
 from app.api.routes.hypotheses import router as hypotheses_router  # noqa: E402
 from app.api.routes.incidents import router as incidents_router  # noqa: E402
 from app.api.routes.observations import router as observations_router  # noqa: E402
@@ -233,5 +234,6 @@ api_router.include_router(entities_router)
 api_router.include_router(audit_router)
 
 app.include_router(api_router)
+app.include_router(health_router)
 app.include_router(ws_router)
 app.include_router(realtime_router)
