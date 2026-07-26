@@ -3789,3 +3789,90 @@ cd frontend && npm run build    → ✓ built in 10.40s (exit 0)
 cd frontend && npx tsc --noEmit → exit 0 (no errors)
 grep -c "openstreetmap" dist/assets/*.js → 0 (no online tiles)
 ```
+
+## T22 — Action cards, hypothesis view, and planning view (2026-07-26)
+
+### Outcome
+Enhanced ActionCard to display all required fields from real API Alert data,
+replaced HypothesesPage and PlanningPage placeholders with real TanStack Query
+views. Approve/dismiss/modify mutations call the real backend API. Success toast
+auto-dismisses after 3s. Tasks query is invalidated after approval so the task
+list updates. `cd frontend && npm run build` and `npm run typecheck` both pass.
+
+### Key findings
+
+1. **The Hypothesis type in `types.ts` did not match the backend response.** The
+   frontend type had `statement`, `confidence`, `supports: string[]`, and
+   `contradicts: string[]`. The backend `_to_dict` in `hypotheses.py` returns
+   `claim`, `probability`, `supporting_evidence: dict | null`, and
+   `contradicting_evidence: dict | null`, plus `data_age_ms`, `entity_type`,
+   `entity_id`, and `org_id`. Fixed the TypeScript interface to match the real
+   API. No other frontend code depended on the old field names.
+
+2. **The `dismissAlert` API client method did not pass a body.** The backend
+   `dismiss_alert` endpoint REQUIRES `payload: dict` with `review_rationale`
+   (422 if missing). The old `dismissAlert(incidentId, alertId, signal?)`
+   signature would have failed with 422. Updated both `approveAlert` and
+   `dismissAlert` to accept a `rationale` parameter and pass
+   `{review_rationale: rationale}` as the POST body. `approveAlert`'s rationale
+   is optional (backend defaults to ""), `dismissAlert`'s is required.
+
+3. **The Alert API has limited fields compared to the ActionCard's view model.**
+   The real Alert has: `title`, `message`, `severity`, `recommended_action`,
+   `confidence_vector` (dict with `s` and `c` values), `status`, `review_rationale`.
+   It does NOT have: benefit range, required resources, alternatives, failure
+   contingency, equity impact, or assumptions. Created an `alertToActionCard`
+   adapter that maps the Alert's real fields to the ActionCard display, with
+   honest "Not quantified" / "Not assessed in current data" / "None proposed"
+   placeholders for fields the API doesn't provide. The `confidence_vector.c`
+   value maps to `confidence`, and `confidence_vector.s` maps to `calibration`.
+
+4. **ActionCard was previously self-contained with internal API calls.** The old
+   component had its own `callApi` function that did `fetch('/api/actions/...')`
+   to a non-existent endpoint, plus internal `status` state. Removed both — the
+   parent (PlanningPage) now owns the API calls via TanStack Query mutations and
+   passes the real `status` from the Alert as a prop. This is the correct
+   separation: presentational component receives data + callbacks, container
+   handles mutations.
+
+5. **TanStack Query `invalidateQueries` is the correct pattern for post-mutation
+   refresh.** After approve/dismiss/modify, the PlanningPage invalidates both
+   `['alerts', incidentId]` and `['tasks', incidentId]` query keys. The alerts
+   refetch picks up the new status (alert disappears from "Pending Review"
+   section). The tasks refetch picks up any new task created by the backend
+   (currently a TODO in `alerts.py` line 172, but the frontend is ready for it).
+
+6. **`window.prompt` is the simplest UX for rationale/action input without
+   adding a modal library.** Dismiss requires a rationale (backend enforces
+   422 if missing). Modify requires a new `recommended_action`. Using
+   `window.prompt()` keeps the PlanningPage under 250 LOC without external
+   dependencies. A production version would use an inline form or modal.
+
+7. **The backend `list_alerts` endpoint accepts a `?status=draft` query
+   parameter** (alias `status_filter`), but the API client's `getAlerts` method
+   doesn't pass query params. Filtered client-side for `status === 'draft' ||
+   status === 'modified'` instead of modifying the API client further. This is
+   fine for the small number of alerts in the demo; a production system with
+   many alerts would want server-side filtering.
+
+### Files modified
+- `frontend/src/api/types.ts` — Fixed Hypothesis interface to match backend
+  response; added ConfidenceVector type; typed Alert.confidence_vector properly.
+- `frontend/src/api/client.ts` — Updated approveAlert/dismissAlert to accept
+  rationale parameter and pass as POST body.
+- `frontend/src/components/ActionCard.tsx` (233 LOC) — Added alertToActionCard
+  adapter; removed internal callApi + status state; accepts status prop; added
+  ARIA labels on all interactive elements; removed MOCK_ACTION export.
+- `frontend/src/pages/HypothesesPage.tsx` (151 LOC) — Real hypothesis view with
+  TanStack Query; shows claim, supporting/contradicting evidence with observation
+  IDs, data age, probability, status; loading/empty/error/stale states.
+- `frontend/src/pages/PlanningPage.tsx` (194 LOC) — Real planning view with
+  TanStack Query mutations; shows draft alerts as ActionCards; approve/dismiss/
+  modify call real API; success/error toast auto-dismisses after 3s; invalidates
+  alerts + tasks queries after decision; loading/empty/error/stale states.
+
+### Verification
+```
+cd frontend && npm run build    → ✓ built in 10.61s (exit 0)
+cd frontend && npm run typecheck → ✓ tsc --noEmit (exit 0, no errors)
+```

@@ -227,22 +227,24 @@ export const api = {
   async approveAlert(
     incidentId: string,
     alertId: string,
+    rationale?: string,
     signal?: AbortSignal,
   ): Promise<unknown> {
     return request<unknown>(
       `/api/incidents/${encodeURIComponent(incidentId)}/alerts/${encodeURIComponent(alertId)}/approve`,
-      { method: 'POST', signal },
+      { method: 'POST', body: { review_rationale: rationale ?? '' }, signal },
     )
   },
 
   async dismissAlert(
     incidentId: string,
     alertId: string,
+    rationale: string,
     signal?: AbortSignal,
   ): Promise<unknown> {
     return request<unknown>(
       `/api/incidents/${encodeURIComponent(incidentId)}/alerts/${encodeURIComponent(alertId)}/dismiss`,
-      { method: 'POST', signal },
+      { method: 'POST', body: { review_rationale: rationale }, signal },
     )
   },
 

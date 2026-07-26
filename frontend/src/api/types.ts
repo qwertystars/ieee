@@ -98,16 +98,27 @@ export interface ObservationCollection {
   features: GeoJSONFeature<Observation>[]
 }
 
+export interface ConfidenceVector {
+  s?: number
+  c?: number
+  f?: number
+  [key: string]: unknown
+}
+
 export interface Hypothesis {
   id: string
+  org_id: string
   incident_id: string
-  statement: string
+  entity_type: string
+  entity_id: string
+  claim: string
+  probability: number
+  supporting_evidence: Record<string, unknown> | null
+  contradicting_evidence: Record<string, unknown> | null
   status: string
-  confidence: number
-  supports: string[]
-  contradicts: string[]
   created_at: number
   updated_at: number
+  data_age_ms: number
 }
 
 export interface HypothesisList {
@@ -124,7 +135,7 @@ export interface Alert {
   message: string
   severity: string
   recommended_action?: string | null
-  confidence_vector?: unknown
+  confidence_vector?: ConfidenceVector | null
   status: string
   created_by: string
   created_at: number
