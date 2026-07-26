@@ -172,6 +172,9 @@ class OperationalTask(_EntityMixin, Base):
     title: Mapped[str] = mapped_column(String)
     status: Mapped[str | None] = mapped_column(String, nullable=True)
     priority: Mapped[str | None] = mapped_column(String, nullable=True)
+    assigned_team_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    required_capability: Mapped[str | None] = mapped_column(String, nullable=True)
+    assignment_history: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 

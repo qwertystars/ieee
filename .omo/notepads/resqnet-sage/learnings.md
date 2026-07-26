@@ -2705,3 +2705,68 @@ consumer.py: 179 pure LOC (under 250 ✓)
 worker/main.py: 76 pure LOC (under 250 ✓)
 ```
 
+
+## T5 — Expand OperationalTask model + migration 0004 (2026-07-26)
+
+### Outcome
+Added 3 columns to `operational_tasks` table via migration `0004_task_expansion.py`
+and updated the `OperationalTask` ORM model in `entities.py` to match. Alembic
+upgrade to `0004 (head)` succeeds; all 3 columns verified present in
+`information_schema.columns` with correct types (`character varying` for the two
+String columns, `jsonb` for `assignment_history`).
+
+### Key findings
+1. **Migration 0004 follows the 0002a `add_column` pattern, not 0003's
+   `create_table` pattern.** Since `operational_tasks` already exists (created
+   in 0001, expanded in 0002a), 0004 only adds columns via `op.add_column`. The
+   downgrade drops them in reverse order. No indexes are added — the task spec
+   did not require them and the existing `ix_operational_tasks_org_incident`
+   composite index from 0002a covers tenancy lookups.
+
+2. **JSONB column uses `from sqlalchemy.dialects.postgresql import JSONB` in
+   both the migration and the model.** The model already imports JSONB (used
+   by `properties` on every entity), so no new import was needed in
+   `entities.py`. The migration imports JSONB explicitly. Using `sa.JSON`
+   instead would compile to `JSON` on PostgreSQL, which is less capable than
+   `JSONB` (no GIN indexing, no `@>` operator) — JSONB is the correct choice
+   for an append-only history column that will be queried.
+
+3. **The `OperationalTask` model uses `Mapped[str | None]` (PEP 604 union)
+   for nullable columns, not `Mapped[Optional[str]]`.** This matches the
+   existing style in `entities.py` (every nullable column uses `str | None`).
+   The task spec suggested `Optional[str]` but the codebase convention is the
+   union syntax — followed the codebase. Both compile to the same SQLAlchemy
+   type.
+
+4. **Column ordering in the ORM matters for readability, not for the
+   migration.** The 3 new fields are placed after `priority` (the last
+   task-specific field added in 0002a) and before `geometry`/`properties`
+   (the generic spatial/metadata columns from `_EntityMixin`-adjacent
+   convention). PostgreSQL `add_column` always appends to the end of the
+   table physically; the ORM declaration order is purely for source
+   readability.
+
+5. **`alembic upgrade head` produced no stdout output on success.** This is
+   the default behavior when the migration is a no-op-ish `add_column` (no
+   data backfill, no DDL that prints progress). The exit code 0 is the
+   success signal — `alembic current` confirms the new head.
+
+### Files produced/modified
+- `backend/alembic/versions/0004_task_expansion.py` (NEW — 3 add_column / 3 drop_column)
+- `backend/app/models/entities.py` (MODIFY — 3 new fields on OperationalTask)
+
+### Verification
+```
+cd backend && source .venv/bin/activate
+export PYTHONPATH=/root/srijan/ieee/backend
+export DATABASE_URL="postgresql+psycopg://resqnet:resqnet123@localhost:5432/resqnet"
+alembic upgrade head  # exit 0
+alembic current      # → 0004 (head)
+
+SELECT column_name, data_type FROM information_schema.columns
+WHERE table_name='operational_tasks'
+  AND column_name IN ('assigned_team_id','required_capability','assignment_history');
+→ assigned_team_id    | character varying
+→ assignment_history  | jsonb
+→ required_capability | character varying
+```
