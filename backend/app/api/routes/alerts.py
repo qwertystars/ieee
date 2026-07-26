@@ -21,6 +21,7 @@ from app.lib.audit import write_audit
 from app.lib.time import now_ms
 from app.models.alert import Alert
 from app.models.user import User
+from app.realtime import manager, schedule_broadcast
 
 logger = logging.getLogger("app.api.routes.alerts")
 
@@ -169,8 +170,12 @@ def approve_alert(
     except Exception as exc:
         logger.warning("provenance record failed for alert %s: %s", alert.id, exc)
     # TODO: Create task from approved alert (todo 15)
-    # TODO: Broadcast via WebSocketManager (todo 16)
-    return _to_dict(alert)
+    result = _to_dict(alert)
+    schedule_broadcast(
+        manager.broadcast(incident_id, {"type": "alert_changed", "payload": result}),
+        request.app,
+    )
+    return result
 
 
 @router.post("/{alert_id}/dismiss")
@@ -210,8 +215,12 @@ def dismiss_alert(
         before=before,
         after=_to_dict(alert),
     )
-    # TODO: Broadcast via WebSocketManager (todo 16)
-    return _to_dict(alert)
+    result = _to_dict(alert)
+    schedule_broadcast(
+        manager.broadcast(incident_id, {"type": "alert_changed", "payload": result}),
+        request.app,
+    )
+    return result
 
 
 @router.post("/{alert_id}/modify")
@@ -253,5 +262,9 @@ def modify_alert(
         before=before,
         after=_to_dict(alert),
     )
-    # TODO: Broadcast via WebSocketManager (todo 16)
-    return _to_dict(alert)
+    result = _to_dict(alert)
+    schedule_broadcast(
+        manager.broadcast(incident_id, {"type": "alert_changed", "payload": result}),
+        request.app,
+    )
+    return result

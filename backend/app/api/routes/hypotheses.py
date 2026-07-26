@@ -19,6 +19,7 @@ from app.lib.time import now_ms
 from app.models.enums import HypothesisStatus
 from app.models.hypotheses import Hypothesis
 from app.models.user import User
+from app.realtime import manager, schedule_broadcast
 
 router = APIRouter(
     prefix="/incidents/{incident_id}/hypotheses", tags=["hypotheses"]
@@ -137,4 +138,9 @@ def create_hypothesis(
         },
     )
     h = db.get(Hypothesis, hid)
-    return _to_dict(h)  # type: ignore[arg-type]
+    result = _to_dict(h)  # type: ignore[arg-type]
+    schedule_broadcast(
+        manager.broadcast_hypothesis(incident_id, result),
+        request.app,
+    )
+    return result

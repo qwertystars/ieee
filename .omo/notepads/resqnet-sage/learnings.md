@@ -3448,3 +3448,83 @@ POST /api/incidents/{id}/tasks/{id}/assign → 200 with assignment details
   - method: 'deterministic'
 Edge cases: 409 (no eligible responders), 422 (no required_capability), 409 (already assigned)
 ```
+
+## T16 — Wire realtime WebSocket broadcasts and polling fallback (2026-07-26)
+
+### Outcome
+Registered `manager.router` in main.py, exposing `/ws/realtime/{incident_id}`
+(with JWT validation) and `/api/incidents/{incident_id}/updates` (polling
+fallback). Added best-effort broadcast calls after observation insert,
+hypothesis create, alert approve/dismiss/modify, and task create/assign/status
+change. All 5 realtime tests and 13 total tests pass.
+
+### Key findings
+
+1. **`app.routes` returns `_IncludedRouter` objects in newer FastAPI/Starlette,
+   not bare `Route` objects.** The verification command
+   `[r.path for r in app.routes]` fails with `AttributeError: '_IncludedRouter'
+   object has no attribute 'path'`. Use `app.openapi()['paths']` for HTTP routes
+   or traverse `original_router.routes` for WebSocket routes.
+
+2. **Sync route handlers cannot directly `await` async broadcast methods.**
+   FastAPI sync handlers run in a thread pool, not the event loop. The
+   WebSocketManager's broadcast methods are async (use `asyncio.Lock` and
+   `await ws.send_json()`). Solution: store the main event loop in
+   `app.state.event_loop` during lifespan startup, then use
+   `asyncio.run_coroutine_threadsafe(coro, loop)` from sync handlers to
+   schedule fire-and-forget broadcasts on the main event loop.
+
+3. **JWT validation on WebSocket requires extracting the token from query
+   params, not the Authorization header.** Browser WebSocket clients cannot
+   set custom headers. The `token` query param (`?token=<jwt>`) is the
+   standard pattern. Call `websocket.close(code=4001)` before `accept()` to
+   reject invalid tokens — Starlette sends an HTTP 403 response.
+
+4. **The `realtime_ws` route handler is NOT part of the `WebSocketManager`
+   class.** It's a module-level function in `manager.py`. Adding JWT validation
+   to it does NOT modify the class — only the route handler. This respects
+   the "Do NOT modify the WebSocketManager class" constraint.
+
+5. **`schedule_broadcast` helper gracefully skips when `app.state.event_loop`
+   is not set.** In tests without lifespan, the helper catches `AttributeError`
+   and logs a debug message. This allows tests to run without setting up the
+   event loop, while production code benefits from fire-and-forget broadcasts.
+
+6. **The WebSocketManager has `broadcast_observation`, `broadcast_hypothesis`,
+   and `broadcast_plan` methods but NOT `broadcast_alert` or `broadcast_task`.**
+   For alerts and tasks, use the generic `manager.broadcast(incident_id,
+   {"type": "alert_changed"|"task_changed", "payload": dict})` method directly.
+
+### Files modified
+- `backend/app/realtime/manager.py` — added JWT validation to `realtime_ws`
+  function (NOT the class); token query param, close 4001 on invalid
+- `backend/app/realtime/__init__.py` — added `schedule_broadcast` helper for
+  sync→async broadcast scheduling via `run_coroutine_threadsafe`
+- `backend/app/api/routes/ws.py` — replaced ping/pong with empty router
+  (real WebSocket is in manager.router)
+- `backend/app/main.py` — store `event_loop` in `app.state` during lifespan,
+  register `realtime_router`
+- `backend/app/api/routes/observations.py` — broadcast after create_observation
+- `backend/app/api/routes/hypotheses.py` — broadcast after create_hypothesis
+- `backend/app/api/routes/alerts.py` — broadcast after approve/dismiss/modify
+- `backend/app/api/routes/tasks.py` — broadcast after create/assign/status change
+
+### Verification
+```
+python3 -c "
+from app.main import app
+paths = list(app.openapi()['paths'].keys())
+print([p for p in paths if 'realtime' in p or 'updates' in p or 'events' in p])
+"
+→ ['/api/incidents/{incident_id}/updates']
+
+python3 -c "
+from app.realtime.manager import router
+for r in router.routes: print(type(r).__name__, r.path)
+"
+→ APIWebSocketRoute /ws/realtime/{incident_id}
+→ APIRoute /api/incidents/{incident_id}/updates
+
+python3 -m pytest tests/test_realtime.py tests/test_hypotheses.py -v
+→ 7 passed
+```

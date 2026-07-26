@@ -31,6 +31,7 @@ from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
 from app.models.observation import Observation
 from app.models.user import User
+from app.realtime import manager, schedule_broadcast
 
 logger = logging.getLogger("app.api.routes.observations")
 
@@ -187,6 +188,10 @@ def create_observation(
     )
 
     result = fetch_feature(db, observation_id, org_id)
+    schedule_broadcast(
+        manager.broadcast_observation(incident_id, result),
+        request.app,
+    )
     return result  # type: ignore[return-value]
 
 

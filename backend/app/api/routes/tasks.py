@@ -17,6 +17,7 @@ from app.models.entities import OperationalTask, Responder, RoadSegment
 from app.models.user import User
 from app.optimizer.routing import RouteReliabilityEngine
 from app.optimizer.routing_types import Route, RouteSegment
+from app.realtime import manager, schedule_broadcast
 
 router = APIRouter(prefix="/incidents/{incident_id}/tasks", tags=["tasks"])
 task_router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -116,7 +117,12 @@ def create_task(
     db.refresh(task)
     write_audit(db, org_id=org_id, incident_id=incident_id, actor=user.email,
                 action="task.created", entity=task_id, after=_to_dict(task))
-    return _to_dict(task)
+    result = _to_dict(task)
+    schedule_broadcast(
+        manager.broadcast(incident_id, {"type": "task_changed", "payload": result}),
+        request.app,
+    )
+    return result
 
 
 @task_router.patch("/{task_id}")
@@ -144,7 +150,12 @@ def update_task_status(
     write_audit(db, org_id=org_id, incident_id=task.incident_id, actor=user.email,
                 action="task.status_updated", entity=task_id,
                 before=before, after=_to_dict(task))
-    return _to_dict(task)
+    result = _to_dict(task)
+    schedule_broadcast(
+        manager.broadcast(task.incident_id, {"type": "task_changed", "payload": result}),
+        request.app,
+    )
+    return result
 
 
 @router.post("/{task_id}/assign")
@@ -234,6 +245,10 @@ def assign_task(
     result = _to_dict(task)
     result["assignment"] = {"team_id": best_resp.id, "team_name": best_resp.name,
                            "cost": best_cost, "method": "deterministic"}
+    schedule_broadcast(
+        manager.broadcast(incident_id, {"type": "task_changed", "payload": result}),
+        request.app,
+    )
     return result
 
 

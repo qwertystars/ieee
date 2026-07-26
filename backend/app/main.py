@@ -1,5 +1,6 @@
 """FastAPI application entry point."""
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -17,6 +18,9 @@ logger = logging.getLogger("app.main")
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Startup: seed users + start Kafka producer. Shutdown: stop producer."""
+    # 0. Store the main event loop for sync->async broadcast scheduling.
+    app.state.event_loop = asyncio.get_running_loop()
+
     # 1. Seed demo users (users table is created by Alembic migration 0002b).
     from app.auth.seed import seed_demo_users
     from app.db import SessionLocal
@@ -206,6 +210,7 @@ from app.api.routes.simulator import router as simulator_router  # noqa: E402
 from app.api.routes.tasks import router as tasks_router  # noqa: E402
 from app.api.routes.tasks import task_router as task_item_router  # noqa: E402
 from app.api.routes.ws import router as ws_router  # noqa: E402
+from app.realtime.manager import router as realtime_router  # noqa: E402
 from fastapi import APIRouter  # noqa: E402
 
 api_router = APIRouter(prefix="/api")
@@ -223,3 +228,4 @@ api_router.include_router(task_item_router)
 
 app.include_router(api_router)
 app.include_router(ws_router)
+app.include_router(realtime_router)
