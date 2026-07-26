@@ -3034,3 +3034,96 @@ GET sensitive obs as viewer → 404 (visibility enforced)
 Filters: incident_id, source_id, phenomenon, observed_start/end, recent_ms,
   bbox, confidence_s — all verified working
 ```
+
+## T10b — Simulator engine, API, and CLI (2026-07-26)
+
+### Outcome
+Created `SimulationEngine` with deterministic seedable RNG, background asyncio
+simulation loop, and Kafka publishing via `ProducerManager`. The engine
+publishes observations to `observations.raw` with a payload matching the
+consumer's `_build_observation` format. API routes (start/stop/status/inject-fault)
+are registered under `/api/simulator`. CLI demo script produces identical
+observation IDs across runs with the same seed.
+
+### Key findings
+
+1. **Deterministic ULIDs require a custom generator, not `generate_ulid()`.**
+   The platform's `generate_ulid()` in `app/lib/ulid.py` uses `time.time()` and
+   `os.urandom()` — both non-deterministic. To make observation IDs reproducible
+   across runs with the same seed, the engine implements `_deterministic_ulid()`
+   which encodes the simulation's logical timestamp (48-bit, same format) and
+   draws the 80-bit randomness portion from the seedable `random.Random`. The
+   Crockford base32 encoding is replicated locally (~8 lines) to avoid modifying
+   `ulid.py`. Same seed → same RNG state → same ULID sequence.
+
+2. **`random.Random.randbytes(n)` is available in Python 3.9+.** The venv is
+   Python 3.11.2, so `rng.randbytes(10)` works for generating the 80-bit
+   randomness portion of the ULID. This is cleaner than `rng.getrandbits(80)`
+   because it returns `bytes` directly, matching the `_b32_encode` input.
+
+3. **The simulation loop must use `asyncio.create_task()` from an async context.**
+   `start()` is sync but creates a background task via `asyncio.create_task()`,
+   which requires a running event loop. This works because `start()` is always
+   called from an async route handler or inside `asyncio.run()` in the CLI.
+   `stop()` is async because it must `await` the task cancellation.
+
+4. **Kafka/Redpanda unavailability is non-fatal.** The engine's `_ensure_producer()`
+   catches `KafkaConnectionError` and sets `self._producer = None`. The
+   `_publish_observation()` method checks `is_started` before sending and logs
+   a debug message if the producer is unavailable. The simulation continues
+   producing observation IDs (stored in `self._observation_ids`) even without
+   Kafka, so the CLI can verify determinism without a running broker.
+
+5. **Payload format must match `consumer.py`'s `_build_observation` exactly.**
+   The consumer accesses required fields via `p["field"]` (not `p.get()`), so
+   they must be present: `observation_id`, `event_type`, `phenomenon`, `geometry`,
+   `observed_at`, `source_id`, `source_type`, `org_id`, `incident_id`. Optional
+   fields (`value`, `unit`, `provenance_chain`, `raw_data_hash`) are accessed via
+   `p.get()` with defaults. The engine includes all 13 fields specified in the
+   task. The `provenance_chain` carries `{"simulated": True}` — MANDATORY for
+   distinguishing simulated from real data downstream.
+
+6. **`raw_data_hash` is computed on the payload WITHOUT the hash field.** The
+   hash is `sha256:` + canonical JSON (`sort_keys=True, separators=(",", ":")`)
+   of the payload dict with `raw_data_hash` excluded. This avoids the
+   self-referential hash problem. The `sha256:` prefix matches the convention
+   used by the CAP adapter (T6).
+
+7. **The API singleton engine needs seed set before `start()`.** The engine's
+   `start()` method reads `self._seed` to initialize the RNG. The API's
+   `StartRequest` includes a `seed` field, so the route handler sets
+   `_engine._seed = req.seed` before calling `_engine.start(...)`. This is a
+   pragmatic access of a "private" attribute within the same package — cleaner
+   than adding a `set_seed()` method that wasn't in the task spec.
+
+8. **Router registration follows the existing pattern: prefix on the router,
+   no extra prefix on `include_router`.** The simulator router has
+   `prefix="/simulator"` and is included in `api_router` (which has
+   `prefix="/api"`) without an extra prefix. Full paths: `/api/simulator/start`,
+   `/api/simulator/stop`, `/api/simulator/status`, `/api/simulator/inject-fault`.
+   The task's suggestion of `include_router(simulator_router, prefix="/api/simulator")`
+   would have produced `/api/api/simulator/...` — the existing pattern is correct.
+
+9. **`python -m scripts.run_rescue_ball_demo` works without `__init__.py`.**
+   Python 3.3+ supports namespace packages, so `scripts/` doesn't need an
+   `__init__.py`. The script adds `backend/` to `sys.path` (following the
+   `download_models.py` pattern) so `from app.simulator.engine import
+   SimulationEngine` resolves. Must use the venv Python (`backend/.venv/bin/python3`)
+   because the system Python lacks `aiokafka`.
+
+### Files produced/modified
+- `backend/app/simulator/engine.py` (NEW — 248 pure LOC) — SimulationEngine
+- `backend/app/api/routes/simulator.py` (NEW — 64 pure LOC) — API routes
+- `scripts/run_rescue_ball_demo.py` (NEW — 60 pure LOC) — CLI demo
+- `backend/app/main.py` (MODIFIED — registered simulator router)
+
+### Verification
+```
+cd backend && source .venv/bin/activate && export PYTHONPATH=/root/srijan/ieee/backend
+python3 -c "from app.simulator.engine import SimulationEngine; print('Engine import OK')"
+→ Engine import OK
+python3 -c "from app.api.routes.simulator import router; print('Router import OK')"
+→ Router import OK
+python3 -m scripts.run_rescue_ball_demo --seed 42 --duration 2.5
+→ 24 observation IDs, identical across runs with same seed
+```

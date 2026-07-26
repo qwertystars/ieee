@@ -201,6 +201,7 @@ from app.api.routes.observations import router as observations_router  # noqa: E
 from app.api.routes.optimize import router as optimize_router  # noqa: E402
 from app.api.routes.scenarios import router as scenarios_router  # noqa: E402
 from app.api.routes.sensing import router as sensing_router  # noqa: E402
+from app.api.routes.simulator import router as simulator_router  # noqa: E402
 from app.api.routes.ws import router as ws_router  # noqa: E402
 from fastapi import APIRouter  # noqa: E402
 
@@ -211,6 +212,7 @@ api_router.include_router(hypotheses_router)
 api_router.include_router(scenarios_router)
 api_router.include_router(optimize_router)
 api_router.include_router(sensing_router)
+api_router.include_router(simulator_router)
 api_router.include_router(eval_router)
 
 app.include_router(api_router)
