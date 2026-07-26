@@ -194,6 +194,7 @@ async def metrics() -> Response:
 
 # ── API routes ───────────────────────────────────────────────────────────────
 
+from app.api.routes.alerts import router as alerts_router  # noqa: E402
 from app.api.routes.auth import router as auth_router  # noqa: E402
 from app.api.routes.eval import router as eval_router  # noqa: E402
 from app.api.routes.hypotheses import router as hypotheses_router  # noqa: E402
@@ -214,6 +215,7 @@ api_router.include_router(optimize_router)
 api_router.include_router(sensing_router)
 api_router.include_router(simulator_router)
 api_router.include_router(eval_router)
+api_router.include_router(alerts_router)
 
 app.include_router(api_router)
 app.include_router(ws_router)

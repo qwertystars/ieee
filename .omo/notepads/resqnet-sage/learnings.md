@@ -3270,3 +3270,92 @@ GET /api/incidents/test_incident/hypotheses?status=invalid → 422
 # Existing tests still pass
 python3 -m pytest tests/test_hypotheses.py -q → 2 passed
 ```
+
+## T14 — Alert and human-approval workflow (2026-07-26)
+
+### Outcome
+Implemented the alert evaluation and human-approval workflow. `evaluate_alerts(db,
+incident_id)` creates draft alerts from threshold-meeting thermal/human-detection
+observations (S >= 0.5 AND C >= 0.2). Four API routes handle list/approve/dismiss/modify,
+all gated to admin/emergency_manager roles. The system NEVER auto-dispatches — every
+alert requires explicit human approval. All state changes write to the hash-chained audit
+log; approvals also record provenance via `ProvenanceChain`. All tests pass: GET 200,
+POST approve/dismiss/modify 200, viewer 403, idempotent evaluate_alerts.
+
+### Key findings
+
+1. **The Alert model has no `source_observation_id` field, so idempotency tracking
+   uses the JSONB `confidence_vector` column.** The 6D vector dict is extended with
+   a `"source_observation_id"` key when building the alert. The idempotency check
+   queries `Alert.confidence_vector["source_observation_id"].astext == obs_id` via
+   SQLAlchemy's JSONB path access. This avoids modifying the Alert model (forbidden
+   by the task) while providing reliable dedup. The JSONB column is flexible enough
+   to hold both the vector data and this provenance key.
+
+2. **`evaluate_alerts` derives org_id from the first observation in the incident.**
+   Since org_id is consistent within an incident (enforced by OrgContextMiddleware),
+   querying `SELECT org_id FROM observations WHERE incident_id = ? LIMIT 1` is
+   sufficient. If no observations exist for the incident, the function returns `[]`
+   — no alerts to create. This avoids requiring an incident row to exist (the
+   observations carry the org_id independently).
+
+3. **FastAPI treats `dict[str, Any] | None = None` as an optional JSON body.** The
+   approve endpoint uses this pattern so clients can send `{"review_rationale": "..."}`
+   or omit the body entirely (rationale defaults to empty string). The dismiss and
+   modify endpoints use `dict[str, Any]` (required body) and validate the presence of
+   `review_rationale` / `recommended_action` inside the handler, returning 422 if missing.
+
+4. **Provenance recording is best-effort — wrapped in try/except.** The
+   `ProvenanceChain.record_decision` call commits its own transaction. If it fails
+   (e.g., ProvenanceInput validation), the alert approval has already been committed
+   and the audit entry has already been written. Logging a warning and continuing is
+   the correct behavior — the user's action (approval) is the critical operation;
+   provenance is metadata. This mirrors how observations.py handles confidence vector
+   computation failures.
+
+5. **The `reviewed_by` field stores `user.id` (ULID), not `user.email`.** The audit
+   log's `actor` field uses `user.email` (matching the existing convention in
+   observations.py and hypotheses.py), but `Alert.reviewed_by` stores the user's ULID
+   primary key, matching the task spec "reviewed_by=current_user.id". This is
+   consistent with how the User model's `id` field is used as a foreign-key-style
+   reference in other tables.
+
+6. **The `modify` endpoint transitions `draft` → `modified` but leaves already-reviewed
+   alerts unchanged.** If an alert is already `approved` or `dismissed`, modifying the
+   `recommended_action` updates the field but does not change the status (the review
+   decision stands). Only `draft` alerts transition to `modified`. This prevents
+   accidentally reopening a dismissed alert by editing its action text.
+
+7. **The alerts table has a FK constraint on `incident_id` to `incidents.id`.** Test
+   data must create a valid Incident row before inserting Alert rows. The
+   `test_incident` ID used in the basic verification command does not exist in the
+   incidents table, but the GET endpoint returns an empty list (200) because it filters
+   by `incident_id` without requiring the incident to exist — the FK is only checked
+   on INSERT, not SELECT.
+
+### Files produced/modified
+- `backend/app/alerts/__init__.py` (NEW — package init with docstring)
+- `backend/app/alerts/rules.py` (NEW — 133 pure LOC, evaluate_alerts + helpers)
+- `backend/app/api/routes/alerts.py` (NEW — 230 pure LOC, 4 routes + helpers)
+- `backend/app/main.py` (MODIFIED — registered alerts_router)
+
+### Verification
+```
+# Basic verification (from task spec):
+python3 -c "from fastapi.testclient import TestClient; ..."
+→ Alerts: 200 {'alerts': [], 'count': 0}
+
+# Comprehensive test:
+1. GET alerts → 200, count=3
+2. POST approve → 200, status=approved, reviewed_by set
+3. POST dismiss → 200, status=dismissed, rationale captured
+4. POST modify → 200, status=modified, recommended_action updated
+5. Viewer approve → 403
+6. GET filter ?status=approved → 200, count=1
+7. Audit entries created: 3 (approve, dismiss, modify)
+
+# evaluate_alerts test:
+- Threshold-meeting obs (s=0.8, c=0.5) → 1 draft alert created
+- Below-threshold obs (s=0.3, c=0.1) → no alert
+- Second run → 0 new alerts (idempotent)
+```
