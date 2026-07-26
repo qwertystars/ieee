@@ -3706,3 +3706,86 @@ cd frontend && npm run typecheck         → exit 0 (no errors)
 - All interactive elements have aria-label attributes.
 - State components use role="status"/"alert" + aria-live for screen readers.
 - SVG icons only (no emojis). Tailwind utility classes throughout.
+
+## T21 — Situation dashboard with map (2026-07-26)
+
+### Outcome
+Replaced the placeholder DashboardPage with a real situation dashboard: full-screen
+MapLibre + deck.gl map with 11 layer types, incident boundary overlay, rescue-ball
+markers, uncertainty/age tooltips, and a right sidebar with situation report, alert,
+and task summaries. Mock data replaced with real API calls via TanStack Query.
+`cd frontend && npm run build` succeeds (exit 0). `tsc --noEmit` passes.
+
+### Key findings
+
+1. **Demo data is centered around Mumbai (72.877, 19.076), not NYC.** The existing
+   `RIVERTOWN_CENTER = [-74.006, 40.7128]` in MapView.tsx and useMapLayers.ts was
+   wrong for the actual seed data. All responders, sensors, shelters, hospitals,
+   and observations in `backend/app/seed/` use Mumbai coordinates. Updated
+   `MAP_CENTER` to `[72.877, 19.076]`.
+
+2. **The frontend `api/types.ts` types from Task 20 didn't match the actual backend
+   responses.** The `Incident` type had `name` but the backend returns `title`. The
+   `Alert` type had `rationale` but the backend returns `review_rationale` + `title`
+   + `message`. The `SituationReport` type had `summary`/`observations_count` but the
+   backend returns `incident` (dict), `observations` (list), `hazards` (list), etc.
+   The `Observation` type had `id` but the backend returns `observation_id`. Updated
+   all types to match the actual backend response shapes.
+
+3. **The backend entities API doesn't include a type discriminator in feature
+   properties.** When fetching all entities without a `type` filter, the features
+   don't indicate which entity type they are. Must fetch by type
+   (`api.getEntities(incidentId, 'roads')`) to know which layer each feature belongs
+   to. Used `Promise.all` with 9 parallel entity-type fetches in a single
+   `useQuery` to keep it efficient.
+
+4. **Alerts and tasks don't have geometry in the API response.** The Alert model has
+   an `area` column but `_to_dict` in `alerts.py` doesn't serialize it. The Task
+   `_to_dict` in `tasks.py` also omits geometry. These can't be rendered as map
+   layers — shown in the dashboard sidebar panels instead.
+
+5. **No PMTiles file exists and the `pmtiles` npm package is not installed.** The
+   `frontend/public/basemaps/` directory is empty. Used a fallback MapLibre style
+   with a solid dark background (`#0f172a`) and no external tile sources. PMTiles
+   support requires: `npm install pmtiles`, `maplibregl.addProtocol('pmtiles', ...)`,
+   and setting the source URL to `pmtiles:///basemaps/rivertown.pmtiles`.
+
+6. **The existing MapView used online OSM raster tiles** (`tile.openstreetmap.org`).
+   Replaced with the local fallback style. Verified: no online tile URLs in source
+   or build output. The `@deck.gl/mapbox` package name is misleading — it works with
+   MapLibre GL, not just Mapbox.
+
+7. **deck.gl's `onHover` callback has `object` as optional.** The `PickingInfo` type
+   from deck.gl has `object?: any` (can be undefined when hovering over empty space).
+   The callback parameter type must have `object` as optional, not required. Fixed
+   by using `object?: unknown` in the callback type.
+
+8. **TanStack Query caches by query key, preventing duplicate requests.** Both
+   `useMapLayers` and `DashboardPage` fetch incidents with key `['incidents']`.
+   TanStack Query deduplicates — only one network request is made. The situation
+   report, alerts, and tasks queries use `['situation-report', incidentId]`,
+   `['alerts', incidentId]`, `['tasks', incidentId]` respectively.
+
+9. **Conflicting observations are visually distinct via corroboration state.** The
+   `mapLayers.ts` already colors observations differently based on `verified`
+   (alpha 200 for verified, 120 for unverified). The transformation maps
+   `corroboration_state === 'corroborated'` to `verified: true`. Stale data
+   (>1h old) uses degraded colors via the existing `freshnessRgba` function.
+
+10. **The `FALLBACK_STYLE` version must be `8 as const`.** MapLibre's
+    `StyleSpecification` type requires `version: 8` as a literal type, not
+    `number`. Using `version: 8` without `as const` causes a TypeScript error.
+
+### Files produced/modified
+- `frontend/src/api/types.ts` (MODIFY — fixed Incident, Alert, Task, SituationReport, Observation types)
+- `frontend/src/lib/mapTransform.ts` (NEW — GeoJSON → LayerData transformations, 217 LOC)
+- `frontend/src/hooks/useMapLayers.ts` (REWRITE — real API via TanStack Query, 193 LOC)
+- `frontend/src/components/MapView.tsx` (REWRITE — local basemap, incident boundary, tooltips, 281 LOC)
+- `frontend/src/pages/DashboardPage.tsx` (REWRITE — full dashboard with sidebar, 189 LOC)
+
+### Verification
+```
+cd frontend && npm run build    → ✓ built in 10.40s (exit 0)
+cd frontend && npx tsc --noEmit → exit 0 (no errors)
+grep -c "openstreetmap" dist/assets/*.js → 0 (no online tiles)
+```

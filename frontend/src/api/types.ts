@@ -45,12 +45,16 @@ export interface TokenResponse {
 export interface Incident {
   id: string
   org_id: string
-  name: string
+  title: string
+  disaster_type: string
+  severity: string
   status: string
+  declaration_level?: string | null
+  description?: string | null
   start_time: number
-  end_time?: number | null
+  expected_end?: number | null
+  config?: Record<string, unknown> | null
   geometry?: GeoJSONGeometry | null
-  properties?: Record<string, unknown> | null
   created_at: number
   updated_at: number
 }
@@ -61,15 +65,32 @@ export interface IncidentList {
 }
 
 export interface Observation {
-  id: string
-  incident_id: string
-  source_id?: string | null
+  observation_id: string
+  event_type: string
   phenomenon: string
+  value?: number | null
+  unit?: string | null
+  geometry_uncertainty: number
   observed_at: number
+  valid_from: number
+  valid_until?: number | null
   received_at: number
-  confidence?: number | null
-  properties?: Record<string, unknown> | null
-  geometry?: GeoJSONGeometry | null
+  source_id: string
+  source_type?: string | null
+  collection_method: string
+  source_reliability: number
+  freshness: number
+  corroboration_state?: string | null
+  model_uncertainty?: number | null
+  quality_flags?: Record<string, unknown> | null
+  access_policy?: string | null
+  provenance_chain?: Record<string, unknown> | null
+  raw_data_hash?: string
+  model_version?: string | null
+  supersedes?: string | null
+  duplicate_group?: string | null
+  org_id: string
+  incident_id: string
 }
 
 export interface ObservationCollection {
@@ -96,16 +117,21 @@ export interface HypothesisList {
 
 export interface Alert {
   id: string
+  org_id: string
   incident_id: string
   alert_type: string
+  title: string
+  message: string
   severity: string
+  recommended_action?: string | null
+  confidence_vector?: unknown
   status: string
-  recommended_action: string
-  rationale?: string | null
-  reviewed_by?: string | null
-  reviewed_at?: number | null
+  created_by: string
   created_at: number
   updated_at: number
+  reviewed_by?: string | null
+  review_rationale?: string | null
+  reviewed_at?: number | null
 }
 
 export interface AlertList {
@@ -115,14 +141,16 @@ export interface AlertList {
 
 export interface Task {
   id: string
+  org_id: string
   incident_id: string
   title: string
   status: string
   priority?: string | null
-  required_capability?: string | null
   assigned_team_id?: string | null
-  geometry?: GeoJSONGeometry | null
+  required_capability?: string | null
+  assignment_history?: unknown
   properties?: Record<string, unknown> | null
+  geometry?: GeoJSONGeometry | null
   created_at: number
   updated_at: number
 }
@@ -133,14 +161,21 @@ export interface TaskList {
 }
 
 export interface SituationReport {
-  incident_id: string
+  incident_id?: string
   generated_at: number
-  summary: string
-  observations_count: number
-  hazards_count: number
-  hypotheses_count: number
-  tasks_count: number
-  alerts_count: number
+  window_ms?: number
+  incident?: Record<string, unknown>
+  observations?: Record<string, unknown>[]
+  hazards?: Record<string, unknown>[]
+  hypotheses?: Record<string, unknown>[]
+  roads?: Record<string, unknown>[]
+  shelters?: Record<string, unknown>[]
+  tasks?: Record<string, unknown>[]
+  alerts?: Record<string, unknown>[]
+  responders?: Record<string, unknown>[]
+  provenance_links?: Record<string, unknown>[]
+  narrative?: Record<string, unknown> | null
+  narrative_error?: string | null
   [key: string]: unknown
 }
 
