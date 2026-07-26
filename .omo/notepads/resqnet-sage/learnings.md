@@ -3528,3 +3528,93 @@ for r in router.routes: print(type(r).__name__, r.path)
 python3 -m pytest tests/test_realtime.py tests/test_hypotheses.py -v
 → 7 passed
 ```
+
+## T17 — Idempotent seed scenario with full demo data (2026-07-26)
+
+### Outcome
+Reconciled ORG_ID from `"demo_org"` to `"org_demo"` in `seed/ids.py`, matching
+`auth/seed.py`'s `DEMO_ORG_ID`. Added rescue-ball devices (2 Sensor rows),
+1 draft trapped-person Alert, 1 draft rescue Recommendation, 1 assigned
+OperationalTask, and population/vulnerability demographics to zone properties.
+Created new `seed/domain.py` module for Incident/Alert/Recommendation/Task
+seeders. Seed is fully idempotent: 3 consecutive runs produce identical row
+counts across all 17 tables. `clean_demo_data` now deletes from
+`recommendations`, `alerts`, and `incidents` in FK-safe order.
+
+### Key findings
+
+1. **ORG_ID reconciliation required one-time data cleanup.** The old
+   `org_id="demo_org"` data (50 observations, 5 hypotheses, 3 scenarios)
+   persisted in the DB because `clean_demo_data` only deletes `org_id="org_demo"`
+   rows. After changing the constant, the old data caused `UniqueViolation` on
+   the second seed run (deterministic IDs collided with stale rows). Fix:
+   one-time `DELETE FROM ... WHERE org_id='demo_org'` across all demo tables.
+   Future seed runs are self-cleaning via `clean_demo_data`.
+
+2. **Incidents table has no `incident_id` column — it IS the incident.**
+   `clean_demo_data` deletes most tables by `WHERE org_id = :oid AND
+   incident_id = :iid`. The `incidents` table uses `WHERE org_id = :oid AND
+   id = :iid` instead. This required a separate delete statement after the
+   main loop, not a simple addition to `_DEMO_TABLES`.
+
+3. **FK-safe delete order: recommendations → alerts → incidents.**
+   `recommendations` has FK to `alerts` (via `alert_id`) and `incidents` (via
+   `incident_id`). `alerts` has FK to `incidents` (via `incident_id`). The
+   delete order must be: recommendations first, then alerts, then incidents.
+   `operational_tasks` has no FK to alerts/recommendations, so its position
+   in the list is flexible.
+
+4. **`confidence_vector` is JSONB — accepts dict despite `Mapped[list | None]`
+   type hint.** The Alert model declares `confidence_vector: Mapped[list | None]`
+   but the column is JSONB. PostgreSQL stores the dict `{"s": 0.7, "c": 0.5}`
+   without error. The type hint is advisory; JSONB accepts any JSON value.
+   The task specified dict form `{"s": 0.7, "c": 0.5}` for the confidence
+   vector, which is the named-component form used by the fusion engine.
+
+5. **File size management: split domain seeders into `domain.py`.** Adding
+   rescue-ball devices to `entities.py` (200 → 232 pure LOC) kept it under
+   250. But adding Incident/Alert/Recommendation/Task seeders there too would
+   have exceeded the limit. Created `seed/domain.py` (125 pure LOC) for the
+   4 domain-object seeders, keeping `entities.py` focused on spatial entities
+   from GeoJSON fixtures and `domain.py` on the incident-scoped domain objects.
+
+6. **Zone demographics augmented via dict merge, not fixture modification.**
+   The `zones.geojson` fixture already has `population`, `vulnerability`,
+   `elevation_m`. Additional fields (`vulnerable_population`, `median_age`,
+   `households`, `density_per_sqkm`) are merged in `seed_zones` via
+   `{**base, **_ZONE_DEMOGRAPHICS.get(name, {})}`. This keeps fixtures stable
+   while enriching the properties JSONB with demo data.
+
+7. **`seed_demo` function name required by verification command.** The
+   verification command imports `from app.seed.seed_demo import seed_demo`.
+   The original function was named `run_seed`. Renamed to `seed_demo` to
+   match the expected public API. The `main()` CLI entry point calls
+   `seed_demo()` internally.
+
+### Files modified
+- `backend/app/seed/ids.py` — ORG_ID changed to "org_demo"; added
+  RESCUE_BALL_DEVICE_{1,2}_ID, ALERT_ID, RECOMMENDATION_ID, TASK_ID
+- `backend/app/seed/db_setup.py` — added recommendations, alerts to
+  _DEMO_TABLES; added separate incidents delete by org_id+id
+- `backend/app/seed/entities.py` — added seed_rescue_ball_devices();
+  augmented seed_zones() with _ZONE_DEMOGRAPHICS merge; added Sensor import
+- `backend/app/seed/domain.py` (NEW — 125 pure LOC) — seed_incident,
+  seed_alert, seed_recommendation, seed_task
+- `backend/app/seed/seed_demo.py` — renamed run_seed to seed_demo; wired
+  incident → entities → rescue_ball_devices → alert → recommendation → task
+
+### Verification
+```
+cd backend && source .venv/bin/activate
+export PYTHONPATH=/root/srijan/ieee/backend
+export DATABASE_URL="postgresql+psycopg://resqnet:resqnet123@localhost:5432/resqnet"
+python3 -c "from app.seed.seed_demo import seed_demo; seed_demo(); print('Seed OK')"
+→ Seed OK
+
+# 3 consecutive runs, identical counts:
+incidents: 1, zones: 5, road_segments: 20, shelters: 3, hospitals: 2,
+buildings: 10, power_substations: 3, cell_towers: 5, responders: 5,
+vehicles: 3, sensors: 2, observations: 50, hypotheses: 5, scenarios: 3,
+alerts: 1, recommendations: 1, operational_tasks: 1
+→ Run 1 == Run 2 == Run 3: True (IDEMPOTENT)
+```

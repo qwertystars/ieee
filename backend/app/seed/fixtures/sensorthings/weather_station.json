@@ -1,0 +1,113 @@
+{
+  "@iot.count": 6,
+  "value": [
+    {
+      "@iot.id": "WS-01",
+      "phenomenonTime": "2026-07-20T02:00:00Z",
+      "result": 45.0,
+      "Datastream": {
+        "@iot.id": "WS-01-windspeed",
+        "name": "Weather Station WS-01 wind speed",
+        "unitOfMeasurement": {"symbol": "km/h", "name": "kilometers per hour"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Central Weather Station",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.877, 19.076]
+        }
+      }
+    },
+    {
+      "@iot.id": "WS-01",
+      "phenomenonTime": "2026-07-20T04:00:00Z",
+      "result": 95.0,
+      "Datastream": {
+        "@iot.id": "WS-01-windspeed",
+        "name": "Weather Station WS-01 wind speed",
+        "unitOfMeasurement": {"symbol": "km/h", "name": "kilometers per hour"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Central Weather Station",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.877, 19.076]
+        }
+      }
+    },
+    {
+      "@iot.id": "WS-01",
+      "phenomenonTime": "2026-07-20T02:00:00Z",
+      "result": 1008.0,
+      "Datastream": {
+        "@iot.id": "WS-01-pressure",
+        "name": "Weather Station WS-01 atmospheric pressure",
+        "unitOfMeasurement": {"symbol": "hPa", "name": "hectopascals"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Central Weather Station",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.877, 19.076]
+        }
+      }
+    },
+    {
+      "@iot.id": "WS-01",
+      "phenomenonTime": "2026-07-20T04:00:00Z",
+      "result": 985.0,
+      "Datastream": {
+        "@iot.id": "WS-01-pressure",
+        "name": "Weather Station WS-01 atmospheric pressure",
+        "unitOfMeasurement": {"symbol": "hPa", "name": "hectopascals"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Central Weather Station",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.877, 19.076]
+        }
+      }
+    },
+    {
+      "@iot.id": "WS-02",
+      "phenomenonTime": "2026-07-20T04:00:00Z",
+      "result": 110.0,
+      "Datastream": {
+        "@iot.id": "WS-02-windspeed",
+        "name": "Weather Station WS-02 wind speed (coastal)",
+        "unitOfMeasurement": {"symbol": "km/h", "name": "kilometers per hour"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Coastal Weather Station",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.890, 19.058]
+        }
+      }
+    },
+    {
+      "@iot.id": "WS-02",
+      "phenomenonTime": "2026-07-20T04:00:00Z",
+      "result": 978.0,
+      "Datastream": {
+        "@iot.id": "WS-02-pressure",
+        "name": "Weather Station WS-02 atmospheric pressure (coastal)",
+        "unitOfMeasurement": {"symbol": "hPa", "name": "hectopascals"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Coastal Weather Station",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.890, 19.058]
+        }
+      }
+    }
+  ]
+}

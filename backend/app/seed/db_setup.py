@@ -18,6 +18,8 @@ _DEMO_TABLES = [
     "scenarios",
     "events",
     "decisions",
+    "recommendations",
+    "alerts",
     "operational_tasks",
     "sensors",
     "vehicles",
@@ -34,7 +36,13 @@ _DEMO_TABLES = [
 
 
 def clean_demo_data(db: Session) -> None:
-    """Delete all demo rows for the demo org+incident (idempotency)."""
+    """Delete all demo rows for the demo org+incident (idempotency).
+
+    Most tables are scoped by (org_id, incident_id). The incidents table is
+    the incident itself — it has no incident_id column, so it is deleted by
+    (org_id, id). FK-safe order: recommendations before alerts (FK),
+    alerts before incidents (FK).
+    """
     for table in _DEMO_TABLES:
         db.execute(
             text(
@@ -43,4 +51,8 @@ def clean_demo_data(db: Session) -> None:
             ),
             {"oid": ORG_ID, "iid": INCIDENT_ID},
         )
+    db.execute(
+        text("DELETE FROM incidents WHERE org_id = :oid AND id = :iid"),
+        {"oid": ORG_ID, "iid": INCIDENT_ID},
+    )
     db.commit()

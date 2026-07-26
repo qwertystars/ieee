@@ -1,0 +1,195 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.84,
+              19.05
+            ],
+            [
+              72.86,
+              19.05
+            ],
+            [
+              72.86,
+              19.08
+            ],
+            [
+              72.84,
+              19.08
+            ],
+            [
+              72.84,
+              19.05
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Ward-1-Coastal",
+        "zone_type": "coastal",
+        "vulnerability": "high",
+        "population": 45000,
+        "elevation_m": 2
+      },
+      "id": "zone_1"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.86,
+              19.08
+            ],
+            [
+              72.88,
+              19.08
+            ],
+            [
+              72.88,
+              19.11
+            ],
+            [
+              72.86,
+              19.11
+            ],
+            [
+              72.86,
+              19.08
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Ward-2-Riverside",
+        "zone_type": "riverside",
+        "vulnerability": "high",
+        "population": 38000,
+        "elevation_m": 3
+      },
+      "id": "zone_2"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.88,
+              19.05
+            ],
+            [
+              72.9,
+              19.05
+            ],
+            [
+              72.9,
+              19.08
+            ],
+            [
+              72.88,
+              19.08
+            ],
+            [
+              72.88,
+              19.05
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Ward-3-Lowland",
+        "zone_type": "lowland",
+        "vulnerability": "medium",
+        "population": 52000,
+        "elevation_m": 5
+      },
+      "id": "zone_3"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.9,
+              19.08
+            ],
+            [
+              72.92,
+              19.08
+            ],
+            [
+              72.92,
+              19.11
+            ],
+            [
+              72.9,
+              19.11
+            ],
+            [
+              72.9,
+              19.08
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Ward-4-Uptown",
+        "zone_type": "uptown",
+        "vulnerability": "low",
+        "population": 61000,
+        "elevation_m": 12
+      },
+      "id": "zone_4"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.92,
+              19.05
+            ],
+            [
+              72.94,
+              19.05
+            ],
+            [
+              72.94,
+              19.08
+            ],
+            [
+              72.92,
+              19.08
+            ],
+            [
+              72.92,
+              19.05
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Ward-5-Industrial",
+        "zone_type": "industrial",
+        "vulnerability": "medium",
+        "population": 28000,
+        "elevation_m": 8
+      },
+      "id": "zone_5"
+    }
+  ]
+}

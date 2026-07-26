@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>RIVERTOWN-CYCLONE-2026-001</identifier>
+  <sender>imd.rivertown@gov.in</sender>
+  <sent>2026-07-20T01:00:00+05:30</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <language>en-IN</language>
+    <category>Met</category>
+    <event>Cyclone Alert</event>
+    <urgency>Expected</urgency>
+    <severity>Extreme</severity>
+    <certainty>Likely</certainty>
+    <effective>2026-07-20T01:00:00+05:30</effective>
+    <onset>2026-07-20T06:00:00+05:30</onset>
+    <expires>2026-07-22T01:00:00+05:30</expires>
+    <headline>Cyclone Alert — Tropical Cyclone approaching Rivertown coast</headline>
+    <description>Tropical Cyclone "Varun" (Category 3) is approaching the Rivertown coast. Landfall expected within 24 hours near 19.08N, 72.87E. Wind speeds up to 140 km/h. Storm surge of 2-3 meters expected in low-lying coastal areas.</description>
+    <instruction>Secure loose objects. Stock emergency supplies. Charge phones. Follow evacuation orders when issued. Fishermen advised not to venture into sea.</instruction>
+    <area>
+      <areaDesc>Rivertown metropolitan area and coastal region</areaDesc>
+      <polygon>19.00,72.80 19.00,72.95 19.15,72.95 19.15,72.80</polygon>
+      <geocode value="RIVERTOWN-METRO">Rivertown Metro</geocode>
+    </area>
+  </info>
+</alert>

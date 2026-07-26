@@ -1,0 +1,90 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.886,
+          19.058
+        ]
+      },
+      "properties": {
+        "name": "CT-01 Coastal Tower",
+        "status": "operational",
+        "carrier": "Rivertown Telecom",
+        "height_m": 45
+      },
+      "id": "cell_tower_1"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.874,
+          19.07
+        ]
+      },
+      "properties": {
+        "name": "CT-02 Riverside Tower",
+        "status": "offline",
+        "carrier": "Rivertown Telecom",
+        "height_m": 50
+      },
+      "id": "cell_tower_2"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.878,
+          19.076
+        ]
+      },
+      "properties": {
+        "name": "CT-03 Central Tower",
+        "status": "operational",
+        "carrier": "Rivertown Telecom",
+        "height_m": 55
+      },
+      "id": "cell_tower_3"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.882,
+          19.088
+        ]
+      },
+      "properties": {
+        "name": "CT-04 Uptown Tower",
+        "status": "operational",
+        "carrier": "Rivertown Telecom",
+        "height_m": 60
+      },
+      "id": "cell_tower_4"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.892,
+          19.092
+        ]
+      },
+      "properties": {
+        "name": "CT-05 Industrial Tower",
+        "status": "degraded",
+        "carrier": "Rivertown Telecom",
+        "height_m": 65
+      },
+      "id": "cell_tower_5"
+    }
+  ]
+}

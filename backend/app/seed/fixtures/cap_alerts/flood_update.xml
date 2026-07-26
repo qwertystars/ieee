@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>RIVERTOWN-FLOOD-2026-002</identifier>
+  <sender>imd.rivertown@gov.in</sender>
+  <sent>2026-07-20T08:00:00+05:30</sent>
+  <status>Actual</status>
+  <msgType>Update</msgType>
+  <scope>Public</scope>
+  <references>imd.rivertown@gov.in RIVERTOWN-FLOOD-2026-001 2026-07-20T03:30:00+05:30</references>
+  <info>
+    <language>en-IN</language>
+    <category>Met</category>
+    <event>Flood Warning</event>
+    <urgency>Immediate</urgency>
+    <severity>Extreme</severity>
+    <certainty>Observed</certainty>
+    <effective>2026-07-20T08:00:00+05:30</effective>
+    <onset>2026-07-20T08:00:00+05:30</onset>
+    <expires>2026-07-22T08:00:00+05:30</expires>
+    <headline>Flood Warning Update — Rivertown flooding now observed</headline>
+    <description>Rivulet river has breached banks in Wards 1-4. Water levels at River Gauge RG-01 at 3.2m (danger level 2.5m). Major roads flooded. Power substation SS-02 offline. Evacuate Wards 1-4 immediately.</description>
+    <instruction>Evacuate immediately to shelters ST-01, ST-02, ST-03. Do not use Bridge BR-04 (flooded). Emergency services are stretched — only call for life-threatening emergencies.</instruction>
+    <area>
+      <areaDesc>Rivertown Wards 1-4, Rivulet basin</areaDesc>
+      <polygon>19.04,72.84 19.04,72.91 19.11,72.91 19.11,72.84</polygon>
+      <geocode value="RIVERTOWN-W1">Ward 1</geocode>
+      <geocode value="RIVERTOWN-W2">Ward 2</geocode>
+      <geocode value="RIVERTOWN-W3">Ward 3</geocode>
+      <geocode value="RIVERTOWN-W4">Ward 4</geocode>
+    </area>
+  </info>
+</alert>

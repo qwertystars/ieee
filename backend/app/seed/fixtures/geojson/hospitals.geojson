@@ -1,0 +1,37 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.878,
+          19.075
+        ]
+      },
+      "properties": {
+        "name": "Rivertown General Hospital",
+        "status": "operational",
+        "capacity": 200
+      },
+      "id": "hospital_1"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.888,
+          19.062
+        ]
+      },
+      "properties": {
+        "name": "Coastal Emergency Hospital",
+        "status": "overloaded",
+        "capacity": 150
+      },
+      "id": "hospital_2"
+    }
+  ]
+}
