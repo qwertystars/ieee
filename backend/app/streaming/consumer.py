@@ -15,7 +15,7 @@ from sqlalchemy import func
 from app.config import settings
 from app.db import SessionLocal
 from app.lib.audit import write_audit
-from app.lib.idempotency import check_and_record, ensure_table
+from app.lib.idempotency import check_and_record
 from app.lib.time import now_ms
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
 from app.models.observation import Observation
@@ -56,7 +56,6 @@ class ConsumerManager:
         )
         await self._dlq_producer.start()
 
-        ensure_table()
         logger.info("Consumer started on topics %s", topics)
 
     async def consume(self) -> None:

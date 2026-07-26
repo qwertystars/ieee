@@ -16,8 +16,9 @@ import enum
 from sqlalchemy import BigInteger, Enum as SAEnum, String, TypeDecorator
 from sqlalchemy import JSON
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Dialect
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import TypeEngine
 
 from app.db import Base
 
@@ -28,7 +29,7 @@ class JSONBCompat(TypeDecorator):
     impl = JSON
     cache_ok = True
 
-    def load_dialect_impl(self, dialect):
+    def load_dialect_impl(self, dialect: Dialect) -> TypeEngine:
         if dialect.name == "postgresql":
             return dialect.type_descriptor(JSONB())
         return dialect.type_descriptor(JSON())
@@ -76,20 +77,9 @@ class ModelRecord(Base):
     created_at: Mapped[int] = mapped_column(BigInteger)
 
 
-def ensure_table(engine: Engine) -> None:
-    """Create the ``models`` table if it does not exist.
-
-    Follows the same pattern as ``ensure_table`` in ``idempotency.py``
-    and ``ensure_tables`` in ``federation.py`` — the table is not in the
-    Alembic migration, so it is created on demand at startup or test time.
-    """
-    ModelRecord.__table__.create(bind=engine, checkfirst=True)
-
-
 __all__ = [
     "JSONBCompat",
     "ModelFramework",
     "ModelTask",
     "ModelRecord",
-    "ensure_table",
 ]

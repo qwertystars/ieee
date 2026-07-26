@@ -7,11 +7,9 @@ Creates 6 demo users with password 'demo1234':
 
 import time
 
-from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 
 from app.auth.passwords import hash_password
-from app.db import Base, engine
 from app.lib.ulid import generate_ulid
 from app.models.user import User
 
@@ -46,20 +44,8 @@ DEMO_USERS: list[dict] = [
 ]
 
 
-def _ensure_users_table() -> None:
-    """Create the users table if it doesn't exist (idempotent).
-
-    The Alembic migration does not include the users table, so we create it
-    here via Base.metadata.create_all scoped to just the users table.
-    """
-    inspector = inspect(engine)
-    if not inspector.has_table("users"):
-        Base.metadata.create_all(bind=engine, tables=[User.__table__])
-
-
 def seed_demo_users(db: Session) -> int:
     """Seed demo users if they don't exist. Returns count of users created."""
-    _ensure_users_table()
     now_ms = int(time.time() * 1000)
     created = 0
     for entry in DEMO_USERS:

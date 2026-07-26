@@ -17,12 +17,10 @@ logger = logging.getLogger("app.main")
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Startup: seed users + start Kafka producer. Shutdown: stop producer."""
-    # 1. Create users table (not in Alembic migration) + seed demo users.
+    # 1. Seed demo users (users table is created by Alembic migration 0002b).
     from app.auth.seed import seed_demo_users
-    from app.db import SessionLocal, Base, engine
-    from app.models.user import User
+    from app.db import SessionLocal
 
-    Base.metadata.create_all(bind=engine, tables=[User.__table__])
     db = SessionLocal()
     try:
         count = seed_demo_users(db)
