@@ -1,6 +1,6 @@
 """Tests for the seed data package (T52).
 
-Verifies that seed_demo.run_seed() populates the DB with the Rivertown
+Verifies that seed_demo.seed_demo() populates the DB with the Rivertown
 cyclone-flood scenario and is idempotent. Uses the real PostgreSQL via
 SessionLocal, following the test_reliability.py / test_scenarios.py pattern.
 
@@ -25,13 +25,13 @@ from app.models.hypotheses import Hypothesis
 from app.models.observation import Observation
 from app.models.scenarios import Scenario
 from app.seed.ids import INCIDENT_ID, ORG_ID
-from app.seed.seed_demo import run_seed
+from app.seed.seed_demo import seed_demo
 
 
 @pytest.fixture(scope="module", autouse=True)
 def _seed_db():
     """Run the seed once for the whole module (idempotent)."""
-    run_seed()
+    seed_demo()
     yield SessionLocal()
 
 
@@ -135,11 +135,11 @@ def test_seed_is_idempotent(db) -> None:
         )
     ).scalar()
 
-    # Commit to release any locks before run_seed.
+    # Commit to release any locks before seed_demo.
     db.commit()
 
     # Run seed again
-    run_seed()
+    seed_demo()
 
     # Expire cache so we read fresh from DB
     db.expire_all()

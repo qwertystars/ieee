@@ -4654,3 +4654,38 @@ cd frontend && npm run typecheck && npm run lint && npm run test && npm run buil
 → test exit 0 (45 tests passed across 3 files)
 → build exit 0 (965 modules, 10.55s)
 ```
+
+## T29 follow-up — stale `run_seed` import in test_seed.py (2026-07-26)
+
+### Outcome
+Fixed broken import in `backend/tests/test_seed.py` that blocked the entire pytest
+suite from collecting. The file imported `run_seed` from `app.seed.seed_demo`, but
+the actual function name is `seed_demo` (module `seed_demo`, function `seed_demo`).
+
+### Root cause
+Pre-existing test file (T52) used a stale name `run_seed`. The seed module was
+refactored/renamed at some point but the test was never updated. The conftest.py
+rewrite in T29 didn't touch this file because it was already passing before some
+other refactor — collection only broke once the import path was exercised.
+
+### Fix
+Single `replaceAll` of `run_seed` → `seed_demo` in `backend/tests/test_seed.py`.
+5 occurrences across the file:
+- line 3: docstring `seed_demo.run_seed()` → `seed_demo.seed_demo()`
+- line 28: `from app.seed.seed_demo import run_seed` → `import seed_demo`
+- line 34: call site in `_seed_db` fixture
+- line 138: comment "before run_seed" → "before seed_demo"
+- line 142: call site in `test_seed_is_idempotent`
+
+### Verification
+- `pytest tests/test_seed.py -q` → 6 passed
+- `pytest tests/ -q --tb=line` → 337 passed (331 prior + 6 from test_seed.py),
+  zero collection errors
+
+### Lesson
+When a single test file blocks collection of the entire suite, pytest still
+collects other files but reports the import error loudly. Always grep for the
+symbol name in test files when renaming a public function — even "internal"
+seed scripts get imported by tests. The function `seed_demo` lives in module
+`app.seed.seed_demo`; the call `seed_demo.seed_demo()` looks redundant but is
+correct (module.function).
