@@ -33,7 +33,7 @@ from app.models.entities import (
 )
 
 # entity_type string -> ORM class
-ENTITY_MAP: dict[str, type] = {
+ENTITY_MAP: dict[str, type[Any]] = {
     "road_segment": RoadSegment,
     "shelter": Shelter,
     "hospital": Hospital,
@@ -93,20 +93,20 @@ class OGCFeaturesClient:
             features = await client.pull_features("roads", bbox=(-74,40,-73,41))
     """
 
-    def __init__(self, base_url: str, timeout: float = 30.0):
+    def __init__(self, base_url: str, timeout: float = 30.0) -> None:
         self.base_url = base_url.rstrip("/")
         self._client = httpx.AsyncClient(timeout=timeout)
 
     async def __aenter__(self) -> "OGCFeaturesClient":
         return self
 
-    async def __aexit__(self, *exc) -> None:
+    async def __aexit__(self, *exc: object) -> None:
         await self._client.aclose()
 
     async def close(self) -> None:
         await self._client.aclose()
 
-    async def _fetch_page(self, url: str, params: dict) -> dict:
+    async def _fetch_page(self, url: str, params: dict[str, Any]) -> dict[str, Any]:
         """Fetch a single page of features; raise on HTTP error."""
         resp = await self._client.get(url, params=params)
         resp.raise_for_status()
@@ -138,7 +138,7 @@ class OGCFeaturesClient:
             start_ms, end_ms = datetime_range
             params["datetime"] = f"{to_iso(start_ms)}/{to_iso(end_ms)}"
 
-        features: list[dict] = []
+        features: list[dict[str, Any]] = []
         visited: set[str] = set()
         first = True
         while url:
@@ -158,11 +158,11 @@ class OGCFeaturesClient:
 
     def map_to_entity(
         self,
-        feature: dict,
+        feature: dict[str, Any],
         entity_type: str,
         org_id: str,
         incident_id: str,
-    ) -> object:
+    ) -> Any:
         """Map a GeoJSON Feature to an ORM entity instance (not yet persisted)."""
         cls = ENTITY_MAP.get(entity_type)
         if cls is None:
@@ -199,13 +199,13 @@ class OGCFeaturesClient:
 
 
 def _find_existing(
-    db: Session, cls: type, org_id: str, external_id: str
-) -> object | None:
+    db: Session, cls: type[Any], org_id: str, external_id: str
+) -> Any | None:
     """Find an existing entity row by (org_id, properties._external_id)."""
     rows = db.execute(
         select(cls).where(
-            cls.org_id == org_id,
-            cls.properties["_external_id"].astext == external_id,
+            cls.org_id == org_id,  # type: ignore[attr-defined]
+            cls.properties["_external_id"].astext == external_id,  # type: ignore[attr-defined]
         )
     ).scalars().all()
     return rows[0] if rows else None
@@ -218,7 +218,7 @@ def upsert_feature(
     entity_type: str,
     org_id: str,
     incident_id: str,
-) -> tuple[object, str]:
+) -> tuple[Any, str]:
     """Insert or update a single feature. Returns (row, action).
 
     action is one of 'inserted', 'updated', 'skipped'.
@@ -289,8 +289,8 @@ async def sync_collection(
 
 
 __all__ = [
+    "ENTITY_MAP",
     "OGCFeaturesClient",
     "sync_collection",
     "upsert_feature",
-    "ENTITY_MAP",
 ]

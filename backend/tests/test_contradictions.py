@@ -46,7 +46,7 @@ def test_contradictory_pair_exists(db) -> None:
         by_entity[h.entity_id].append(h)
 
     contradictory_found = False
-    for eid, group in by_entity.items():
+    for group in by_entity.values():
         if len(group) >= 2:
             claims = {h.claim for h in group}
             if len(claims) >= 2:
@@ -68,7 +68,7 @@ def test_contradictory_hypotheses_both_active(db) -> None:
     for h in hyps:
         by_entity[h.entity_id].append(h)
 
-    for eid, group in by_entity.items():
+    for group in by_entity.values():
         if len(group) >= 2:
             claims = {h.claim for h in group}
             if len(claims) >= 2:
@@ -80,7 +80,7 @@ def test_contradictory_hypotheses_both_active(db) -> None:
                 return
 
     # If no contradictory pair found, fail (covered by test above).
-    assert False, "no contradictory pair to check"  # noqa: B011
+    assert False, "no contradictory pair to check"
 
 
 def test_bridge_passable_impassable_pair(db) -> None:

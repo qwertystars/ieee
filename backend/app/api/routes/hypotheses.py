@@ -120,8 +120,8 @@ def create_hypothesis(
         entity_id=entity_id,
         claim=claim,
         probability=probability,
-        supporting_evidence=payload.get("supporting_evidence"),
-        contradicting_evidence=payload.get("contradicting_evidence"),
+        supporting_evidence=payload.get("supporting_evidence") or {},
+        contradicting_evidence=payload.get("contradicting_evidence") or {},
     )
     write_audit(
         db,

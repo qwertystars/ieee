@@ -114,11 +114,11 @@ class OperationalDisplay:
 
 
 __all__ = [
-    "SensingActionType",
-    "SensingAction",
-    "PlanOutcome",
-    "Uncertainty",
     "EVIResult",
-    "PlanImpact",
     "OperationalDisplay",
+    "PlanImpact",
+    "PlanOutcome",
+    "SensingAction",
+    "SensingActionType",
+    "Uncertainty",
 ]

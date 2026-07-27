@@ -82,7 +82,7 @@ def _record_provenance(
     rationale: str,
 ) -> None:
     """Record a provenance entry for an alert decision (best-effort)."""
-    cv = alert.confidence_vector or {}
+    cv: Any = alert.confidence_vector or {}
     source_obs = cv.get("source_observation_id") if isinstance(cv, dict) else None
     ProvenanceChain.record_decision(
         db,

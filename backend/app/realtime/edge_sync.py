@@ -14,11 +14,12 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+from typing import Any
 
 from sqlalchemy import BigInteger, Integer, String, func, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Mapped, mapped_column, Session
+from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from app.db import Base
 from app.lib.time import now_ms
@@ -55,7 +56,7 @@ class EdgeSyncState(Base):
     last_batch_pending: Mapped[int] = mapped_column(Integer, default=0)
 
 
-def compute_content_hash(payload: dict[str, object]) -> str:
+def compute_content_hash(payload: dict[str, Any]) -> str:
     """SHA-256 hex digest of the canonical JSON encoding of payload."""
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -73,11 +74,11 @@ class EdgeSync:
 
     def sync(
         self,
-        outbox_items: list[dict[str, object]],
+        outbox_items: list[dict[str, Any]],
         db: Session,
         org_id: str,
         incident_id: str,
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """Receive outbox items, deduplicate, apply in order.
 
         Returns: {received, deduplicated, applied, duplicates, errors}
@@ -107,10 +108,10 @@ class EdgeSync:
             "errors": errors,
         }
 
-    def deduplicate(self, items: list[dict[str, object]]) -> list[dict[str, object]]:
+    def deduplicate(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Filter out items with duplicate content hashes within a batch."""
         seen: set[str] = set()
-        unique: list[dict[str, object]] = []
+        unique: list[dict[str, Any]] = []
         for item in items:
             h = item.get("content_hash") or compute_content_hash(item.get("payload", {}))
             if h in seen:
@@ -121,7 +122,7 @@ class EdgeSync:
 
     def apply_item(
         self,
-        item: dict[str, object],
+        item: dict[str, Any],
         db: Session,
         org_id: str,
         incident_id: str,
@@ -199,7 +200,7 @@ class EdgeSync:
         db.add(Observation(**data))
         db.flush()
 
-    def get_sync_status(self, incident_id: str) -> dict[str, object]:
+    def get_sync_status(self, incident_id: str) -> dict[str, Any]:
         """Return sync status: applied_count, pending_count, last_sync_at."""
         state = self.db.get(EdgeSyncState, incident_id)
         applied_count = (

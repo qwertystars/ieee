@@ -18,6 +18,7 @@ import hashlib
 import json
 import logging
 import random
+from collections.abc import Callable
 
 from app.simulator.rescue_ball import RescueBallDevice
 from app.simulator.scenarios import (
@@ -40,7 +41,7 @@ logger = logging.getLogger("app.simulator.engine")
 _CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
 # Maps fault type names to scenario injection functions.
-_FAULT_INJECTIONS = {
+_FAULT_INJECTIONS: dict[str, Callable[..., None]] = {
     "battery_drain": inject_battery_drain,
     "sensor_degradation": inject_sensor_degradation,
     "connectivity_loss": inject_connectivity_loss,

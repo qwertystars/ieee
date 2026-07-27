@@ -43,7 +43,7 @@ def start_simulation(
     user: User = Depends(require_roles("admin", "emergency_manager")),
 ) -> dict:
     """Start the simulation. Returns 202 with device IDs."""
-    _engine._seed = req.seed  # noqa: SLF001 — set seed before start()
+    _engine._seed = req.seed
     try:
         device_ids = _engine.start(req.org_id, req.incident_id, req.device_count)
     except RuntimeError as exc:

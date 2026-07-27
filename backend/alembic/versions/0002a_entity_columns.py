@@ -11,9 +11,9 @@ composite indexes on (org_id, incident_id) plus a time-series index on
 observations(observed_at, org_id).
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 from app.models.enums import (
     AccessPolicy,
     CorroborationState,
@@ -22,7 +22,6 @@ from app.models.enums import (
     ScenarioStatus,
     SourceType,
 )
-
 
 revision = "0002a"
 down_revision = "0001"

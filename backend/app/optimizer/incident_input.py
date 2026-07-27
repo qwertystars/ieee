@@ -13,8 +13,14 @@ from sqlalchemy.orm import Session
 
 from app.models.entities import (
     OperationalTask,
+)
+from app.models.entities import (
     Responder as ResponderModel,
+)
+from app.models.entities import (
     Shelter as ShelterModel,
+)
+from app.models.entities import (
     Zone as ZoneModel,
 )
 from app.optimizer.optimizer_types import (

@@ -173,7 +173,7 @@ def test_road_passability_differs_by_class(
         assert 0.0 <= passabilities[vc.value] <= 1.0
 
     # At least 3 distinct values — classes are differentiated.
-    distinct = set(round(p, 4) for p in passabilities.values())
+    distinct = {round(p, 4) for p in passabilities.values()}
     assert len(distinct) >= 3
 
     # Boat differs from ambulance and regular_vehicle.

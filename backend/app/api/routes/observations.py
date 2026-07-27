@@ -188,10 +188,11 @@ def create_observation(
     )
 
     result = fetch_feature(db, observation_id, org_id)
-    schedule_broadcast(
-        manager.broadcast_observation(incident_id, result),
-        request.app,
-    )
+    if result is not None:
+        schedule_broadcast(
+            manager.broadcast_observation(incident_id, result),
+            request.app,
+        )
     return result  # type: ignore[return-value]
 
 

@@ -110,7 +110,7 @@ def test_producer_manager_fails_gracefully() -> None:
     producer = ProducerManager(bootstrap_servers="localhost:9092")
     assert producer.is_started is False
 
-    with pytest.raises(Exception):
+    with pytest.raises((ConnectionError, RuntimeError, OSError)):
         asyncio.run(producer.start())
 
 

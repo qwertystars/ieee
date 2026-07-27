@@ -10,6 +10,7 @@ never a single forecast.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from app.models.enums import ScenarioLabel
 
@@ -54,7 +55,7 @@ class Scenario:
     probability: float
     params: ScenarioParams
 
-    def to_params_dict(self) -> dict[str, object]:
+    def to_params_dict(self) -> dict[str, Any]:
         """Serialize params to a JSONB-compatible dict for storage."""
         p = self.params
         return {
@@ -70,4 +71,4 @@ class Scenario:
         }
 
 
-__all__ = ["WorldStateSnapshot", "ScenarioParams", "Scenario"]
+__all__ = ["Scenario", "ScenarioParams", "WorldStateSnapshot"]

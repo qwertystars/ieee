@@ -8,6 +8,7 @@ breaks the chain at that point.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import BigInteger, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -41,15 +42,15 @@ class ProvenanceInput:
     """
 
     input_observation_ids: list[object]
-    data_versions: dict[str, object]
-    model_versions: dict[str, object]
-    optimization_parameters: dict[str, object]
+    data_versions: dict[str, Any]
+    model_versions: dict[str, Any]
+    optimization_parameters: dict[str, Any]
     scenario_set: list[object]
-    constraints: dict[str, object]
+    constraints: dict[str, Any]
     generated_alternatives: list[object]
-    operator_decision: dict[str, object]
+    operator_decision: dict[str, Any]
     override_reason: str
-    execution_outcome: dict[str, object]
+    execution_outcome: dict[str, Any]
 
     def __post_init__(self) -> None:
         for name in REQUIRED_FIELDS:
@@ -88,6 +89,6 @@ class DecisionProvenance(Base):
 
 __all__ = [
     "REQUIRED_FIELDS",
-    "ProvenanceInput",
     "DecisionProvenance",
+    "ProvenanceInput",
 ]

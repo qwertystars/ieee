@@ -136,7 +136,7 @@ def _instrument_sqlalchemy() -> None:
 
         from app.db import engine
 
-        SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)
+        SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)  # type: ignore[attr-defined]
     except ImportError:
         logger.debug(
             "opentelemetry-instrumentation-sqlalchemy not installed — skipping"
@@ -229,13 +229,13 @@ def metrics_endpoint() -> Response:
 
 
 __all__ = [
-    "setup_telemetry",
-    "metrics_endpoint",
     "TelemetryMiddleware",
-    "http_requests_total",
-    "http_request_duration_seconds",
     "active_websocket_connections",
-    "optimization_solve_time_seconds",
+    "http_request_duration_seconds",
+    "http_requests_total",
+    "metrics_endpoint",
     "ml_inference_time_seconds",
+    "optimization_solve_time_seconds",
     "queue_depth",
+    "setup_telemetry",
 ]

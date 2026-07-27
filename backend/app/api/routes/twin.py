@@ -16,7 +16,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.deps import get_current_user, get_db
@@ -26,7 +26,7 @@ from app.models.incident import Incident
 from app.models.observation import Observation
 from app.models.user import User
 from app.twin.cascading import CascadeSimulator
-from app.twin.cascading_types import EdgeType, NodeType
+from app.twin.cascading_types import CascadeResult
 from app.twin.silence import TelecomSilenceModel
 from app.twin.silence_types import SilenceContext, TimeWindow
 
@@ -62,7 +62,6 @@ def get_cascade(
     simulates failure of ``node_id`` (or the node with the largest blast
     radius if omitted). Returns affected nodes, max depth, and blast radius.
     """
-    from app.models.relationships import GraphEdge
 
     org_id = request.state.org_id or ""
     _get_incident(db, org_id, incident_id)
@@ -87,15 +86,18 @@ def get_cascade(
                 status_code=404,
                 detail=f"node '{node_id}' not in infrastructure graph",
             )
-        result = sim.simulate_failure(node_id)
+        result: CascadeResult | None = sim.simulate_failure(node_id)
     else:
         # Find the node with the largest blast radius.
-        best_result = None
-        for nid in list(sim._nodes.keys()):  # noqa: SLF001 — read-only iteration
+        best_result: CascadeResult | None = None
+        for nid in list(sim._nodes.keys()):
             r = sim.simulate_failure(nid)
             if best_result is None or r.blast_radius > best_result.blast_radius:
                 best_result = r
         result = best_result
+
+    if result is None:
+        raise HTTPException(status_code=500, detail="cascade simulation failed")
 
     node = sim.get_node(result.failed_node_id)
     return {

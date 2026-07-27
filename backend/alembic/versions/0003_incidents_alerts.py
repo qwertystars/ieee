@@ -12,11 +12,11 @@ GiST spatial indexes on geometry/area; composite (org_id, incident_id)
 indexes on alerts and recommendations.
 """
 
-from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSONB
 from geoalchemy2 import Geometry
+from sqlalchemy.dialects.postgresql import JSONB
 
+from alembic import op
 
 revision = "0003"
 down_revision = "0002b"

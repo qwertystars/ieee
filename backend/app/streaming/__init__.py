@@ -7,4 +7,4 @@ ConsumerManager: async consumer reading observations.normalized → PostgreSQL.
 from app.streaming.consumer import ConsumerManager
 from app.streaming.producer import ProducerManager
 
-__all__ = ["ProducerManager", "ConsumerManager"]
+__all__ = ["ConsumerManager", "ProducerManager"]

@@ -12,11 +12,11 @@ import os
 from collections.abc import Generator
 
 import pytest
-from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
+from alembic import command
 from app.db import SessionLocal, engine
 from app.deps import get_db
 from app.main import app

@@ -28,9 +28,9 @@ from app.seed.entities import (
     seed_infrastructure,
     seed_rescue_ball_devices,
     seed_responders,
-    seed_vehicles,
     seed_roads,
     seed_shelters,
+    seed_vehicles,
     seed_zones,
 )
 from app.seed.hypotheses import seed_hypotheses
@@ -85,4 +85,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
+    sys.exit(0)

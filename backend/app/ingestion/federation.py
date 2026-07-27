@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from sqlalchemy import BigInteger, Integer, String, Text, select
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, Session
+from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from app.db import Base
 from app.lib.time import now_ms
@@ -218,6 +218,6 @@ class OutboxManager:
 
 __all__ = [
     "OutboxEntry",
-    "SourceManager",
     "OutboxManager",
+    "SourceManager",
 ]

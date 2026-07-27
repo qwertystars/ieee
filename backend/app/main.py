@@ -90,9 +90,9 @@ else:
 
 # Middleware order (last added = outermost = runs first on request):
 # RequestID → OrgContext → CORS → router
-from app.middleware.error_handler import register_error_handlers  # noqa: E402
-from app.middleware.org_context import OrgContextMiddleware  # noqa: E402
-from app.middleware.request_id import RequestIDMiddleware  # noqa: E402
+from app.middleware.error_handler import register_error_handlers
+from app.middleware.org_context import OrgContextMiddleware
+from app.middleware.request_id import RequestIDMiddleware
 
 app.add_middleware(OrgContextMiddleware)
 app.add_middleware(RequestIDMiddleware)
@@ -101,7 +101,7 @@ app.add_middleware(RequestIDMiddleware)
 register_error_handlers(app)
 
 # ── Telemetry (OpenTelemetry traces + Prometheus metrics) ───────────────────
-from app.lib.telemetry import setup_telemetry  # noqa: E402
+from app.lib.telemetry import setup_telemetry
 
 setup_telemetry(app)
 
@@ -198,31 +198,34 @@ async def metrics() -> Response:
 
 # ── API routes ───────────────────────────────────────────────────────────────
 
-from app.api.routes.alerts import router as alerts_router  # noqa: E402
-from app.api.routes.audit_routes import router as audit_router  # noqa: E402
-from app.api.routes.auth import router as auth_router  # noqa: E402
-from app.api.routes.capabilities import router as capabilities_router  # noqa: E402
-from app.api.routes.entities import router as entities_router  # noqa: E402
-from app.api.routes.eval import router as eval_router  # noqa: E402
-from app.api.routes.health import router as health_router  # noqa: E402
-from app.api.routes.hypotheses import router as hypotheses_router  # noqa: E402
-from app.api.routes.incidents import router as incidents_router  # noqa: E402
-from app.api.routes.ingest import router as ingest_router  # noqa: E402
-from app.api.routes.observations import router as observations_router  # noqa: E402
-from app.api.routes.optimize import (  # noqa: E402
+from fastapi import APIRouter
+
+from app.api.routes.alerts import router as alerts_router
+from app.api.routes.audit_routes import router as audit_router
+from app.api.routes.auth import router as auth_router
+from app.api.routes.capabilities import router as capabilities_router
+from app.api.routes.entities import router as entities_router
+from app.api.routes.eval import router as eval_router
+from app.api.routes.health import router as health_router
+from app.api.routes.hypotheses import router as hypotheses_router
+from app.api.routes.incidents import router as incidents_router
+from app.api.routes.ingest import router as ingest_router
+from app.api.routes.observations import router as observations_router
+from app.api.routes.optimize import (
     incident_router as optimize_incident_router,
+)
+from app.api.routes.optimize import (
     router as optimize_router,
 )
-from app.api.routes.privacy import router as privacy_router  # noqa: E402
-from app.api.routes.scenarios import router as scenarios_router  # noqa: E402
-from app.api.routes.twin import router as twin_router  # noqa: E402
-from app.api.routes.sensing import router as sensing_router  # noqa: E402
-from app.api.routes.simulator import router as simulator_router  # noqa: E402
-from app.api.routes.tasks import router as tasks_router  # noqa: E402
-from app.api.routes.tasks import task_router as task_item_router  # noqa: E402
-from app.api.routes.ws import router as ws_router  # noqa: E402
-from app.realtime.manager import router as realtime_router  # noqa: E402
-from fastapi import APIRouter  # noqa: E402
+from app.api.routes.privacy import router as privacy_router
+from app.api.routes.scenarios import router as scenarios_router
+from app.api.routes.sensing import router as sensing_router
+from app.api.routes.simulator import router as simulator_router
+from app.api.routes.tasks import router as tasks_router
+from app.api.routes.tasks import task_router as task_item_router
+from app.api.routes.twin import router as twin_router
+from app.api.routes.ws import router as ws_router
+from app.realtime.manager import router as realtime_router
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(auth_router)

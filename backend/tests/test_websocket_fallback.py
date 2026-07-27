@@ -12,16 +12,12 @@ Uses the real PostgreSQL database and the real FastAPI app via TestClient.
 
 from __future__ import annotations
 
-import json
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import delete
 
 from app.auth.seed import seed_demo_users
 from app.db import SessionLocal
-from app.lib.time import now_ms
-from app.lib.ulid import generate_ulid
 from app.main import app
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
 from app.models.observation import Observation

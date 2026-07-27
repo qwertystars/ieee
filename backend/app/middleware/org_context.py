@@ -24,13 +24,13 @@ class OrgContextMiddleware(BaseHTTPMiddleware):
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
-        org_id = None
+        org_id: str | None = None
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.lower().startswith("bearer "):
             token = auth_header.split(" ", 1)[1]
             try:
                 payload = decode_token(token)
-                org_id = payload.get("org_id")
+                org_id = payload.get("org_id")  # type: ignore[assignment]
             except JWTError:
                 # Invalid/expired token — let get_current_user handle the 401.
                 pass

@@ -7,11 +7,11 @@ The schema is built by Alembic migrations (see conftest.py).
 
 import asyncio
 import json
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
 from sqlalchemy import text
-from unittest.mock import AsyncMock, patch
 
 from app.db import SessionLocal
 from app.ingestion.adapters.ogc_features import (

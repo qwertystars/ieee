@@ -15,10 +15,10 @@ and capability-based routing:
 The ORM model in app.models.entities.OperationalTask is updated to match.
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
 
+from alembic import op
 
 revision = "0004"
 down_revision = "0003"

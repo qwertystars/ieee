@@ -82,7 +82,7 @@ def list_sensing_actions(
     catalog = SensingActionCatalog()
     if top is not None:
         recs = catalog.get_top_actions(incident_id, n=top)
-        actions = [
+        actions: list[dict[str, Any]] = [
             {
                 "action": {
                     "id": r.action.id,
@@ -194,6 +194,7 @@ def assess_damage(
 
     try:
         import numpy as np
+
         from app.perception.damage import DamageAssessor
 
         assessor = DamageAssessor()

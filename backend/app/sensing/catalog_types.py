@@ -80,9 +80,9 @@ class DispatchResult:
 
 
 __all__ = [
-    "RiskLevel",
     "ActionCost",
-    "CatalogAction",
     "ActionRecommendation",
+    "CatalogAction",
     "DispatchResult",
+    "RiskLevel",
 ]

@@ -13,7 +13,6 @@ import asyncio
 from typing import Any
 
 import httpx
-import pytest
 
 from app.ingestion.adapters.ayrshare import AyrshareClient
 

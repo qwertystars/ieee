@@ -13,8 +13,6 @@ from __future__ import annotations
 
 import asyncio
 
-import pytest
-
 from app.simulator.engine import SimulationEngine
 
 ORG_ID = "org_test_sim"

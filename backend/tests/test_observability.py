@@ -15,7 +15,6 @@ from __future__ import annotations
 import io
 import json
 import logging
-import os
 import subprocess
 from pathlib import Path
 
@@ -271,6 +270,7 @@ def test_no_secret_keywords_in_log_calls():
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     secret_lines = [
         line

@@ -17,7 +17,7 @@ import logging
 from dataclasses import dataclass
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from app.perception.flood_types import QualityFlag
 
@@ -96,4 +96,4 @@ class _ResNet50S1Segmentation(nn.Module):
         return self.head(self.dropout(feats))
 
 
-__all__ = ["EnsembleResult", "_ResNet50S1Segmentation", "_RandomEncoder"]
+__all__ = ["EnsembleResult", "_RandomEncoder", "_ResNet50S1Segmentation"]

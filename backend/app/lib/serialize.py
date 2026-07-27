@@ -14,7 +14,7 @@ Rules:
 one of {draft, reviewed, official}.
 """
 
-from typing import Any
+from collections.abc import Mapping
 
 # Fields that carry operational risk if exposed publicly.
 SENSITIVE_FIELDS: frozenset[str] = frozenset(
@@ -39,7 +39,7 @@ DRAFT_FIELDS: frozenset[str] = frozenset(
 )
 
 
-def _to_dict(obj: Any) -> dict:
+def _to_dict(obj: object) -> dict:
     """Best-effort conversion of obj to a plain dict."""
     if isinstance(obj, dict):
         return dict(obj)
@@ -47,11 +47,13 @@ def _to_dict(obj: Any) -> dict:
     if hasattr(obj, "__dict__"):
         return {k: v for k, v in obj.__dict__.items() if not k.startswith("_")}
     # Fallback: try mapping protocol.
-    return dict(obj)
+    if isinstance(obj, Mapping):
+        return dict(obj)
+    return {}
 
 
 def serialize(
-    obj: Any,
+    obj: object,
     visibility: str,
     review_status: str,
 ) -> dict:
@@ -81,4 +83,4 @@ def serialize(
     return out
 
 
-__all__ = ["serialize", "SENSITIVE_FIELDS", "DRAFT_FIELDS"]
+__all__ = ["DRAFT_FIELDS", "SENSITIVE_FIELDS", "serialize"]

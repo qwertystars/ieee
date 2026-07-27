@@ -16,7 +16,7 @@ from typing import Any
 import httpx
 import pytest
 
-from app.ingestion.adapters.stac import STACClient, index_item, _filter_items
+from app.ingestion.adapters.stac import STACClient, _filter_items, index_item
 
 
 def _make_stac_item(

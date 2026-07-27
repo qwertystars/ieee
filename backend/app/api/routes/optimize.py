@@ -27,12 +27,12 @@ from app.api.routes.privacy import round_coords_by_role
 from app.deps import get_current_user, get_db
 from app.models.incident import Incident
 from app.models.user import User
+from app.optimizer.api import router
 from app.optimizer.engine import EmergencyResponseOptimizer
 from app.optimizer.fairness import FairnessEngine
 from app.optimizer.fairness_types import FairnessZone, Plan
 from app.optimizer.incident_input import build_input_from_db, demo_input
 from app.optimizer.optimizer_types import OptimizerInput, Zone
-from app.optimizer.api import router  # noqa: F401 — re-export existing /optimize router
 
 logger = logging.getLogger("app.api.routes.optimize")
 
@@ -97,7 +97,7 @@ def _serialize_result(result: Any, inp: OptimizerInput) -> dict[str, Any]:
         }
         for a in result.assignments
     ]
-    finite = lambda v: round(v, 4) if v != float("inf") else None  # noqa: E731
+    finite = lambda v: round(v, 4) if v != float("inf") else None
     return {
         "status": result.status,
         "assignments": assignments,
@@ -190,4 +190,4 @@ def get_incident_optimize(
     }
 
 
-__all__ = ["router", "incident_router"]
+__all__ = ["incident_router", "router"]

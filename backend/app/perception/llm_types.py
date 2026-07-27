@@ -32,7 +32,6 @@ from app.perception.nlp_patterns import (
     PHONE_RE,
 )
 
-
 # ─── Enums ───────────────────────────────────────────────────────────────────
 
 
@@ -63,7 +62,7 @@ class ProviderConfig:
     ``api_key`` is the dummy string ``"ollama"``.
     """
 
-    __slots__ = ("base_url", "api_key", "model", "provider")
+    __slots__ = ("api_key", "base_url", "model", "provider")
 
     def __init__(
         self,
@@ -277,15 +276,15 @@ DEFAULT_PROMPTS: dict[str, str] = {
 
 
 __all__ = [
+    "DEFAULT_PROMPTS",
+    "PII_REPLACEMENTS",
+    "PROMPT_VERSION",
     "AICallRecord",
     "BriefingDraft",
     "Claim",
-    "DEFAULT_PROMPTS",
     "EvidenceSummary",
     "OptimizerExplanation",
-    "PII_REPLACEMENTS",
     "ParsedReport",
-    "PROMPT_VERSION",
     "ProcedureMatch",
     "PromptRecord",
     "Provider",

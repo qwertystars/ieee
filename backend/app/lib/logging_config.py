@@ -16,7 +16,7 @@ import logging
 import os
 import sys
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 # ── Context vars — set by middleware, read by the JSON formatter ────────────
@@ -98,7 +98,7 @@ class JsonFormatter(logging.Formatter):
             safe_error_context = f"{type(exc).__name__}: {exc}"
 
         payload: dict[str, Any] = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),

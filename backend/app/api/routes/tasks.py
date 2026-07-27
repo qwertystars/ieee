@@ -232,7 +232,7 @@ def assign_task(
                     "assigned_at": ts, "assigned_by": user.email,
                     "cost": best_cost, "method": "deterministic"})
     task.assigned_team_id = best_resp.id
-    task.assignment_history = history
+    task.assignment_history = list(history)  # type: ignore[assignment]
     task.status = "in_progress"
     task.updated_at = ts
     best_resp.status = "assigned"

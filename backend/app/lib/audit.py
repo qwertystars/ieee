@@ -117,4 +117,4 @@ def verify_chain(db: Session, org_id: str) -> bool | int:
     return True
 
 
-__all__ = ["write_audit", "verify_chain"]
+__all__ = ["verify_chain", "write_audit"]

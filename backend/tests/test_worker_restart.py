@@ -12,8 +12,6 @@ methods on the real ConsumerManager class.
 
 from __future__ import annotations
 
-import json
-
 import pytest
 from sqlalchemy.exc import IntegrityError
 

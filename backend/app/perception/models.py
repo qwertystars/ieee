@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import enum
 
-from sqlalchemy import BigInteger, Enum as SAEnum, String, TypeDecorator
-from sqlalchemy import JSON
+from sqlalchemy import JSON, BigInteger, String, TypeDecorator
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine import Dialect
 from sqlalchemy.orm import Mapped, mapped_column
@@ -80,6 +80,6 @@ class ModelRecord(Base):
 __all__ = [
     "JSONBCompat",
     "ModelFramework",
-    "ModelTask",
     "ModelRecord",
+    "ModelTask",
 ]

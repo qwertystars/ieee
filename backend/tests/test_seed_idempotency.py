@@ -9,8 +9,6 @@ Uses the real PostgreSQL database via SessionLocal. No mocking.
 
 from __future__ import annotations
 
-from collections import defaultdict
-
 import pytest
 from sqlalchemy import func, select
 
@@ -18,14 +16,9 @@ from app.db import SessionLocal
 from app.models.alert import Alert
 from app.models.entities import (
     Building,
-    CellTower,
-    Hazard,
     Hospital,
-    PowerSubstation,
-    Responder,
     RoadSegment,
     Shelter,
-    Vehicle,
     Zone,
 )
 from app.models.hypotheses import Hypothesis

@@ -20,11 +20,11 @@ All outputs are PROBABILISTIC — ``flood_prob`` is in [0, 1], never binarized.
 from __future__ import annotations
 
 import logging
-from typing import Protocol
+from typing import Any, Protocol
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 from app.lib.time import now_ms
 from app.perception.ensemble_types import _ResNet50S1Segmentation
@@ -179,7 +179,7 @@ class FloodEnsemble:
         self,
         tensor: torch.Tensor,
         zone_id: str | None = None,
-    ) -> object:
+    ) -> Any:
         from app.perception.ensemble_types import EnsembleResult
 
         weights = self._resolve_weights(zone_id)
@@ -225,4 +225,4 @@ class FloodEnsemble:
         return QualityFlag.low
 
 
-__all__ = ["FloodEnsemble", "ResNet50S1Mapper", "GFMMember"]
+__all__ = ["FloodEnsemble", "GFMMember", "ResNet50S1Mapper"]

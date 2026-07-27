@@ -13,12 +13,11 @@ from __future__ import annotations
 import pytest
 from sqlalchemy import delete
 
+from app.api.routes.health import FeedHealthTracker
 from app.db import SessionLocal
-from app.fusion.freshness import TAU_BY_PHENOMENON
 from app.lib.time import now_ms
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
 from app.models.observation import Observation
-from app.api.routes.health import FeedHealthTracker
 
 ORG_ID = "org_test_stale"
 INCIDENT_ID = "inc_test_stale"

@@ -12,22 +12,22 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
 from app.perception.llm_types import (
     DEFAULT_PROMPTS,
+    PII_REPLACEMENTS,
     PROMPT_VERSION,
     BriefingDraft,
     EvidenceSummary,
     OptimizerExplanation,
-    PII_REPLACEMENTS,
     ParsedReport,
     ProcedureMatch,
+    PromptRecord,
     Provider,
     ProviderConfig,
-    PromptRecord,
     QueryAnswer,
     Translation,
     make_call_record,
@@ -78,7 +78,7 @@ class LLMIntegration:
         self._db = db_session
         self._prompts_cache: dict[str, str] = {}
 
-    def _resolve_provider(self) -> tuple[ProviderConfig, object]:
+    def _resolve_provider(self) -> tuple[ProviderConfig, Any]:
         """Resolve provider config: cloud -> local -> disabled."""
         for cfg in (self._cloud, self._local):
             if cfg is None:
@@ -226,7 +226,7 @@ class LLMIntegration:
             system_prompt="Extract structured observation from the report.",
         )
 
-    def summarize_evidence(self, observations: list[dict[str, object]]) -> EvidenceSummary:
+    def summarize_evidence(self, observations: list[dict[str, Any]]) -> EvidenceSummary:
         """(2) Summarize evidence across heterogeneous streams (cited)."""
         return self._run(
             "summarize_evidence", EvidenceSummary, json.dumps(observations, default=str),
@@ -249,14 +249,14 @@ class LLMIntegration:
             system_prompt="Answer the query with cited observations.",
         )
 
-    def generate_briefing(self, observations: list[dict[str, object]]) -> BriefingDraft:
+    def generate_briefing(self, observations: list[dict[str, Any]]) -> BriefingDraft:
         """(5) Generate an incident briefing draft from observations."""
         return self._run(
             "generate_briefing", BriefingDraft, json.dumps(observations, default=str),
             system_prompt="Generate a briefing with cited key developments.",
         )
 
-    def explain_optimizer_output(self, optimizer_result: dict[str, object]) -> OptimizerExplanation:
+    def explain_optimizer_output(self, optimizer_result: dict[str, Any]) -> OptimizerExplanation:
         """(6) Explain optimizer output in natural language."""
         return self._run(
             "explain_optimizer", OptimizerExplanation,

@@ -1,6 +1,6 @@
 """Auth routes — POST /api/auth/login, GET /api/auth/me, POST /api/auth/logout."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -10,7 +10,7 @@ from starlette.responses import Response
 from app.auth.jwt import JWTError, create_access_token, decode_token
 from app.auth.passwords import verify_password
 from app.config import settings
-from app.deps import get_db, get_current_user, oauth2_scheme, revoke_token
+from app.deps import get_current_user, get_db, oauth2_scheme, revoke_token
 from app.models.user import User
 from app.schemas.auth import TokenResponse, UserInfo
 
@@ -58,7 +58,7 @@ def logout(
         payload = decode_token(token)
         exp = payload.get("exp")
         if exp is not None:
-            now = int(datetime.now(timezone.utc).timestamp())
+            now = int(datetime.now(UTC).timestamp())
             ttl_seconds = max(int(exp) - now, 0)
     except JWTError:
         # Token already validated by get_current_user; fall back to default TTL.

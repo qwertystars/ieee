@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Generator
-from typing import Optional
+from typing import Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -18,10 +18,10 @@ logger = logging.getLogger("app.deps")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=True)
 
 REVOKED_TOKENS_KEY = "revoked_tokens"
-_redis_client: Optional[object] = None
+_redis_client: Any = None
 
 
-def get_redis() -> Optional[object]:
+def get_redis() -> Any | None:
     """Lazy Redis singleton. Returns None if Redis is unreachable."""
     global _redis_client
     if _redis_client is not None:
@@ -103,11 +103,11 @@ def get_current_user(
 
 # Re-export require_roles for convenience. Imported here (after get_current_user
 # is defined) to avoid a circular import with app.auth.roles.
-from app.auth.roles import require_roles  # noqa: E402, F401
+from app.auth.roles import require_roles
 
 __all__ = [
-    "get_db",
     "get_current_user",
+    "get_db",
     "get_redis",
     "is_token_revoked",
     "oauth2_scheme",

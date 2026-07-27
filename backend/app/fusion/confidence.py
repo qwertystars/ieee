@@ -109,21 +109,22 @@ def _extract_coords(geometry: object) -> tuple[float, float] | None:
     import shapely.geometry
     import shapely.wkb
     import shapely.wkt
+    from shapely.geometry.base import BaseGeometry
 
     if geometry is None:
         return None
-    geom: Any
+    geom: BaseGeometry
     if isinstance(geometry, str):
         geom = shapely.wkt.loads(geometry)
     elif isinstance(geometry, (bytes, bytearray)):
         geom = shapely.wkb.loads(bytes(geometry))
     elif isinstance(geometry, dict):
         geom = shapely.geometry.shape(geometry)
-    elif hasattr(geometry, "geom_type"):
+    elif isinstance(geometry, BaseGeometry):
         geom = geometry
     else:
         from geoalchemy2.shape import to_shape
-        geom = to_shape(geometry)
+        geom = to_shape(geometry)  # type: ignore[arg-type]
     point = geom.centroid if geom.geom_type != "Point" else geom
     return (float(point.y), float(point.x))
 

@@ -24,15 +24,15 @@ def from_iso(iso_string: str) -> int:
         s = s[:-1] + "+00:00"
     dt = _dt.datetime.fromisoformat(s)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=_dt.timezone.utc)
+        dt = dt.replace(tzinfo=_dt.UTC)
     return int(dt.timestamp() * 1000)
 
 
 def to_iso(epoch_ms: int) -> str:
     """Convert epoch milliseconds to an ISO 8601 UTC string with millisecond precision."""
     seconds, ms = divmod(int(epoch_ms), 1000)
-    dt = _dt.datetime.fromtimestamp(seconds, tz=_dt.timezone.utc)
+    dt = _dt.datetime.fromtimestamp(seconds, tz=_dt.UTC)
     return dt.strftime("%Y-%m-%dT%H:%M:%S") + f".{ms:03d}Z"
 
 
-__all__ = ["now_ms", "from_iso", "to_iso"]
+__all__ = ["from_iso", "now_ms", "to_iso"]

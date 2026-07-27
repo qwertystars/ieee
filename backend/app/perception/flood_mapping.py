@@ -15,12 +15,12 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
-from typing import Any
+from typing import Protocol
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 from app.lib.time import now_ms
 from app.perception.flood_types import FloodMapResult, QualityFlag
@@ -30,6 +30,12 @@ logger = logging.getLogger(__name__)
 _PATCH_SIZE = 224
 _GFM_ALPHA = 0.6  # model weight
 _GFM_BETA = 0.4   # GFM weight
+
+
+class _MinioLike(Protocol):
+    """Structural type for the MinIO client methods we use."""
+
+    def put_object(self, bucket: str, key: str, data: object, length: int) -> object: ...
 
 
 class _DOFASegmentation(nn.Module):
@@ -53,7 +59,7 @@ class _DOFASegmentation(nn.Module):
         try:
             from torchgeo.models import dofa
 
-            return dofa(pretrained=pretrained)
+            return dofa(pretrained=pretrained)  # type: ignore[operator]
         except Exception:
             logger.warning("DOFA unavailable, using random encoder")
             return _RandomEncoder()
@@ -90,8 +96,8 @@ class SARFloodMapper:
 
     def __init__(
         self,
-        model: Any | None = None,
-        minio_client: Any | None = None,
+        model: nn.Module | None = None,
+        minio_client: _MinioLike | None = None,
         cache_dir: str | None = None,
         minio_bucket: str = "flood-maps",
     ) -> None:

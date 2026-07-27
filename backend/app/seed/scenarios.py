@@ -5,6 +5,7 @@ The probabilities sum to 1.0: best=0.2, expected=0.6, worst=0.2.
 """
 
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -18,7 +19,7 @@ from app.seed.ids import INCIDENT_ID, ORG_ID, seed_id
 class _ScenarioSpec:
     label: ScenarioLabel
     probability: float
-    params: dict[str, object]
+    params: dict[str, Any]
 
 
 _SCENARIOS: list[_ScenarioSpec] = [

@@ -80,7 +80,7 @@ class EventRegistryAdapter:
             return []
 
         client = await self._get_client()
-        params = {
+        params: dict[str, str | int] = {
             "apiKey": self.api_key,
             "mandatorySourceLocation": "true",
             "keyword": " OR ".join(self.keywords),
@@ -127,8 +127,6 @@ class EventRegistryAdapter:
     ) -> dict:
         """Map an Event Registry article to an observation dict."""
         title = article.get("title", "")
-        body = article.get("body", "")
-        text = f"{title}. {body}".strip() if body else title
 
         geometry_wkt, uncertainty = self._extract_geometry(article)
         observed_at = (

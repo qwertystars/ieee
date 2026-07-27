@@ -12,13 +12,25 @@ from __future__ import annotations
 import numpy as np
 
 from app.eval.testbed_helpers import (
-    elev_at, gen_buildings, gen_cell_towers, gen_citizens, gen_hospitals,
-    gen_population, gen_responders, gen_roads, gen_shelters, gen_substations,
+    gen_buildings,
+    gen_cell_towers,
+    gen_citizens,
+    gen_hospitals,
+    gen_population,
+    gen_responders,
+    gen_roads,
+    gen_shelters,
+    gen_substations,
     gen_terrain,
 )
 from app.eval.testbed_types import (
-    ObservationSource, PopulationHex, RoadGraph, TestbedInfrastructure,
-    TestbedObservation, TestbedParams, fingerprint,
+    ObservationSource,
+    PopulationHex,
+    RoadGraph,
+    TestbedInfrastructure,
+    TestbedObservation,
+    TestbedParams,
+    fingerprint,
 )
 
 _BASE_TS_MS = 1_753_000_000_000  # 2026-07-20T00:00:00Z

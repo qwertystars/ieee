@@ -91,7 +91,7 @@ class SourceReliabilityTracker:
         row = self._get_row(source_id, phenomenon_type)
         if row is None:
             return (_PRIOR_EXPECTED, _PRIOR_CI_LOWER, _PRIOR_CI_UPPER)
-        alpha, beta = row.alpha, row.beta
+        alpha, beta = float(row.alpha), float(row.beta)
         expected = alpha / (alpha + beta)
         ci_lo, ci_hi = _beta_ci(alpha, beta)
         return (expected, ci_lo, ci_hi)
@@ -118,10 +118,10 @@ class SourceReliabilityTracker:
             )
             self.db.add(row)
         if verified_correct:
-            row.alpha += 1
+            row.alpha = float(row.alpha) + 1  # type: ignore[assignment]
         else:
-            row.beta += 1
-        row.updated_at = now_ms()
+            row.beta = float(row.beta) + 1  # type: ignore[assignment]
+        row.updated_at = now_ms()  # type: ignore[assignment]
         self.db.commit()
 
     def apply_time_decay(
@@ -139,9 +139,9 @@ class SourceReliabilityTracker:
             )
         ).scalars().all()
         for row in rows:
-            row.alpha *= decay_factor
-            row.beta *= decay_factor
-            row.updated_at = now_ms()
+            row.alpha = float(row.alpha) * decay_factor  # type: ignore[assignment]
+            row.beta = float(row.beta) * decay_factor  # type: ignore[assignment]
+            row.updated_at = now_ms()  # type: ignore[assignment]
         self.db.commit()
 
     def get_conditioned_reliability(self, source_id: str) -> dict:
@@ -160,10 +160,10 @@ class SourceReliabilityTracker:
         ).scalars().all()
         result: dict[str, tuple[float, float, float]] = {}
         for row in rows:
-            alpha, beta = row.alpha, row.beta
+            alpha, beta = float(row.alpha), float(row.beta)
             expected = alpha / (alpha + beta)
             ci_lo, ci_hi = _beta_ci(alpha, beta)
-            result[row.phenomenon_type] = (expected, ci_lo, ci_hi)
+            result[str(row.phenomenon_type)] = (expected, ci_lo, ci_hi)
         return result
 
 

@@ -19,13 +19,13 @@ import os
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.deps import get_current_user, get_db
 from app.lib.time import now_ms
 from app.models.incident import Incident
 from app.models.user import User
-from sqlalchemy import select
 
 logger = logging.getLogger("app.api.routes.scenarios")
 
@@ -170,8 +170,9 @@ def get_calibration(
     user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Return Brier score, ECE, and conformal coverage from fixture data."""
-    from app.fusion.calibration import ConformalCalibrator
     import numpy as np
+
+    from app.fusion.calibration import ConformalCalibrator
 
     org_id = request.state.org_id or ""
     _get_incident(db, org_id, incident_id)
@@ -220,6 +221,7 @@ def get_flood_map(
 
     try:
         import torch
+
         from app.perception.flood_mapping import SARFloodMapper
 
         mapper = SARFloodMapper()
@@ -258,10 +260,16 @@ def get_flood_ensemble(
 
     try:
         import torch
-        from app.perception.ensemble import FloodEnsemble, GFMMember, ResNet50S1Mapper
+
+        from app.perception.ensemble import (
+            FloodEnsemble,
+            GFMMember,
+            ResNet50S1Mapper,
+            _FloodMemberLike,
+        )
         from app.perception.flood_mapping import SARFloodMapper
 
-        members = [SARFloodMapper(), ResNet50S1Mapper(), GFMMember({"flood_prob": 0.3})]
+        members: list[_FloodMemberLike] = [SARFloodMapper(), ResNet50S1Mapper(), GFMMember({"flood_prob": 0.3})]
         ensemble = FloodEnsemble(members)
         dummy = torch.randn(2, 64, 64)
         result = ensemble.run_inference(dummy)

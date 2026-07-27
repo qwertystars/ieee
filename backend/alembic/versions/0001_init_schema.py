@@ -5,10 +5,10 @@ Revises:
 Create Date: 2026-07-18
 """
 
-from alembic import op
 import sqlalchemy as sa
 from geoalchemy2 import Geometry
 
+from alembic import op
 from app.models.enums import (
     AccessPolicy,
     CorroborationState,
@@ -17,7 +17,6 @@ from app.models.enums import (
     ScenarioStatus,
     SourceType,
 )
-
 
 # revision identifiers, used by Alembic.
 revision = "0001"

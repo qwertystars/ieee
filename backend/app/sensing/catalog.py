@@ -256,7 +256,7 @@ class SensingActionCatalog:
         reconnaissance within ten minutes. Confirmation would verify bridge
         or road passability and reassign rescue boats accordingly."
         """
-        mins = int(round(action.cost.time_minutes))
+        mins = round(action.cost.time_minutes)
         time_word = _TIME_WORDS.get(mins, str(mins))
         return (
             f"Recommended information request: {action.description} "

@@ -100,7 +100,7 @@ class TwitterAdapter:
             return []
 
         client = await self._get_client()
-        params = {
+        params: dict[str, str | int] = {
             "query": self._build_query(),
             "max_results": 100,
             "tweet.fields": _TWEET_FIELDS,

@@ -18,13 +18,17 @@ from __future__ import annotations
 import logging
 import os
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Protocol
 
 from sqlalchemy.orm import Session
 
 from app.lib.time import now_ms
 from app.perception.models import ModelRecord
+
+if TYPE_CHECKING:
+    import onnxruntime as ort
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +37,17 @@ logger = logging.getLogger(__name__)
 DEFAULT_IDLE_TIMEOUT_S = 300
 
 
+class _MinioLike(Protocol):
+    """Structural type for the MinIO client methods we use."""
+
+    def get_object(self, bucket: str, key: str) -> Any: ...
+
+
 @dataclass(slots=True)
 class _CachedModel:
     """An in-memory cached ONNX inference session with usage tracking."""
 
-    session: Any
+    session: ort.InferenceSession
     model_name: str
     version: str
     last_used_ms: int
@@ -112,9 +122,9 @@ class ModelServing:
     def __init__(
         self,
         session_factory: Callable[[], Session],
-        minio_client: Any | None = None,
+        minio_client: _MinioLike | None = None,
         cache_dir: str | None = None,
-    ):
+    ) -> None:
         self._session_factory = session_factory
         self._minio = minio_client
         self._cache_dir = cache_dir
@@ -123,7 +133,7 @@ class ModelServing:
 
     # ── Public API ──────────────────────────────────────────────────────
 
-    def load_model(self, model_id: str) -> Any:
+    def load_model(self, model_id: str) -> ort.InferenceSession:
         """Lazy-load a model, returning the cached ``InferenceSession``.
 
         First call downloads weights from MinIO and creates the session.
@@ -220,7 +230,7 @@ class ModelServing:
             response.release_conn()
         return data
 
-    def _create_session(self, model_bytes: bytes) -> Any:
+    def _create_session(self, model_bytes: bytes) -> ort.InferenceSession:
         """Create an ONNX Runtime inference session with CPU provider."""
         import onnxruntime as ort
 
@@ -229,13 +239,13 @@ class ModelServing:
             providers=["CPUExecutionProvider"],
         )
 
-    def _run_session(self, session: Any, input_data: dict[str, Any]) -> dict[str, Any]:
+    def _run_session(self, session: ort.InferenceSession, input_data: dict[str, Any]) -> dict[str, Any]:
         """Execute inference and map outputs by name."""
         input_names = [i.name for i in session.get_inputs()]
         feeds = {name: input_data[name] for name in input_names if name in input_data}
         results = session.run(None, feeds)
         output_names = [o.name for o in session.get_outputs()]
-        return dict(zip(output_names, results))
+        return dict(zip(output_names, results, strict=True))
 
 
 __all__ = [

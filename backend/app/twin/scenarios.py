@@ -218,4 +218,4 @@ class ScenarioGenerator:
         return ids
 
 
-__all__ = ["ScenarioGenerator", "DEFAULT_N", "MAX_SCENARIOS", "MIN_SCENARIOS"]
+__all__ = ["DEFAULT_N", "MAX_SCENARIOS", "MIN_SCENARIOS", "ScenarioGenerator"]

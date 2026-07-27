@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections import defaultdict
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
@@ -54,7 +55,7 @@ class WebSocketManager:
             if not conns:
                 self._connections.pop(incident_id, None)
 
-    async def broadcast(self, incident_id: str, message: dict[str, object]) -> None:
+    async def broadcast(self, incident_id: str, message: dict[str, Any]) -> None:
         """Send a JSON message to every connection for incident_id.
 
         Dead connections are removed after the send attempt.
@@ -79,7 +80,7 @@ class WebSocketManager:
                         self._connections.pop(incident_id, None)
 
     async def broadcast_observation(
-        self, incident_id: str, observation: dict[str, object]
+        self, incident_id: str, observation: dict[str, Any]
     ) -> None:
         await self.broadcast(
             incident_id,
@@ -87,7 +88,7 @@ class WebSocketManager:
         )
 
     async def broadcast_hypothesis(
-        self, incident_id: str, hypothesis: dict[str, object]
+        self, incident_id: str, hypothesis: dict[str, Any]
     ) -> None:
         await self.broadcast(
             incident_id,
@@ -95,7 +96,7 @@ class WebSocketManager:
         )
 
     async def broadcast_plan(
-        self, incident_id: str, plan: dict[str, object]
+        self, incident_id: str, plan: dict[str, Any]
     ) -> None:
         await self.broadcast(
             incident_id,
@@ -144,7 +145,7 @@ def polling_updates(
     incident_id: str,
     since: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Polling fallback: return observations newer than `since` (epoch ms).
 
     Clients without WebSocket support poll this endpoint with their last
@@ -166,7 +167,7 @@ def polling_updates(
     }
 
 
-def _serialize_observation(obs: Observation) -> dict[str, object]:
+def _serialize_observation(obs: Observation) -> dict[str, Any]:
     """Project an Observation row into a JSON-safe dict for the polling API."""
     return {
         "observation_id": obs.observation_id,

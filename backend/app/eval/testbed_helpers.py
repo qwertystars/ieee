@@ -10,9 +10,22 @@ from __future__ import annotations
 import numpy as np
 
 from app.eval.testbed_types import (
-    Building, BuildingType, CellTower, CitizenDevice, EntityStatus,
-    Hospital, PopulationHex, ResponderStation, RoadClass, RoadEdge,
-    RoadGraph, RoadNode, Shelter, Substation, TestbedParams, TerrainDEM,
+    Building,
+    BuildingType,
+    CellTower,
+    CitizenDevice,
+    EntityStatus,
+    Hospital,
+    PopulationHex,
+    ResponderStation,
+    RoadClass,
+    RoadEdge,
+    RoadGraph,
+    RoadNode,
+    Shelter,
+    Substation,
+    TerrainDEM,
+    TestbedParams,
     stable_id,
 )
 
@@ -25,7 +38,7 @@ def gen_terrain(
     bbox: tuple[float, float, float, float],
 ) -> TerrainDEM:
     res = p.dem_resolution
-    min_lon, min_lat, max_lon, max_lat = bbox
+    min_lon, _min_lat, max_lon, _max_lat = bbox
     lons = np.linspace(min_lon, max_lon, res)
     base = np.abs(lons - min_lon) * 50.0 / p.bbox_extent_deg
     noise = rng.normal(0, 3.0, size=(res, res))
@@ -232,7 +245,15 @@ def gen_citizens(
 
 
 __all__ = [
-    "gen_buildings", "gen_cell_towers", "gen_citizens", "gen_hospitals",
-    "gen_population", "gen_responders", "gen_roads", "gen_shelters",
-    "gen_substations", "gen_terrain", "elev_at",
+    "elev_at",
+    "gen_buildings",
+    "gen_cell_towers",
+    "gen_citizens",
+    "gen_hospitals",
+    "gen_population",
+    "gen_responders",
+    "gen_roads",
+    "gen_shelters",
+    "gen_substations",
+    "gen_terrain",
 ]

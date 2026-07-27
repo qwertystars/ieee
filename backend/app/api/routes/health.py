@@ -9,7 +9,7 @@ GET /api/incidents/{id}/feed-health returns per-feed status with:
 from __future__ import annotations
 
 import logging
-import math
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
@@ -103,7 +103,7 @@ class FeedHealthTracker:
         incident_id: str,
         db: Session,
         current_ms: int | None = None,
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """Return per-feed health status for an incident.
 
         Groups observations by (source_id, phenomenon) and computes status
@@ -120,7 +120,7 @@ class FeedHealthTracker:
             .group_by(Observation.source_id, Observation.phenomenon)
         ).all()
 
-        feeds: list[dict[str, object]] = []
+        feeds: list[dict[str, Any]] = []
         fresh_count = 0
         for row in rows:
             source_id, phenomenon, last_update, _obs_count = row
@@ -160,7 +160,7 @@ class FeedHealthTracker:
         incident_id: str,
         db: Session,
         current_ms: int | None = None,
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """Return overall degradation level, lost feeds, unavailable capabilities."""
         health = self.get_feed_health(incident_id, db, current_ms)
         feeds = health["feeds"]
@@ -205,7 +205,7 @@ tracker = FeedHealthTracker()
 def feed_health(
     incident_id: str,
     db: Session = Depends(get_db),
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Return per-feed health status for an incident.
 
     Each feed is classified as healthy / degraded / down based on data age
@@ -218,9 +218,9 @@ def feed_health(
 def degradation_summary(
     incident_id: str,
     db: Session = Depends(get_db),
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Return overall degradation summary for an incident."""
     return tracker.get_degradation_summary(incident_id, db)
 
 
-__all__ = ["FeedHealthTracker", "tracker", "router"]
+__all__ = ["FeedHealthTracker", "router", "tracker"]

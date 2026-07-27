@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth.abac import ABACEngine, ELEVATED_ROLES
+from app.auth.abac import ELEVATED_ROLES, ABACEngine
 from app.auth.abac_types import Actor, Context, Subject
 from app.deps import get_current_user, get_db
 from app.lib.privacy import ProgressivePrecision
@@ -200,7 +200,7 @@ def get_fairness_report(
             social_media_usage=float(props.get("social_media_usage", 1.0)),
         ))
 
-    fz_tuple = tuple(fairness_zones)
+    fz_tuple: tuple[FairnessZone, ...] = tuple(fairness_zones)
 
     # Build two plans: original (unconstrained) and fair (constrained).
     # The original plan allocates all coverage to the first zone (highest
@@ -213,16 +213,16 @@ def get_fairness_report(
     remaining = n_responders
 
     # Fair plan: satisfy c_min for vulnerable zones first, then distribute.
-    for z in fz_tuple:
-        if z.vulnerable and z.c_min > 0:
-            alloc = min(z.c_min, remaining)
-            fair_coverage[z.id] = alloc
+    for fz in fz_tuple:
+        if fz.vulnerable and fz.c_min > 0:
+            alloc = min(fz.c_min, remaining)
+            fair_coverage[fz.id] = alloc
             remaining -= alloc
-    for z in fz_tuple:
+    for fz in fz_tuple:
         if remaining <= 0:
             break
-        if fair_coverage[z.id] == 0:
-            fair_coverage[z.id] = 1
+        if fair_coverage[fz.id] == 0:
+            fair_coverage[fz.id] = 1
             remaining -= 1
 
     # Original plan: all responders to the first zone (max throughput, no fairness).
@@ -295,4 +295,4 @@ def redact_pii(entity: dict, role: str) -> dict:
     return serializer.serialize(entity, viewer_role=role)
 
 
-__all__ = ["router", "round_coords_by_role", "redact_pii"]
+__all__ = ["redact_pii", "round_coords_by_role", "router"]

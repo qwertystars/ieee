@@ -39,7 +39,7 @@ router = APIRouter(prefix="/incidents", tags=["entities"])
 
 _WRITE_ROLES = ("admin", "emergency_manager", "responder_coordinator")
 
-_ENTITY_MAP: dict[str, type] = {
+_ENTITY_MAP: dict[str, type[Any]] = {
     "zones": Zone,
     "roads": RoadSegment,
     "shelters": Shelter,
@@ -122,7 +122,7 @@ def list_entities(
         if geom_col is None:
             continue
         stmt = select(model, func.ST_AsGeoJSON(geom_col).label("geojson")).where(
-            model.org_id == org_id, model.incident_id == incident_id,
+            model.org_id == org_id, model.incident_id == incident_id,  # type: ignore[attr-defined]
         )
         if bbox_tuple is not None:
             minx, miny, maxx, maxy = bbox_tuple
@@ -153,7 +153,7 @@ def update_entity(
             status_code=422, detail=f"unknown entity type: {entity_type}",
         )
     entity = db.execute(
-        select(model).where(model.org_id == org_id, model.id == entity_id)
+        select(model).where(model.org_id == org_id, model.id == entity_id)  # type: ignore[attr-defined]
     ).scalars().first()
     if entity is None:
         raise HTTPException(status_code=404, detail="entity not found")

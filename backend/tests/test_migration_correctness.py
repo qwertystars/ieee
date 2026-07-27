@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from sqlalchemy import text
 
-from app.db import SessionLocal, engine
+from app.db import engine
 from app.models import (
     Alert,
     Bridge,

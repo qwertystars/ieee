@@ -12,8 +12,6 @@ inserted manually. No source files are modified.
 
 from __future__ import annotations
 
-import json
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import delete
@@ -21,8 +19,8 @@ from sqlalchemy import delete
 from app.auth.passwords import hash_password
 from app.auth.seed import seed_demo_users
 from app.db import SessionLocal
-from app.lib.ulid import generate_ulid
 from app.lib.time import now_ms
+from app.lib.ulid import generate_ulid
 from app.main import app
 from app.models.user import User
 

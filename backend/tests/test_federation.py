@@ -10,7 +10,9 @@ from sqlalchemy import delete
 
 from app.db import SessionLocal
 from app.ingestion.federation import (
-    OutboxEntry, OutboxManager, SourceManager,
+    OutboxEntry,
+    OutboxManager,
+    SourceManager,
 )
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy

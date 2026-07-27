@@ -11,7 +11,7 @@ from __future__ import annotations
 import enum
 import math
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 import numpy as np
 
@@ -97,9 +97,11 @@ _FAILURE_THRESHOLD = 0.3
 _SAFE_THRESHOLD = 0.7
 
 
+class _ModelServingLike(Protocol):
+    def run_inference(self, model_id: str, input_data: dict[str, Any]) -> dict[str, Any]: ...
+
+
 # ─── DamageAssessor ───────────────────────────────────────────────────────
-
-
 class DamageAssessor:
     """Building damage classification + road passability assessment.
 
@@ -109,7 +111,7 @@ class DamageAssessor:
 
     def __init__(
         self,
-        model_serving: Any | None = None,
+        model_serving: _ModelServingLike | None = None,
         model_id: str = "building-damage",
     ) -> None:
         self._model_serving = model_serving
@@ -119,8 +121,8 @@ class DamageAssessor:
 
     def assess_building_damage(
         self,
-        image_tensor: Any,
-        pre_event_tensor: Any | None = None,
+        image_tensor: np.ndarray,
+        pre_event_tensor: np.ndarray | None = None,
     ) -> BuildingDamageResult:
         """Classify building damage from post-event imagery.
 
@@ -281,8 +283,8 @@ class DamageAssessor:
 
     def _prepare_damage_input(
         self,
-        image_tensor: Any,
-        pre_event_tensor: Any | None,
+        image_tensor: np.ndarray,
+        pre_event_tensor: np.ndarray | None,
     ) -> dict[str, Any]:
         """Convert tensors to ONNX input dict."""
         post = self._to_numpy(image_tensor)
@@ -292,7 +294,7 @@ class DamageAssessor:
         return {"post_image": post}
 
     @staticmethod
-    def _to_numpy(tensor: Any) -> np.ndarray:
+    def _to_numpy(tensor: np.ndarray) -> np.ndarray:
         """Convert torch tensor or numpy array to numpy, add batch dim if 3D."""
         if hasattr(tensor, "detach"):
             arr = tensor.detach().cpu().numpy()

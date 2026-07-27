@@ -124,7 +124,7 @@ class RedditAdapter:
         posts: list[dict] = []
         for subreddit in self.subreddits:
             url = f"{_BASE_URL}/r/{subreddit}/new"
-            params = {"limit": 100, "sort": "new"}
+            params: dict[str, str | int] = {"limit": 100, "sort": "new"}
             try:
                 resp = await client.get(url, params=params, headers=headers)
                 if resp.status_code != 200:

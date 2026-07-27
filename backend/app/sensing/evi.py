@@ -217,7 +217,7 @@ class EVIComputer:
     @staticmethod
     def _format_time(minutes: float) -> str:
         """Format minutes as a human-readable time phrase."""
-        mins = int(round(minutes))
+        mins = round(minutes)
         word = _TIME_WORDS.get(mins, str(mins))
         return f"{word} minutes"
 

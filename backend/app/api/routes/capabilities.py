@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 import os
 import socket
+from typing import Any
 
 from fastapi import APIRouter
 
@@ -214,7 +215,7 @@ _CHECKS = (
 
 
 @router.get("/capabilities")
-def capabilities() -> dict[str, object]:
+def capabilities() -> dict[str, Any]:
     """Return runtime availability of all platform features.
 
     Each feature is checked at request time — statuses are not hardcoded.

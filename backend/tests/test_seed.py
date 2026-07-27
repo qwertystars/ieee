@@ -24,7 +24,7 @@ from app.models.enums import HypothesisStatus
 from app.models.hypotheses import Hypothesis
 from app.models.observation import Observation
 from app.models.scenarios import Scenario
-from app.seed.ids import INCIDENT_ID, ORG_ID
+from app.seed.ids import ORG_ID
 from app.seed.seed_demo import seed_demo
 
 
@@ -104,7 +104,7 @@ def test_hypotheses_with_contradictions(db) -> None:
         by_entity.setdefault(h.entity_id, []).append(h)
 
     contradictory_found = False
-    for eid, group in by_entity.items():
+    for group in by_entity.values():
         if len(group) >= 2:
             claims = {h.claim for h in group}
             if len(claims) >= 2:
