@@ -1,0 +1,74 @@
+
+> resqnet-sage-frontend@0.1.0 test
+> vitest run
+
+4:54:41 AM [vite] warning: `esbuild` option was specified by "vite:react-babel" plugin. This option is deprecated, please use `oxc` instead.
+4:54:41 AM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-babel" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+Both esbuild and oxc options were set. oxc options will be used and esbuild options will be ignored. The following esbuild options were set: `{ jsx: 'automatic', jsxImportSource: undefined }`
+
+ RUN  v4.1.10 /root/srijan/ieee/frontend
+
+ ❯ src/lib/outbox.test.ts (19 tests | 1 failed) 66ms
+     × generates strictly increasing IDs within the same millisecond 16ms
+Error: useAuth must be used within an AuthProvider
+    at Module.useAuth (/root/srijan/ieee/frontend/src/auth/AuthContext.tsx:78:11)
+    at Consumer (/root/srijan/ieee/frontend/src/auth/AuthContext.test.tsx:40:16)
+    at renderWithHooks (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/root/srijan/ieee/frontend/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/root/srijan/ieee/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/root/srijan/ieee/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/root/srijan/ieee/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+Error: useAuth must be used within an AuthProvider
+    at Module.useAuth (/root/srijan/ieee/frontend/src/auth/AuthContext.tsx:78:11)
+    at Consumer (/root/srijan/ieee/frontend/src/auth/AuthContext.test.tsx:40:16)
+    at renderWithHooks (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/root/srijan/ieee/frontend/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/root/srijan/ieee/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/root/srijan/ieee/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/root/srijan/ieee/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/outbox.test.ts > ULID monotonicity > generates strictly increasing IDs within the same millisecond
+AssertionError: expected [ '01KYGYSQP4JKPB5G6F6501JVVV', …(19) ] to deeply equal [ '01KYGYSQP4JKPB5G6F6501JVVV', …(19) ]
+
+- Expected
++ Received
+
+@@ -4,12 +4,12 @@
+    "01KYGYSQP5XADSMH48DGRXQHZQ",
+    "01KYGYSQP5XADSMH48DGRXQHZS",
+    "01KYGYSQP5XADSMH48DGRXQHZV",
+    "01KYGYSQP5XADSMH48DGRXQHZX",
+    "01KYGYSQP5XADSMH48DGRXQHZZ",
+-   "01KYGYSQP5XADSMH48DGRXQJ01",
+    "01KYGYSQP5XADSMH48DGRXQJ03",
++   "01KYGYSQP5XADSMH48DGRXQJ01",
+    "01KYGYSQP5XADSMH48DGRXQJ05",
+    "01KYGYSQP5XADSMH48DGRXQJ07",
+    "01KYGYSQP5XADSMH48DGRXQJ09",
+    "01KYGYSQP5XADSMH48DGRXQJ0B",
+    "01KYGYSQP5XADSMH48DGRXQJ0D",
+
+ ❯ src/lib/outbox.test.ts:279:17
+    277|     const ids = items.map(i => i.id)
+    278|     const sorted = [...ids].sort()
+    279|     expect(ids).toEqual(sorted)
+       |                 ^
+    280|     expect(new Set(ids).size).toBe(20)
+    281|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  1 failed | 44 passed (45)
+   Start at  04:54:41
+   Duration  1.96s (transform 332ms, setup 656ms, import 392ms, tests 235ms, environment 3.60s)
+
