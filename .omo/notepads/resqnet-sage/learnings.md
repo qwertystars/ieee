@@ -4973,3 +4973,57 @@ cd backend && .venv/bin/python -m pytest tests/test_sota_routes.py -v
 cd backend && .venv/bin/python -m pytest --tb=short -q
 → 453 passed, 7 warnings in 56.05s
 ```
+
+## Task 34 — Social Media Ingestion Adapters (Tests + API Route)
+
+### Summary
+Added fixture-based tests for all 4 social media adapters (Twitter, Reddit,
+Instagram, YouTube) and a `POST /api/incidents/{id}/ingest/social-media`
+API route that returns 202 and triggers async ingestion via BackgroundTasks.
+
+### Files produced/modified
+- `backend/app/api/routes/ingest.py` (NEW — 124 pure LOC, POST route + background ingestion task + noop producer fallback)
+- `backend/tests/test_social_media_adapters.py` (NEW — 246 pure LOC, 17 tests: 12 adapter + 5 route)
+- `backend/app/main.py` (MODIFIED — registered ingest_router under api_router)
+
+### Key decisions
+1. **Noop producer for Kafka-down resilience.** When Kafka/Redpanda is
+   unavailable, `_start_producer()` catches the failure and returns a
+   `_NoopProducer` whose `send()` is a logged no-op. This lets the adapter
+   complete `pull_observations()` + `map_to_observation()` + idempotency
+   recording without crashing. The route still returns 202.
+
+2. **BackgroundTasks for async ingestion.** The route returns 202
+   immediately and schedules `_run_ingestion` via FastAPI's
+   `BackgroundTasks`. The background task creates its own `SessionLocal()`
+   (the request DB session is closed post-response) and its own producer.
+
+3. **source_type query param dispatches to adapter class.** A `_ADAPTERS`
+   dict maps `"twitter" → TwitterAdapter`, etc. Invalid source_type
+   returns 422.
+
+4. **Test pattern follows test_event_registry_adapter.py.** Each adapter
+   gets 3 tests: (1) mock HTTP via `httpx.MockTransport`, pull, verify
+   observation dict; (2) empty config → `pull_observations()` returns
+   `[]`; (3) PII text (phone + email) → redacted tokens `[PHONE]`/`[EMAIL]`
+   in `quality_flags.text`. Shared `_assert_common_obs` and
+   `_assert_pii_redacted` helpers keep the test file under 250 LOC.
+
+5. **Reddit adapter iterates subreddits.** The default config has 3
+   subreddits (`disasterresponse`, `emergency`, `flooding`). The test
+   sets `subreddits: ["flooding"]` to get exactly 1 post back per mock
+   response — otherwise the same post appears 3× (once per subreddit).
+
+6. **All observations land as access_policy=sensitive.** Verified in
+   every adapter test via `_assert_common_obs` which asserts
+   `obs["access_policy"] == "sensitive"` and
+   `obs["source_type"] == "social_media"`.
+
+### Verification
+```
+cd backend && .venv/bin/python -m pytest tests/test_social_media_adapters.py -v
+→ 17 passed, 2 warnings in 5.82s
+
+cd backend && .venv/bin/python -m pytest --tb=short -q
+→ 470 passed, 8 warnings in 66.14s  (453 existing + 17 new)
+```
