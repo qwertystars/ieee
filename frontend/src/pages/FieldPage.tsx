@@ -155,7 +155,7 @@ export default function FieldPage() {
         {tasksQ.data && tasks.length === 0 && <EmptyState message="No tasks assigned" />}
         <div className="flex flex-col gap-2" role="list">
           {tasks.map(t => (
-            <div key={t.id} role="listitem" className="rounded-lg border border-gray-700 bg-gray-900/95 p-3">
+            <div key={t.id} role="listitem" data-testid="task-card" className="rounded-lg border border-gray-700 bg-gray-900/95 p-3">
               <div className="flex items-start justify-between gap-2">
                 <h3 className="text-sm font-medium text-gray-100">{t.title}</h3>
                 <span className={`rounded px-1.5 py-0.5 text-[10px] ${statusColor(t.status)}`} aria-label={`Status: ${t.status}`}>

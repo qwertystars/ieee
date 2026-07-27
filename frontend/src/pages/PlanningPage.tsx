@@ -143,7 +143,7 @@ export default function PlanningPage() {
           </h2>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2" role="list" aria-label="Action proposals">
             {proposals.map(a => (
-              <div key={a.id} role="listitem">
+              <div key={a.id} role="listitem" data-testid="alert-card">
                 <ActionCard
                   action={alertToActionCard(a)}
                   status={a.status}
@@ -164,7 +164,7 @@ export default function PlanningPage() {
           </h2>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 opacity-60" role="list" aria-label="Reviewed alerts">
             {reviewed.slice(0, 4).map(a => (
-              <div key={a.id} role="listitem">
+              <div key={a.id} role="listitem" data-testid="alert-card">
                 <ActionCard
                   action={alertToActionCard(a)}
                   status={a.status}

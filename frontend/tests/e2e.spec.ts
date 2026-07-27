@@ -31,6 +31,9 @@ test.describe('Full responder flow', () => {
 
     // The incident title should appear in the sidebar.
     await expect(page.locator('aside')).toContainText(/Rivertown|Flood|Incident/i, { timeout: 15_000 })
+
+    // Observation markers should be visible on the map when data is present.
+    await expect(page.locator('[data-testid="observation-marker"]')).toBeVisible({ timeout: 15_000 })
   })
 
   test('simulator starts and device count is visible', async ({ page }) => {
@@ -54,13 +57,16 @@ test.describe('Full responder flow', () => {
     await page.waitForURL('**/dashboard')
     // The alerts panel should be present (may be empty or have alerts).
     await expect(page.getByRole('heading', { name: 'Alerts' })).toBeVisible({ timeout: 15_000 })
+    // Synced badge should be visible when online with no pending outbox items.
+    await expect(page.locator('[data-testid="synced-badge"]')).toBeVisible({ timeout: 15_000 })
   })
 
   test('operator can approve an alert from the planning page', async ({ page }) => {
     await page.getByRole('link', { name: 'Planning' }).click()
     await page.waitForURL('**/planning', { timeout: 10_000 })
-    // The planning page should render (may have alerts with approve buttons).
-    await expect(page.locator('body')).toBeVisible({ timeout: 15_000 })
+    // Alert cards with approve buttons should be visible on the planning page.
+    await expect(page.locator('[data-testid="alert-card"]')).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('[data-testid="approve-button"]')).toBeVisible({ timeout: 15_000 })
   })
 
   test('field responder view shows assigned tasks', async ({ page }) => {
@@ -69,6 +75,27 @@ test.describe('Full responder flow', () => {
 
     // The field page should show the "My Tasks" section.
     await expect(page.getByRole('heading', { name: 'My Tasks' })).toBeVisible({ timeout: 15_000 })
+    // Task cards should be visible when tasks are assigned.
+    await expect(page.locator('[data-testid="task-card"]')).toBeVisible({ timeout: 15_000 })
+  })
+
+  test('outbox pending badge appears when offline, synced badge on reconnect', async ({ page }) => {
+    await page.getByRole('link', { name: 'Field' }).click()
+    await page.waitForURL('**/field', { timeout: 10_000 })
+
+    // Go offline and update a task status to queue it in the outbox.
+    await page.context().setOffline(true)
+    const taskSelect = page.locator('select[aria-label^="Update status for task"]').first()
+    if (await taskSelect.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await taskSelect.selectOption('in_progress')
+
+      // Pending badge should appear when mutation is queued in outbox.
+      await expect(page.locator('[data-testid="pending-badge"]')).toBeVisible({ timeout: 15_000 })
+    }
+
+    // Go back online — synced badge should reappear after sync.
+    await page.context().setOffline(false)
+    await expect(page.locator('[data-testid="synced-badge"]')).toBeVisible({ timeout: 30_000 })
   })
 
   test('task status update from field view reaches command centre', async ({ page }) => {

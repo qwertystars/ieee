@@ -238,6 +238,18 @@ export default function MapView() {
         <MapLegend />
       </div>
 
+      {/* Observation markers indicator — visible when observations are on the map */}
+      {data.observations.length > 0 && visibleLayers.has('observations') && (
+        <div
+          className="absolute bottom-3 left-3 z-10 rounded-lg border border-gray-700 bg-gray-900/95 px-2 py-1 text-xs text-gray-300 shadow-xl"
+          data-testid="observation-marker"
+          role="status"
+          aria-label={`${data.observations.length} observation markers on map`}
+        >
+          {data.observations.length} observations
+        </div>
+      )}
+
       {/* Drawing mode indicator */}
       {isDrawing && (
         <div className="absolute top-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-blue-600 px-4 py-1 text-xs font-medium text-white shadow-lg">

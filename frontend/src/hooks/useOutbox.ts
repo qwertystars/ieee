@@ -96,9 +96,11 @@ export function useOutbox(): UseOutboxResult {
     const goOffline = () => setIsOnline(false)
     window.addEventListener('online', goOnline)
     window.addEventListener('offline', goOffline)
+    window.addEventListener('outbox-changed', refreshCount)
     return () => {
       window.removeEventListener('online', goOnline)
       window.removeEventListener('offline', goOffline)
+      window.removeEventListener('outbox-changed', refreshCount)
     }
   }, [refreshCount, syncOutbox])
 

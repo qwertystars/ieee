@@ -59,13 +59,23 @@ export function AppLayout() {
             />
             {isOnline ? 'Online' : 'Offline'}
           </span>
-          {pendingCount > 0 && (
+          {pendingCount > 0 ? (
             <span
               role="status"
+              data-testid="pending-badge"
               aria-label={`${pendingCount} pending offline change${pendingCount === 1 ? '' : 's'} queued for sync`}
               className="rounded-full bg-amber-600 px-2 py-0.5 text-[10px] font-medium text-white"
             >
               {pendingCount} pending
+            </span>
+          ) : (
+            <span
+              role="status"
+              data-testid="synced-badge"
+              aria-label="All changes synced"
+              className="rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-medium text-white"
+            >
+              Synced
             </span>
           )}
           {user && (

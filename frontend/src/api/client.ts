@@ -83,6 +83,9 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
     try {
       const priority = inferPriority(path, method)
       await addToOutbox(path, method, body, priority)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('outbox-changed'))
+      }
       return undefined as T
     } catch {
       throw new ApiError(0, 'offline and outbox unavailable', path)
