@@ -96,7 +96,7 @@ class TwitterAdapter:
         Returns empty list if bearer token missing or API error.
         """
         if not self.bearer_token:
-            logger.warning("Twitter bearer token missing, skipping pull")
+            logger.warning("Twitter bearer credential missing, skipping pull")
             return []
 
         client = await self._get_client()

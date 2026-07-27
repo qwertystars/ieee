@@ -24,9 +24,11 @@ RUN pip install --no-cache-dir "gdal==$(gdal-config --version)"
 # Install torch CPU-only (smaller image, no CUDA needed for local-hardware-first).
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
-# Install remaining requirements.
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install remaining requirements from the pinned lock file.
+# --no-deps: the lock file already contains every transitive dependency;
+# torch and gdal are installed separately above.
+COPY requirements.lock .
+RUN pip install --no-cache-dir --no-deps -r requirements.lock
 
 # Copy application code.
 COPY . .

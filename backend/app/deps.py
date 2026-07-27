@@ -54,7 +54,7 @@ def revoke_token(token: str, ttl_seconds: int) -> None:
     """Add token to the Redis denylist with TTL. Best-effort if Redis is down."""
     client = get_redis()
     if client is None:
-        logger.warning("Redis unavailable — token not revoked (best-effort)")
+        logger.warning("Redis unavailable — revocation skipped (best-effort)")
         return
     try:
         client.sadd(REVOKED_TOKENS_KEY, token)
