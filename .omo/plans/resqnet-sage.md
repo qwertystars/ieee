@@ -2,1024 +2,376 @@
 
 ## TL;DR (For humans)
 
-**What you'll get:** A complete disaster-response intelligence system that goes far beyond a dashboard. It builds a continuously updated probabilistic model of a crisis, forecasts plausible hazard and infrastructure scenarios, and uses risk-aware optimization to generate operationally feasible response alternatives. It actively identifies which missing observations should be collected next, preserves the provenance and disagreement of every source, and allows commanders to inspect evidence, assumptions, trade-offs and contingencies before acting. The system runs entirely on local hardware with no internet dependency, supports offline operation with store-and-forward sync, and degrades honestly (showing data age, lost feeds, and widening uncertainty rather than hiding stale data). It includes a replayable evaluation testbed with failure injection, four baselines for comparison, six categories of metrics, and ablation studies that prove which components actually improve outcomes.
+**What you'll get:** A tested, reproducible, software-first ResQNet-SAGE disaster-response system. The backend engine layer is already ~60 REAL files (fusion, perception, optimizer, twin, knowledge, sensing, eval, streaming, realtime, auth, ABAC). This plan wires those engines to real API routes, reconciles the drifted database schema with forward-only Alembic migrations, builds a deterministic rescue-ball simulator, implements the complete Phase 1 sensing-to-response loop (telemetry → ingestion → confidence → hypothesis → alert → human approval → task → map), builds a full React frontend with offline PWA support, continues the SOTA research plan (including privacy/ABAC wiring and fairness reporting — both required for Gate E), and adds comprehensive testing, automation, and documentation.
 
-**Why this approach:** The user provided an extremely detailed SOTA research synthesis document identifying that the current design is not yet state of the art. The core insight: ResQNet should be redesigned around "Given uncertain, incomplete, delayed and contradictory information, which feasible combination of actions is expected to prevent the most harm over the next operational horizon?" The user chose a full pivot away from Cloudflare Workers to a Python/PostGIS stack because the required capabilities cannot run on Workers. Everything must work on local hardware with low internet connectivity.
+**Why this approach:** The engine layer is remarkably complete but completely disconnected from the API surface (5 of 9 routes are stubs returning `{"status":"ok"}`). The highest-leverage work is integration wiring, not new engine development. Foundation repair comes first because the migration drift (13 entity tables missing columns, 8+ runtime-created tables, orphaned `sources` table) makes every higher layer fragile.
 
-**What it will NOT do:** It will not retain the Cloudflare Workers platform. It will not continue the existing platform build plan. It will not auto-publish AI artifacts. It will not use online RL as the sole controller. It will not compress the confidence vector into a single number. It will not silently resolve contradictory hypotheses. It will not require cloud runtime dependencies. It will not vendor the archived pyds library. It will not use DESIGN.md as the interface contract (superseded).
+**What it will NOT do:** Will not extend the Cloudflare Workers `platform/` codebase. Will not use an unconstrained LLM or RL controller for field commands. Will not fabricate model accuracy or hardware capabilities. Will not push to main. Will not download huge datasets into Git.
 
-**Effort:** XL — 53 work units across 10 waves + a validation spike + final verification, building 9 SOTA architectural layers plus an evaluation testbed from scratch.
+**Effort:** Large — 41 implementation todos across 5 gate-ordered waves plus 4 final verification tasks. Each todo is scoped to 1-3 tool calls with exhaustive references. Includes social media ingestion adapters (X/Twitter, Reddit, Instagram, YouTube), event detection (Event Registry), and unified communication (Ayrshare outbound, Unipile inbound DMs).
 
-**Risk:** High — (1) PostgreSQL extension coexistence (Apache AGE may not work alongside PostGIS — spike validates first, fallback to recursive CTEs), (2) SAR satellite data and ML model availability on local hardware (requires pre-download + ONNX conversion), (3) pgmpy DBN only supports discrete variables, (4) OR-Tools CP-SAT does not natively support CVaR (requires custom linearization), (5) offline LLM inference quality. Each risk has a stated mitigation.
+**Risk:** Migration reconciliation is the highest-risk area (must not break existing tests or lose data). The enum type mismatch (native PG ENUM vs VARCHAR) requires careful migration. The frontend is a near-total rebuild. The simulator is entirely new code.
 
-**Decisions to sanity-check:** (1) Full pivot from Cloudflare to Python/PostGIS. (2) Dempster-Shafer combination implemented directly (~50 LOC) rather than vendoring archived pyds. (3) If Apache AGE is incompatible with PostGIS, graph queries use graph_edges table + recursive CTEs as primary approach. (4) All ML models run locally via ONNX Runtime; satellite data pre-downloaded via sync-when-connected pattern. (5) LLM summarization uses local Ollama for offline, cloud API when connected.
-
-Your next move: approve the plan, or run a high-accuracy review first. Full execution detail follows below.
+**Decisions:** Dedicated worker container (prompt's preferred option). VARCHAR for all enums (matches ORM's `native_enum=False`). New Incident table (preserving Event as audit log). Local PMTiles with OSM fallback. PostgreSQL/PostGIS test DB (not SQLite-only). Alert thresholds: s ≥ 0.5 AND C ≥ 0.2 (reasonable defaults, documented as configurable). Travel cost via `RouteReliabilityEngine.compute_cost()` (validated to exist at `routing.py:130`). Reconcile ORG_ID: `seed/ids.py` uses `"demo_org"` but `auth/seed.py` uses `"org_demo"` — pick `"org_demo"` and update `seed/ids.py` to match.
 
 ## Scope
-### Must have
-- A complete ResQNet-SAGE (Situation-Aware Geospatial Evidence and Action Engine) system built from scratch on a Python/PostGIS stack, implementing all 9 architectural layers from the SOTA research synthesis document.
-- **Stack**: Python 3.11+ FastAPI + SQLAlchemy 2.x + GeoAlchemy2 + Alembic + Pydantic v2; PostgreSQL 16 + PostGIS 3.4 + TimescaleDB + Apache AGE (graph); Redpanda (Kafka-compatible streaming) + Benthos (stream processing); PyTorch + TorchGeo + rasterio + GDAL + ONNX Runtime (ML); OR-Tools CP-SAT + Pyomo + HiGHS (optimization); React 18 + Vite + MapLibre GL JS + deck.gl + Tailwind + TanStack Query (frontend); MinIO (S3-compatible object storage); Redis (cache + pub/sub); OpenTelemetry + Prometheus + Grafana (observability).
-- **Local-hardware-first deployment**: All services in a single Docker Compose stack runnable on local hardware. No cloud runtime dependencies. ML models pre-downloaded/cached. Satellite data acquisition via "sync when connected" pattern. Frontend is a PWA with offline capabilities. System must operate in degraded mode when internet is unavailable.
-- **9 SOTA layers**:
-  - Layer 1: Federated emergency-data fabric (23-field observation schema + CAP/SensorThings/OGC API/STAC/HDX HAPI adapters)
-  - Layer 2: Multimodal crisis-perception system (SAR flood mapping ensemble, building/road damage assessment, social media NLP pipeline)
-  - Layer 3: Temporal crisis knowledge graph (entities, relationships, contradictory hypothesis preservation)
-  - Layer 4: Probabilistic evidence fusion (confidence vector [6D], Beta source reliability, phenomenon-specific freshness, Bayesian/DBN world-state P(X_t|O_{1:t}), conformal calibration)
-  - Layer 5: Hazard & infrastructure digital twin (scenario ensemble, cascading dependency DAG, telecom silence residual)
-  - Layer 6: Decision optimization (rolling-horizon risk-aware CVaR optimizer, constraints, route reliability, stability threshold)
-  - Layer 7: Active sensing / expected value of information (EVI computation, sensing action catalog)
-  - Layer 8: Human-centered explainable decision support (4 interface modes, action cards with evidence/alternatives/uncertainty)
-  - Layer 9: Resilient communications & offline operation (edge-first topology, store-and-forward sync, low-bandwidth fallback, honest degradation)
-- **Evaluation testbed**: Replayable cyclone-flood digital twin with failure injection, 4 baselines, 6 metric categories (perception, uncertainty, operational, resilience, human-factors, equity), ablation study runner.
-- **Conventions** (carried from existing project, adapted for Python): ULID IDs; UTC epoch ms; `org_id` tenancy on every table; `visibility ∈ {public,internal,sensitive}` + `review_status ∈ {draft,reviewed,official}`; hash-chained append-only audit; idempotency keys on external/queue/webhook paths; all AI output `review_status=draft` until human approval; files under 250 pure LOC; conventional commits `feat(scope): description`.
 
-### Must NOT have (guardrails, anti-slop, scope boundaries)
-- Do NOT retain or extend the Cloudflare Workers platform (`platform/` directory is dead code; no new work there).
-- Do NOT continue the existing `disaster-cf-replatform.md` plan or its boulder work.
-- Do NOT use the FEATURES.md checkbox catalog as the spec — the SOTA research synthesis document is the sole spec.
-- Do NOT auto-publish AI artifacts — always `review_status=draft` until human approval.
-- Do NOT use online RL as the sole operational controller — hard constraints always enforced.
-- Do NOT treat the evaluation testbed as an afterthought — it is a first-class deliverable.
-- Do NOT require cloud runtime dependencies — everything runs on local hardware with low/no internet.
-- Do NOT compress the confidence vector into a single scalar — all 6 dimensions must remain available to the reasoning engine.
-- Do NOT silently resolve contradictory hypotheses — preserve both supporting and contradicting evidence.
-- Do NOT implement during planning — execution starts only on `/start-work`.
-- Do NOT use `DESIGN.md` as the interface contract — it is SUPERSEDED by this plan. Where they conflict, this plan wins (ULID not UUID, epoch ms not server-default timestamps, new stack not old).
-- Do NOT vendor or depend on `pyds` (reineking/pyds) — it is archived since 2021, not on PyPI (name collision with NASA PDS), and the author recommends "probabilistic alternatives." Implement Dempster-Shafer combination rule directly (~50 LOC) if needed, or use pgmpy Bayesian fusion exclusively.
-- Do NOT assume Apache AGE has a SQLAlchemy dialect — graph queries require raw SQL via psycopg3. If AGE+PostGIS+TimescaleDB cannot coexist (AGE v1.8.0 requires PG 18, PostGIS 3.4 may not support PG 18), fall back to `graph_edges` table + recursive CTEs as the PRIMARY approach, not a fallback.
-- Do NOT assume pgmpy DBN supports continuous variables — it only accepts `TabularCPD` (discrete). All evidence must be discretized with documented bin boundaries.
-- Do NOT assume OR-Tools CP-SAT natively supports CVaR — it requires custom linearization via Rockafellar-Uryasev formulation with auxiliary variables.
-- Do NOT assume cloud LLM APIs are available at runtime — provide local LLM (Ollama) for offline inference.
+The entire 17-section execution prompt: implementation audit, foundation repair (migrations, incident domain, config hardening, worker lifecycle), rescue-ball simulator, Phase 1 vertical slice (auth, observation API, confidence/hypothesis, alerts/approval, tasks/assignment, realtime, seed, situation report), frontend (8 pages, map, action cards, offline states), offline PWA, SOTA plan continuation (fusion, perception, twin, optimizer, active sensing, privacy/ABAC, fairness, evaluation), testing hierarchy, phase gates A-E, automation commands, documentation, commit discipline, blocker handling, final report.
 
 ## Verification strategy
-> Zero human intervention — all verification is agent-executed.
-- **Test decision**: TDD for logic-bearing engines (evidence fusion, optimizer, EVI, knowledge graph queries, freshness decay, Beta updates, conformal calibration) + tests-after for CRUD/plumbing/routes/UI. Framework: `pytest` + `pytest-asyncio` for backend; `vitest` + Playwright for frontend; `docker compose` for integration.
-- **ML model verification**: unit tests with fixture tensors (not requiring real satellite data); integration tests with cached sample Sentinel-1 scenes; calibration tests against held-out flood labels.
-- **Optimizer verification**: unit tests with small scenario fixtures (2-3 zones, 2-3 teams); constraint violation tests; stability threshold tests; CVaR calculation tests.
-- **Evaluation testbed verification**: deterministic seeded runs; ablation comparisons produce different metrics when components are removed.
-- **Offline/degraded mode verification**: tests that simulate network partition, feed loss, and verify honest degradation (stale data flagged, uncertainty widens, capabilities reported as unavailable).
-- **Per-todo acceptance**: every todo carries References (SOTA spec section + exact files) + agent-executable Acceptance criteria (runnable command with expected output) + happy QA + failure QA + Commit.
-- **Evidence**: `.omo/evidence/task-<N>-resqnet-sage.<ext>`
+
+- **Gate A (Foundation):** `docker compose exec backend alembic upgrade head` succeeds from empty DB and from 0001; ORM/migration schema check passes; no `create_all()` or `ensure_table()` in production code paths; backend + worker start; health endpoints don't leak secrets; full backend test suite passes (with PostgreSQL test DB).
+- **Gate B (Phase 1 API):** Seed is idempotent; login + /me + logout work; observation filters work; simulator publishes through ingestion; observation reaches PostgreSQL; confidence vector exists on observations; trapped-person hypothesis/alert produced; operator approval creates a task; audit + provenance present.
+- **Gate C (Frontend):** `npm run build` succeeds; login flow works; map renders seeded data; simulator moves; alert appears; operator approves it; task appears in field responder view; task update reaches command centre; WebSocket + polling fallback both work.
+- **Gate D (Offline):** Core stack boots without cloud; field PWA loads from cache; offline mutation enters outbox; reconnect syncs exactly once; stale/degraded indicators appear.
+- **Gate E (SOTA):** All fusion/perception/twin/optimizer/sensing/privacy/ABAC/fairness/eval engine tests pass with real PostgreSQL integration.
+- **Final verification wave:** F1 plan compliance audit, F2 code quality review, F3 real manual QA (Playwright-asserted), F4 scope fidelity.
 
 ## Execution strategy
-### Parallel execution waves
-> Target 5-8 todos per wave. The plan is organized by SOTA spec layers (Sections 3-11), respecting dependency chains. ML perception (Layer 2) parallelizes with ingestion/knowledge graph (Layers 1+3). Evidence fusion (Layer 4) depends on both. Optimization (Layer 6) depends on fusion + digital twin (Layer 5). Active sensing (Layer 7) depends on optimization. UI (Layer 8) depends on all compute layers. Evaluation (Section 14) depends on everything.
 
-### Dependency matrix
-| Wave / Layer | Depends on | Blocks | Can parallelize with |
-|---|---|---|---|
-| Wave 0: Spike (T0a) | — | W1 | — |
-| Wave 1: Foundation (T1-T5) | T0a | everything | — |
-| Wave 2: Ingestion + Knowledge Graph (T6-T12) | W1 | W3, W4 | W4 (ML perception starts in parallel) |
-| Wave 3: Evidence Fusion (T13-T17) | W2 | W5, W6 | — |
-| Wave 4: ML Perception (T18-T22) | W1 + T9 (STAC) | W5 (scenarios use ML outputs) | W2, W3 |
-| Wave 5: Digital Twin (T23-T25) | W3, W4 | W6 | — |
-| Wave 6: Optimization + Active Sensing (T26-T31) | W3, W5 | W7 | — |
-| Wave 7: Decision Support UI (T32-T36) | W6 | W8 | — |
-| Wave 8: Resilient Comms (T37-T40) | W7 | W9 | — |
-| Wave 9: Evaluation Testbed (T41-T45) | all layers | W10 | — |
-| Wave 10: Privacy/Security/Integration (T46-T50) | cross-cutting | final verification | — |
-| Final verification (F1-F4) | all | — | — |
-
-> Metis-folded: Wave 4 depends on T9 (STAC adapter), not just W1 — SAR pipeline needs STAC for imagery indexing. Redpanda minimum memory is 4GB, not 1GB. Apache AGE may not coexist with PostGIS — graph_edges + recursive CTEs is the primary approach, AGE is optional. pyds is dropped — implement DS combination directly or use pgmpy exclusively.
+Five gate-ordered waves, each gated before the next starts. Each wave ends with a gate-checkpoint verification todo. Within each wave, todos are dependency-ordered. Every todo carries exhaustive file references (the executor has no interview context), agent-executable acceptance criteria, happy + failure QA scenarios with evidence paths, and a conventional commit line. Files created must stay under 250 pure LOC — split by responsibility if exceeded. All interactive elements must have ARIA labels. Pre-commit: run relevant focused tests + type checks + inspect diff for secrets/large files.
 
 ## Todos
-> Implementation + Test = ONE todo. Never separate.
-<!-- APPEND TASK BATCHES BELOW THIS LINE WITH edit/apply_patch - never rewrite the headers above. -->
-<!-- Each todo references the SOTA spec section it implements. -->
-
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-<!-- WAVE 0: SPIKE — Validate PostgreSQL extension coexistence (Metis GAP 3) -->
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-
-- [x] 51. Spike: Validate PostgreSQL + PostGIS + Apache AGE + TimescaleDB coexistence
-  What to do / Must NOT do: Build a custom Docker image (`Dockerfile.db`) based on `postgres:16` (or `postgres:18` if AGE requires it). Install PostGIS 3.4, Apache AGE (latest), and TimescaleDB extensions. Verify all four `CREATE EXTENSION` commands succeed in the same database. If any two are incompatible (AGE v1.8.0 requires PG 18; PostGIS 3.4 may not support PG 18), document the incompatibility and choose: (a) drop AGE — use `graph_edges` table + recursive CTEs as primary graph approach (recommended), (b) drop TimescaleDB — use plain PostgreSQL tables for sensor history, (c) use separate PostgreSQL instances. Also verify: `h3` extension availability (or plan for application-layer H3 via Python `h3` package). Output: a working `Dockerfile.db` + documented decision.
-  SOTA spec ref: §13.2 (data stores: PostgreSQL/PostGIS, TimescaleDB, graph layer)
-  Parallelization: Wave 0 | Blocked by: — | Blocks: T1, T2, T11
-  References: Metis GAP 3. Apache AGE META.json: `prereqs.runtime.requires.PostgreSQL: "18.0.0"`. PostGIS 3.4 supports PG 13-17. No pre-built image combining all three. PostGIS+AGE coexistence: open GitHub issues #179, #48.
-  Acceptance criteria: `docker build -t resqnet-db .` exits 0; `docker run resqnet-db psql -c "CREATE EXTENSION postgis; CREATE EXTENSION age; CREATE EXTENSION timescaledb;"` succeeds (or documented why one is dropped); decision recorded in `docs/db-extensions.md`.
-  QA scenarios:
-  ```
-  Scenario: all extensions load
-    Tool: bash
-    Steps: docker build -t resqnet-db -f Dockerfile.db . && docker run --rm resqnet-db psql -U disaster -c "CREATE EXTENSION postgis; CREATE EXTENSION age; CREATE EXTENSION timescaledb; SELECT extname FROM pg_extension;" | tee .omo/evidence/task-0a-resqnet-sage.txt
-    Expected: all extensions listed (or documented decision for dropped one)
-    Evidence: .omo/evidence/task-0a-resqnet-sage.txt
-  ```
-  Commit: Y | `chore(spike): validate PG extension coexistence`
-
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-<!-- WAVE 1: FOUNDATION — SOTA spec §3 (event schema), §13 (implementation) -->
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-
-- [x] 1. Project skeleton + Docker Compose (all services, local-hardware-first)
-  What to do / Must NOT do: Create `backend/` (Python 3.11+ FastAPI + SQLAlchemy 2.x + GeoAlchemy2 + Alembic + Pydantic v2) and `frontend/` (React 18 + Vite + MapLibre GL JS + deck.gl + Tailwind + TanStack Query). Root `docker-compose.yml` with services: `db` (PostGIS 16 + Apache AGE + TimescaleDB via `apache/age` image or postgis+age extension), `redpanda` (single-node, `--mode dev-container`, 4GB RAM minimum — 1GB is below Redpanda minimum), `benthos` (stream processor), `minio` (S3-compatible object storage, self-hosted), `redis` (cache + pub/sub), `ollama` (local LLM for offline inference — llama3.1:8b model, ~5GB RAM, needed for T36/T48 offline LLM), `backend` (uvicorn), `frontend` (Vite dev or static), `prometheus` + `grafana` (observability). `.env.example` with all env vars. `backend/requirements.txt` with: fastapi, uvicorn, sqlalchemy, geoalchemy2, alembic, pydantic, pydantic-settings, shapely, geojson-pydantic, **psycopg[binary]** (psycopg3, NOT psycopg2 — needed for Apache AGE raw SQL), aiokafka, redis, minio, torch, torchgeo, rasterio, gdal, ortools, pyomo, highspy, pgmpy, scikit-learn, mapie, onnxruntime, **faiss-cpu** (vector similarity for dedup — replaces Cloudflare Vectorize), **openai** (OpenAI-compatible client, works with Ollama at localhost:11434), opentelemetry-sdk, opentelemetry-instrumentation-fastapi, prometheus-client. `backend/app/` package structure: `__init__.py`, `main.py`, `config.py`, `db.py`, `deps.py`, `models/`, `schemas/`, `api/routes/`, `fusion/`, `knowledge/`, `twin/`, `optimizer/`, `sensing/`, `perception/`, `ingestion/`, `streaming/`, `eval/`, `lib/`, `auth/`, `audit/`. `frontend/package.json` with: react, vite, maplibre-gl, deck.gl, tailwindcss, @tanstack/react-query, react-router-dom, i18next. Must NOT use any cloud services at runtime — all services self-hosted in Docker Compose. Must NOT carry over any Cloudflare Workers code from `platform/`.
-  SOTA spec ref: §13.1 (streaming/ingestion), §13.2 (data stores), §13.3 (geospatial services), §13.4 (ML stack), §13.5 (optimization stack), §13.6 (observability)
-  Parallelization: Wave 1 | Blocked by: — | Blocks: T2-T5, all
-  References: `docker-compose.yml` (existing, to replace), `DESIGN.md:11-22` (stack), `.env.example` (existing, to update). Redpanda Docker pattern: `--mode dev-container`, `--smp 1`, `--memory 1G`, internal+external addr split (research bg_835b8072). Apache AGE: `apache/age:latest` image or `postgres:16` + `CREATE EXTENSION age`. MinIO: `minio/minio server /data`. Benthos: `jeffail/benthos:latest` with YAML config mount.
-  Acceptance criteria (agent-executable): `docker compose up -d` exits 0; `curl -s http://localhost:8000/healthz` returns `{"ok":true}`; `curl -s http://localhost:19092` (Redpanda) responds; `curl -s http://localhost:9000/minio/health/live` returns 200; `curl -s http://localhost:11434/api/tags` (Ollama) responds; **if T51 spike kept Apache AGE**: `docker compose exec db psql -U disaster -c "SELECT * FROM ag_catalog.create_graph('test_graph');"` succeeds; **if T51 dropped AGE**: `docker compose exec db psql -U disaster -c "SELECT count(*) FROM graph_edges;"` succeeds (graph_edges table exists as primary approach); `cd frontend && npm install && npm run build` exits 0.
-  QA scenarios:
-  ```
-  Scenario: full stack boots
-    Tool: bash
-    Steps: docker compose up -d --wait && curl -s http://localhost:8000/healthz | tee .omo/evidence/task-1-resqnet-sage.txt
-    Expected: JSON with ok:true and all service bindings present
-    Evidence: .omo/evidence/task-1-resqnet-sage.txt
-  Scenario: missing service causes healthz failure
-    Tool: bash
-    Steps: docker compose stop db && curl -s http://localhost:8000/healthz | tee .omo/evidence/task-1-resqnet-sage-error.txt; docker compose start db
-    Expected: healthz returns ok:false with db check failing
-    Evidence: .omo/evidence/task-1-resqnet-sage-error.txt
-  ```
-  Commit: Y | `chore(platform): project skeleton + docker compose stack`
-
-- [x] 2. Rich observation schema (23-field event model) + core DB schema (entities, relationships, hypotheses, scenarios)
-  What to do / Must NOT do: Create SQLAlchemy + GeoAlchemy2 models in `backend/app/models/`. Observation schema per SOTA spec §3.3 with ALL 23 fields: `observation_id` (ULID PK), `event_type`, `phenomenon`, `value` (float nullable), `unit`, `geometry` (PostGIS Geometry), `geometry_uncertainty` (float, meters), `observed_at` (bigint, UTC epoch ms), `valid_from` (bigint), `valid_until` (bigint nullable), `received_at` (bigint), `source_id` (text FK), `source_type` (enum), `collection_method` (text), `source_reliability` (float 0-1), `freshness` (float 0-1), `corroboration_state` (enum: uncorroborated/corroborated/contradicted/superseded), `model_uncertainty` (float nullable), `quality_flags` (JSONB), `access_policy` (enum: public/internal/sensitive), `provenance_chain` (JSONB array of source IDs), `raw_data_hash` (text), `model_version` (text nullable), `supersedes` (ULID nullable FK self), `duplicate_group` (ULID nullable). Core entities: `Hazard`, `Zone`, `Building`, `RoadSegment`, `Bridge`, `PowerSubstation`, `CellTower`, `Hospital`, `Shelter`, `Responder`, `Vehicle`, `Sensor`, `OperationalTask`, `Decision`, `Scenario` — each with `id` (ULID), `org_id`, `incident_id`, `geometry` (where applicable), `created_at`, `updated_at`. Relationship table: `graph_edges(source_type, source_id, edge_type, target_type, target_id, properties JSONB, valid_from, valid_until)` for Apache AGE graph. `hypotheses` table: `id`, `org_id`, `incident_id`, `entity_type`, `entity_id`, `claim` (text), `probability` (float 0-1), `supporting_evidence` (JSONB array of obs IDs), `contradicting_evidence` (JSONB), `status` (enum: active/resolved/superseded), `created_at`, `updated_at`. `scenarios` table: `id`, `org_id`, `incident_id`, `label` (enum: best/expected/worst), `probability` (float), `params` (JSONB), `result_geojson` (text nullable), `status` (enum: queued/running/completed/failed), `created_at`, `completed_at`. All tables carry `org_id` + `incident_id` (incident-scoped). `events` table for hash-chained audit: `id`, `org_id`, `actor`, `action`, `entity`, `before` (JSONB), `after` (JSONB), `ts` (bigint), `prev_hash` (text), `hash` (text). Alembic migration `0001_init.sql` creates all tables + PostGIS extension + AGE extension + H3 extension (`h3_postgis`) if available, else H3 via application layer.
-  SOTA spec ref: §3.3 (event schema), §5 (knowledge graph entities), §7.1 (scenario ensemble), §12.4 (provenance/auditability)
-  Parallelization: Wave 1 | Blocked by: T1 | Blocks: T6-T12, all schema consumers
-  References: SOTA spec §3.3 (23-field schema), §5.1 (core entities), §5.2 (relationships), §5.3 (hypotheses), §7.1 (scenarios), §12.4 (audit). `DESIGN.md:95-141` (existing entity list to adapt). Convention: ULID (not UUID), UTC epoch ms, org_id tenancy.
-  Acceptance criteria: `cd backend && alembic upgrade head` exits 0; `docker compose exec db psql -U disaster -c "SELECT column_name FROM information_schema.columns WHERE table_name='observations' ORDER BY ordinal_position;"` lists all 23 fields; a pytest inserts an observation and reads it back with geometry round-trip.
-  QA scenarios:
-  ```
-  Scenario: observation schema has all 23 fields
-    Tool: bash
-    Steps: docker compose up -d db && cd backend && alembic upgrade head && docker compose exec -T db psql -U disaster -c "SELECT count(*) FROM information_schema.columns WHERE table_name='observations';" | tee ../.omo/evidence/task-2-resqnet-sage.txt
-    Expected: count = 23 (or 25 including id and org_id)
-    Evidence: .omo/evidence/task-2-resqnet-sage.txt
-  Scenario: geometry round-trips through PostGIS
-    Tool: bash
-    Steps: cd backend && pytest tests/test_schema.py::test_observation_geometry_roundtrip -q | tee ../.omo/evidence/task-2-resqnet-sage-error.txt
-    Expected: pytest exits 0, GeoJSON Point persists and reads back with correct coordinates
-    Evidence: .omo/evidence/task-2-resqnet-sage-error.txt
-  ```
-  Commit: Y | `feat(schema): rich observation model + knowledge graph entities + audit`
-
-- [x] 3. ULID + timestamp + audit hash-chain + idempotency primitives (Python)
-  What to do / Must NOT do: `backend/app/lib/ulid.py` — ULID generation (Crockford base32, monotonic, 26-char). `backend/app/lib/time.py` — `now_ms()` UTC epoch ms, `from_iso()`, `to_iso()`. `backend/app/lib/audit.py` — `write_audit(db, org_id, incident_id, actor, action, entity, before, after)` that appends to `events` table with `hash = sha256(prev_hash + json(payload))` and verifies chain on read. `backend/app/lib/idempotency.py` — dedup by `(source, external_id)` unique constraint + message-id dedup table for queue messages. `backend/app/lib/serialize.py` — visibility serializer: whitelists fields by `visibility ∈ {public,internal,sensitive}` + `review_status ∈ {draft,reviewed,official}`. Must NOT use UUID — ULIDs only. Must NOT trust org_id from client — resolved server-side.
-  SOTA spec ref: §12.4 (provenance/auditability), §12.1 (data minimization), §12.2 (access control)
-  Parallelization: Wave 1 | Blocked by: T1, T2 | Blocks: all state-changing todos
-  References: `platform/worker/src/lib/ulid.ts` (existing pattern to port to Python), `platform/worker/src/lib/audit.ts` (existing hash-chain pattern). SOTA spec §12.4: "hash-chained append-only log is sufficient for tamper evidence".
-  Acceptance criteria: `cd backend && pytest tests/test_audit.py -q` passes — inserts 3 events, recomputes hashes, asserts chain validity; tampering middle row → `verify_chain()` returns false at that index. `pytest tests/test_idempotency.py` — insert same `(source, external_id)` twice → second is no-op.
-  QA scenarios:
-  ```
-  Scenario: audit hash-chain verifies
-    Tool: bash
-    Steps: cd backend && pytest tests/test_audit.py::test_chain_verifies -q | tee ../.omo/evidence/task-3-resqnet-sage.txt
-    Expected: exit 0, chain of 3 events verifies
-    Evidence: .omo/evidence/task-3-resqnet-sage.txt
-  Scenario: tampered chain detected
-    Tool: bash
-    Steps: cd backend && pytest tests/test_audit.py::test_tamper_detected -q | tee ../.omo/evidence/task-3-resqnet-sage-error.txt
-    Expected: exit 0, verify_chain returns false at tampered index
-    Evidence: .omo/evidence/task-3-resqnet-sage-error.txt
-  ```
-  Commit: Y | `feat(lib): ulid + audit hash-chain + idempotency + visibility serializer`
-
-- [x] 4. FastAPI app skeleton: routes, auth, error model, OpenAPI, WebSocket
-  What to do / Must NOT do: `backend/app/main.py` — FastAPI app with lifespan (starts Redpanda producer, stops on shutdown). Middleware: request_id (UUID, header `X-Request-Id`), org_context (resolves org_id from auth, never from client), structured JSON logger, global error handler returning `{error:{code,message,request_id}}`. Route groups: `/api/auth`, `/api/observations`, `/api/hypotheses`, `/api/scenarios`, `/api/optimize`, `/api/sensing`, `/api/eval`, `/healthz`, `/healthz/deep`, `/openapi.json`. Auth: JWT (python-jose) + passlib bcrypt, `require_roles(*roles)` dep, seed demo users (admin, emergency_manager, responder_coordinator, field_responder, shelter_manager, viewer) password `demo1234`. WebSocket endpoint `/ws/events/{incident_id}` for real-time updates (Redpanda consumer → WS fanout). Pydantic v2 schemas for all entities with `model_config = ConfigDict(from_attributes=True)`. Must NOT scatter auth/org resolution — one middleware layer.
-  SOTA spec ref: §13.1 (FastAPI), §10.2 (evaluative AI interface modes), §8 (API for action portfolios)
-  Parallelization: Wave 1 | Blocked by: T1, T2 | Blocks: T6-T12
-  References: `DESIGN.md:147-206` (API surface to adapt), `platform/worker/src/index.ts` (existing route structure to mirror). SOTA spec §10 (human-centered decision support). aiokafka lifespan pattern from research bg_835b8072.
-  Acceptance criteria: `curl -s http://localhost:8000/openapi.json | python -m json.tool` returns valid OpenAPI 3; `curl -s -X POST http://localhost:8000/api/auth/login -d 'username=admin@demo.disaster&password=demo1234'` returns JWT; WebSocket connect to `/ws/events/test-incident` returns connection accepted.
-  QA scenarios:
-  ```
-  Scenario: auth login returns JWT
-    Tool: bash
-    Steps: docker compose up -d backend && curl -s -X POST http://localhost:8000/api/auth/login -H 'Content-Type: application/x-www-form-urlencoded' --data 'username=admin@demo.disaster&password=demo1234' | python -m json.tool | tee .omo/evidence/task-4-resqnet-sage.txt
-    Expected: JSON contains access_token
-    Evidence: .omo/evidence/task-4-resqnet-sage.txt
-  Scenario: invalid credentials rejected
-    Tool: bash
-    Steps: curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8000/api/auth/login -H 'Content-Type: application/x-www-form-urlencoded' --data 'username=admin@demo.disaster&password=wrong' | tee .omo/evidence/task-4-resqnet-sage-error.txt
-    Expected: HTTP 401
-    Evidence: .omo/evidence/task-4-resqnet-sage-error.txt
-  ```
-  Commit: Y | `feat(api): fastapi skeleton + auth + websocket + openapi`
-
-- [x] 5. OpenTelemetry + Prometheus + Grafana observability
-  What to do / Must NOT do: `backend/app/lib/telemetry.py` — OpenTelemetry traces (FastAPI instrumentation, SQLAlchemy instrumentation, Redpafka producer/consumer spans), Prometheus metrics (request count, latency histogram, active WebSocket count, optimization solve time, ML inference time, queue depth). `prometheus.yml` config scraping backend `/metrics` endpoint. `grafana/provisioning/` dashboards: system health, request latency, optimization performance, ML model performance, feed health. Distributed trace IDs propagated from source observation to recommendation (SOTA spec §13.6). Must NOT add observability as an afterthought — wired from T1 onward.
-  SOTA spec ref: §13.6 (observability), §14.7 (resilience metrics: p50/p95 latency)
-  Parallelization: Wave 1 | Blocked by: T1, T4 | Blocks: all (cross-cutting)
-  References: SOTA spec §13.6: "OpenTelemetry; Prometheus; Grafana; distributed trace IDs propagated from source observation to recommendation". Research bg_835b8072 (Prometheus + Grafana Docker setup).
-  Acceptance criteria: `curl -s http://localhost:8000/metrics` returns Prometheus format metrics; Grafana at `http://localhost:3001` loads system health dashboard; a request to `/api/observations` produces a trace span visible in logs.
-  QA scenarios:
-  ```
-  Scenario: metrics endpoint returns prometheus format
-    Tool: bash
-    Steps: curl -s http://localhost:8000/metrics | head -20 | tee .omo/evidence/task-5-resqnet-sage.txt
-    Expected: output starts with # HELP / # TYPE / metric_name lines
-    Evidence: .omo/evidence/task-5-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(observability): opentelemetry traces + prometheus metrics + grafana dashboards`
-
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-<!-- WAVE 2: INGESTION + KNOWLEDGE GRAPH — SOTA spec §3 (federated data fabric), §5 (knowledge graph) -->
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-
-- [x] 6. CAP 1.2 adapter — parse, validate, ingest CAP alerts
-  What to do / Must NOT do: `backend/app/ingestion/adapters/cap.py` — parse OASIS CAP 1.2 XML alerts (from NDMA SACHET, IPAWS, or any CAP feed). Extract: alert info, area descriptions, geometry (polygon/circle), urgency, severity, certainty, effective/expires times, sender, references (for updates/cancellations). Map to observation schema (event_type=`official_alert`, source_type=`cap_feed`). Handle CAP update/cancel by setting `supersedes` field. Idempotent by CAP identifier. Must NOT auto-publish — all alerts land as `review_status=draft` if AI-generated, `official` if from verified official source.
-  SOTA spec ref: §3.2 (CAP 1.2 standard), §3.3 (event schema)
-  Parallelization: Wave 2 | Blocked by: T2, T4 | Blocks: T10
-  References: SOTA spec §3.2: "OASIS CAP 1.2 is a standardized all-hazard format". `platform/worker/src/api/routes/ingestion.ts` (existing CAP route to port). OASIS CAP 1.2 spec: https://docs.oasis-open.org/emergency/cap/v1.2/CAP-v1.2-os.html
-  Acceptance criteria: `cd backend && pytest tests/test_cap_adapter.py -q` — parses sample CAP XML, extracts geometry + severity, writes observation row, idempotent re-parse produces same observation_id.
-  QA scenarios:
-  ```
-  Scenario: CAP XML parsed into observation
-    Tool: bash
-    Steps: cd backend && pytest tests/test_cap_adapter.py::test_parse_cap_alert -q | tee ../.omo/evidence/task-6-resqnet-sage.txt
-    Expected: exit 0, observation has geometry, observed_at, source_type=cap_feed
-    Evidence: .omo/evidence/task-6-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(ingestion): CAP 1.2 adapter`
-
-- [x] 7. SensorThings API adapter — sensor observations, datastreams
-  What to do / Must NOT do: `backend/app/ingestion/adapters/sensorthings.py` — OGC SensorThings API client. Connect to SensorThings endpoints (rain gauges, river gauges, tide gauges, weather stations, air-quality sensors, IoT flood sensors). Pull Datastream → Observations → map to observation schema (event_type=`sensor_reading`, source_type=`sensorthings`). Handle pagination (`@iot.nextLink`), filtering by time range and spatial bbox. Cron-triggered pull + webhook push support. Must NOT assume sensor availability — handle 404/timeout gracefully and log feed health.
-  SOTA spec ref: §3.2 (OGC SensorThings API), §4.1 (meteorological/hydrological sources)
-  Parallelization: Wave 2 | Blocked by: T2, T4 | Blocks: T10
-  References: SOTA spec §3.2: "Use SensorThings for observations from rain gauges, river gauges...". OGC SensorThings API spec: https://docs.ogc.org/is/15-078r6/15-078r6.html
-  Acceptance criteria: `pytest tests/test_sensorthings_adapter.py -q` — mocks SensorThings endpoint, pulls 5 observations, maps to observation schema with correct phenomenon/unit/geometry.
-  QA scenarios:
-  ```
-  Scenario: SensorThings observations ingested
-    Tool: bash
-    Steps: cd backend && pytest tests/test_sensorthings_adapter.py::test_pull_observations -q | tee ../.omo/evidence/task-7-resqnet-sage.txt
-    Expected: exit 0, 5 observations created with correct mapping
-    Evidence: .omo/evidence/task-7-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(ingestion): SensorThings API adapter`
-
-- [x] 8. OGC API Features adapter — roads, shelters, hospitals, boundaries
-  What to do / Must NOT do: `backend/app/ingestion/adapters/ogc_features.py` — OGC API Features client. Connect to OGC API Features endpoints for vector entities (roads, shelters, hospitals, administrative boundaries, evacuation zones). Pull features by collection + bbox + datetime. Map to core entity tables (RoadSegment, Shelter, Hospital, etc.) with geometry in PostGIS. Support incremental sync (only pull features modified since last sync via `datetime` filter). Must NOT overwrite user-edited data — use upsert with conflict detection.
-  SOTA spec ref: §3.2 (OGC API Features), §5.1 (core entities)
-  Parallelization: Wave 2 | Blocked by: T2, T4 | Blocks: T10
-  References: SOTA spec §3.2: "Use OGC API Features for roads, shelters, hospitals...". OGC API Features spec: https://docs.ogc.org/is/17-069r4/17-069r4.html
-  Acceptance criteria: `pytest tests/test_ogc_adapter.py -q` — mocks OGC API Features endpoint, pulls 10 road features, creates RoadSegment rows with PostGIS LINESTRING geometry.
-  QA scenarios:
-  ```
-  Scenario: OGC features ingested as entities
-    Tool: bash
-    Steps: cd backend && pytest tests/test_ogc_adapter.py::test_pull_roads -q | tee ../.omo/evidence/task-8-resqnet-sage.txt
-    Expected: exit 0, road segments created with geometry
-    Evidence: .omo/evidence/task-8-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(ingestion): OGC API Features adapter`
-
-- [x] 9. STAC catalog + HDX HAPI adapter — satellite imagery indexing, humanitarian data
-  What to do / Must NOT do: `backend/app/ingestion/adapters/stac.py` — STAC client (pystac-client) for satellite/aerial/drone imagery indexing. Index by location, time, sensor, cloud cover. Store metadata in DB, actual imagery in MinIO (S3-compatible). Support local STAC catalog for offline imagery. `backend/app/ingestion/adapters/hdx.py` — HDX Humanitarian API client for standardized humanitarian indicators and operational datasets. Must NOT require internet at runtime — support cached/pre-downloaded catalogs for offline operation.
-  SOTA spec ref: §3.2 (STAC), §3.2 (HDX HAPI), §13.2 (pgSTAC/object storage)
-  Parallelization: Wave 2 | Blocked by: T1, T2 | Blocks: T18 (SAR pipeline needs STAC)
-  References: SOTA spec §3.2: "Use the SpatioTemporal Asset Catalog specification for satellite, aerial and drone imagery". SOTA spec §3.2: "For standardized humanitarian indicators... use HDX Humanitarian API". Note: "OCHA retired HDX HXL services on January 31, 2026" — use HAPI, not HXL.
-  Acceptance criteria: `pytest tests/test_stac_adapter.py -q` — indexes 3 sample STAC items, stores metadata in DB; `pytest tests/test_hdx_adapter.py -q` — pulls 2 humanitarian indicators.
-  QA scenarios:
-  ```
-  Scenario: STAC items indexed
-    Tool: bash
-    Steps: cd backend && pytest tests/test_stac_adapter.py::test_index_stac_items -q | tee ../.omo/evidence/task-9-resqnet-sage.txt
-    Expected: exit 0, 3 STAC items indexed with location/time/sensor metadata
-    Evidence: .omo/evidence/task-9-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(ingestion): STAC catalog + HDX HAPI adapters`
-
-- [x] 10. Event-time processing pipeline — Redpanda + Benthos (normalize → dedup → store with provenance)
-  What to do / Must NOT do: `backend/app/streaming/producer.py` — aiokafka async producer writing to Redpanda topic `observations.raw`. `backend/app/streaming/consumer.py` — async consumer reading from `observations.normalized` topic → INSERT to PostgreSQL with provenance. `benthos/disaster_pipeline.yaml` — Benthos config: input from `observations.raw`, normalize (bloblang: timestamp to epoch ms, source_type uppercase, coordinate normalization, metadata target_topic), dedup by observation_id (Redis cache), switch-route to type-specific topics (`observations.sensor`, `observations.citizen`, `observations.satellite`, `alerts.official`), DLQ to `observations.dlq`. Schema registry with Avro. PostgreSQL LISTEN/NOTIFY for instant dashboard updates. Must NOT lose observations on processing failure — DLQ + idempotency keys on every message.
-  SOTA spec ref: §3.1 (federated ingestion), §3.3 (three different times: observed/received/valid), §13.1 (Kafka/Redpanda + Benthos)
-  Parallelization: Wave 2 | Blocked by: T1, T2, T4 | Blocks: T11
-  References: SOTA spec §13.1: "Kafka, Redpanda or Pulsar for event transport... For a smaller prototype, Redpanda plus Benthos or a lightweight stream processor may be sufficient." Research bg_835b8072: Redpanda Docker setup (1GB, dev-container), aiokafka producer/consumer patterns, Benthos YAML pipeline (bloblang + dedup + switch routing), Avro schema registry.
-  Acceptance criteria: `docker compose exec redpanda rpk topic list` shows all topics; produce a test observation to `observations.raw` → it appears in `observations.normalized` → INSERT in PostgreSQL; duplicate observation_id is deduped; a malformed message goes to DLQ.
-  QA scenarios:
-  ```
-  Scenario: observation flows through pipeline
-    Tool: bash
-    Steps: docker compose up -d && python -c "import asyncio; from app.streaming.producer import producer_manager; asyncio.run(producer_manager.start()); asyncio.run(producer_manager.send('observations.raw', {'observation_id':'test1','source_type':'SENSOR','lat':26.0,'lon':-80.0,'timestamp':'2026-01-01T00:00:00Z'}))" && sleep 2 && docker compose exec db psql -U disaster -c "SELECT count(*) FROM observations WHERE observation_id='test1';" | tee .omo/evidence/task-10-resqnet-sage.txt
-    Expected: count = 1
-    Evidence: .omo/evidence/task-10-resqnet-sage.txt
-  Scenario: duplicate observation deduped
-    Tool: bash
-    Steps: (produce same observation_id twice) && docker compose exec db psql -U disaster -c "SELECT count(*) FROM observations WHERE observation_id='test1';" | tee .omo/evidence/task-10-resqnet-sage-error.txt
-    Expected: count = 1 (deduped)
-    Evidence: .omo/evidence/task-10-resqnet-sage-error.txt
-  ```
-  Commit: Y | `feat(streaming): Redpanda + Benthos event-time pipeline`
-
-- [x] 11. Temporal crisis knowledge graph — entities, relationships, contradictory hypotheses (Apache AGE)
-  What to do / Must NOT do: `backend/app/knowledge/graph.py` — build and query the temporal crisis knowledge graph using Apache AGE (PostgreSQL extension). Create graph per incident. Vertices: all entities from T2 (hazards, zones, buildings, roads, bridges, substations, towers, hospitals, shelters, responders, vehicles, sensors, tasks, decisions, observations, hypotheses). Edges per SOTA spec §5.2: ROAD passes_through ZONE, ROAD provides_access_to HOSPITAL, SHELTER has_capacity, ZONE affected_by FLOOD, TOWER powered_by SUBSTATION, REPORT refers_to BUILDING, RESPONDER assigned_to TASK, TASK requires VEHICLE_TYPE, HOSPITAL reachable_via ROUTE, OBSERVATION supports HYPOTHESIS, OBSERVATION contradicts HYPOTHESIS, ACTION supersedes ACTION. Each edge carries `valid_from`, `valid_until`, `properties` (JSONB). Queries via Cypher: multi-hop traversal for cascading impact analysis. Must NOT use a separate graph database — AGE runs inside PostgreSQL. Fallback: if AGE not available, use `graph_edges` table + recursive CTEs.
-  SOTA spec ref: §5 (temporal crisis knowledge graph), §5.2 (relationships), §5.3 (contradictory hypotheses)
-  Parallelization: Wave 2 | Blocked by: T2, T10 | Blocks: T13 (fusion reads from graph)
-  References: SOTA spec §5.1 (core entities), §5.2 (relationships list), §5.3 ("Do not silently choose one version and discard the rest"). Research bg_835b8072: Apache AGE setup (`apache/age:latest`), `create_graph()`, Cypher query format (`SELECT * FROM cypher('graph', $$ MATCH ... $$) AS (...)`).
-  Acceptance criteria: `pytest tests/test_knowledge_graph.py -q` — creates 5 entities + 5 edges, queries 2-hop neighbors. **If T51 kept AGE**: queries via Cypher (`SELECT * FROM cypher(...)`). **If T51 dropped AGE**: queries via recursive CTE over `graph_edges` table. Both paths must return correct 2-hop results. `pytest tests/test_hypotheses.py` — creates 2 contradictory hypotheses for same entity, both preserved with supporting/contradicting evidence.
-  QA scenarios:
-  ```
-  Scenario: 2-hop graph query returns correct neighbors
-    Tool: bash
-    Steps: cd backend && pytest tests/test_knowledge_graph.py::test_two_hop_query -q | tee ../.omo/evidence/task-11-resqnet-sage.txt
-    Expected: exit 0, query returns entities 2 hops from start node
-    Evidence: .omo/evidence/task-11-resqnet-sage.txt
-  Scenario: contradictory hypotheses both preserved
-    Tool: bash
-    Steps: cd backend && pytest tests/test_hypotheses.py::test_contradictory_hypotheses_preserved -q | tee ../.omo/evidence/task-11-resqnet-sage-error.txt
-    Expected: exit 0, both H1 (passable) and H2 (impassable) exist with their evidence
-    Evidence: .omo/evidence/task-11-resqnet-sage-error.txt
-  ```
-  Commit: Y | `feat(knowledge): temporal crisis knowledge graph + contradictory hypotheses`
-
-- [x] 12. Federated data fabric — source ownership, policy-controlled sharing, delayed sync
-  What to do / Must NOT do: `backend/app/ingestion/federation.py` — support central feeds (full data), federated queries (query remote endpoints, don't copy data), aggregated outputs (receive summaries, not raw data), local edge processing (process locally, sync results). `sources` table: `id`, `org_id`, `name`, `type` (enum), `provider`, `refresh_interval_s`, `last_success_at`, `last_error`, `status`, `config` (JSONB), `access_policy` (enum), `ownership` (enum: owned/federated/aggregated). Delayed sync: outbox table for observations created offline, sync when connectivity restored, dedup by content hash. Must NOT blindly centralize all data — respect source ownership and access policies.
-  SOTA spec ref: §3.1 (federated data fabric), §3.2 (standards), §11 (resilient communications)
-  Parallelization: Wave 2 | Blocked by: T2, T4 | Blocks: T37 (offline sync)
-  References: SOTA spec §3.1: "Utilities, police, hospitals and telecom providers may not permit raw operational data to leave their infrastructure." SOTA spec §3.1: "retain source ownership and provenance instead of copying all data into an unrestricted central database."
-  Acceptance criteria: `pytest tests/test_federation.py -q` — registers a federated source, queries it remotely (mocked), receives aggregated output without copying raw data; delayed sync: 3 observations created offline, sync produces 3 inserts + 0 duplicates.
-  QA scenarios:
-  ```
-  Scenario: federated query returns aggregated data
-    Tool: bash
-    Steps: cd backend && pytest tests/test_federation.py::test_federated_query -q | tee ../.omo/evidence/task-12-resqnet-sage.txt
-    Expected: exit 0, aggregated data received without raw data copy
-    Evidence: .omo/evidence/task-12-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(ingestion): federated data fabric + delayed sync`
-
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-<!-- WAVE 3: PROBABILISTIC EVIDENCE FUSION — SOTA spec §6 -->
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-
-- [x] 13. Confidence vector computation (6 dimensions: source reliability, corroboration, freshness, geo precision, model uncertainty, conflict)
-  What to do / Must NOT do: `backend/app/fusion/confidence.py` — compute confidence vector `q_i = [S_i, C_i, F_i, G_i, M_i, K_i]` for each observation per SOTA spec §6.1. `S_i` (source reliability): from Beta model (T14). `C_i` (corroboration strength): count of other observations within spatial+temporal window supporting same claim, normalized 0-1. `F_i` (freshness): exponential decay `F_i(t) = exp(-(t-t_i)/tau_k)` per phenomenon type (T15). `G_i` (geographic precision): based on source type (exact GPS=1.0, road segment=0.7, ward=0.3, vague text=0.1). `M_i` (model uncertainty): from ML model confidence or None for direct observations. `K_i` (conflict level): 0 if no contradictions, increases with number/strength of contradicting observations. Store all 6 dimensions per observation in `quality_flags` JSONB. Compute display confidence as weighted sum only for UI, but NEVER compress for the reasoning engine. Must NOT reduce to single scalar internally.
-  SOTA spec ref: §6.1 (confidence vector), §6.2 (freshness), §6.3 (source reliability), §6.4 (probabilistic world state)
-  Parallelization: Wave 3 | Blocked by: T2, T11 | Blocks: T16, T26
-  References: SOTA spec §6.1: "For observation i, retain: q_i = [S_i, C_i, F_i, G_i, M_i, K_i]". `platform/worker/src/lib/scoring/taskPriority.ts` (existing scalar score to replace). Research bg_ba8ac5cb: pgmpy for DBN, analytic Beta updates for source reliability.
-  Acceptance criteria: `pytest tests/test_confidence_vector.py -q` — computes all 6 dimensions for 5 test observations; corroboration dimension increases when 2 observations support same claim; conflict dimension increases when contradicting observation added.
-  QA scenarios:
-  ```
-  Scenario: confidence vector has 6 dimensions
-    Tool: bash
-    Steps: cd backend && pytest tests/test_confidence_vector.py::test_six_dimensions -q | tee ../.omo/evidence/task-13-resqnet-sage.txt
-    Expected: exit 0, vector has S, C, F, G, M, K values
-    Evidence: .omo/evidence/task-13-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(fusion): confidence vector computation (6D)`
-
-- [x] 14. Source reliability Beta model — updates with field verification, conditioned on report type
-  What to do / Must NOT do: `backend/app/fusion/reliability.py` — `SourceReliabilityTracker` class with Beta(α, β) per source. Initialize with prior Beta(2, 2). On field verification: `α += 1` if verified correct, `β += 1` if disproved. Apply time decay so old performance doesn't dominate: `α_eff = α * decay_factor`, `β_eff = β * decay_factor`. Condition on report type: a source can be reliable for road observations but poor at flood depth — store separate (α, β) per (source_id, phenomenon_type). Expected reliability = α/(α+β). 95% credible interval via scipy.stats.beta.ppf. Must NOT assign permanent credibility — always updatable.
-  SOTA spec ref: §6.3 (source reliability should update over time)
-  Parallelization: Wave 3 | Blocked by: T2 | Blocks: T13
-  References: SOTA spec §6.3: "A responder, sensor, social account or predictive model should not have a permanently assigned credibility." SOTA spec §6.3: "This should be conditioned on report type." Research bg_ba8ac5cb: "Analytic Beta-Binomial conjugate updates (O(1) per update — perfect for FastAPI)".
-  Acceptance criteria: `pytest tests/test_reliability.py -q` — tracker starts at 0.5, 3 correct reports → reliability > 0.6, 2 disproven → reliability < 0.4; conditioned reliability: same source reliable for roads (α=10, β=1) but poor for flood_depth (α=1, β=10).
-  QA scenarios:
-  ```
-  Scenario: reliability updates with verification
-    Tool: bash
-    Steps: cd backend && pytest tests/test_reliability.py::test_reliability_updates -q | tee ../.omo/evidence/task-14-resqnet-sage.txt
-    Expected: exit 0, reliability moves from 0.5 to >0.6 after 3 correct
-    Evidence: .omo/evidence/task-14-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(fusion): Beta-distributed source reliability with type conditioning`
-
-- [x] 15. Phenomenon-specific freshness decay — per-observation-type τ
-  What to do / Must NOT do: `backend/app/fusion/freshness.py` — freshness function `F_i(t) = exp(-(t - t_i) / tau_k)` where τ_k depends on observation type k. Configurable τ per phenomenon: responder_position (τ=60s), road_passability (τ=600s), shelter_capacity (τ=1800s), building_footprint (τ=86400s), demographic_vulnerability (τ=2592000s). Store τ config in `settings` table (tenant-overridable). Compute freshness on read (not write) so it's always current. Must NOT use same expiry for every feed — phenomenon-specific.
-  SOTA spec ref: §6.2 (phenomenon-specific freshness)
-  Parallelization: Wave 3 | Blocked by: T2 | Blocks: T13
-  References: SOTA spec §6.2: "Using the same expiry period for every feed would be incorrect." SOTA spec §6.2 provides τ examples.
-  Acceptance criteria: `pytest tests/test_freshness.py -q` — road observation 60s old has F > 0.9 (F=exp(-60/600)=0.905); same observation 2h old has F < 0.01 (F=exp(-7200/600)≈0.000006); building footprint 1h old has F > 0.9 (F=exp(-3600/86400)=0.959, large τ=86400s).
-  QA scenarios:
-  ```
-  Scenario: freshness decays differently per type
-    Tool: bash
-    Steps: cd backend && pytest tests/test_freshness.py::test_per_type_decay -q | tee ../.omo/evidence/task-15-resqnet-sage.txt
-    Expected: exit 0, road F < building F for same age
-    Evidence: .omo/evidence/task-15-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(fusion): phenomenon-specific freshness decay`
-
-- [x] 16. Probabilistic world state estimation — pgmpy Dynamic Bayesian Network (P(X_t | O_{1:t}))
-  What to do / Must NOT do: `backend/app/fusion/world_state.py` — Dynamic Bayesian Network using pgmpy `DynamicBayesianNetwork` + `DBNInference`. Define crisis state nodes per hazard type (e.g., flood_severity ∈ {none, minor, moderate, severe, extreme}). Inter-slice edges: state_t → state_t+1 (transition). Intra-slice edges: state → sensor_reading, state → citizen_report, state → satellite_observation. CPDs: transition matrix (P(state_t+1 | state_t)), sensor model (P(reading | state)), report model (P(report | state)). `forward_inference(variables=[(state, t)], evidence={...})` for filtering P(X_t | O_{1:t}). Wrap in stateful service class with potential caching for rolling window (last N time slices). Convert heterogeneous evidence (sensor readings, citizen reports, ML outputs) to discrete observations for the DBN. Must NOT use MCMC for real-time — use exact inference (pgmpy's junction tree).
-  SOTA spec ref: §6.4 (probabilistic world state), §6.4 (implementation options: Bayesian networks, DBNs)
-  Parallelization: Wave 3 | Blocked by: T13 | Blocks: T23 (digital twin reads world state)
-  References: SOTA spec §6.4: "P(X_t | O_{1:t})". SOTA spec §6.4: "Bayesian networks; dynamic Bayesian networks; factor graphs; particle filters; Dempster-Shafer". Research bg_ba8ac5cb: pgmpy v1.1.2 active, `DBNInference.forward_inference()`, uses `(node, time_slice)` tuples, exact inference via Interface Algorithm. "PyMC's MCMC is too slow for real-time FastAPI request handling (seconds vs milliseconds for pgmpy's exact inference)."
-  Acceptance criteria: `pytest tests/test_world_state.py -q` — DBN with 3-state flood severity, 3 time slices, forward inference returns probability distribution summing to 1.0; evidence of severe flood increases P(severe) from prior 0.1 to > 0.5.
-  QA scenarios:
-  ```
-  Scenario: DBN forward inference produces valid distribution
-    Tool: bash
-    Steps: cd backend && pytest tests/test_world_state.py::test_forward_inference -q | tee ../.omo/evidence/task-16-resqnet-sage.txt
-    Expected: exit 0, probabilities sum to 1.0, P(severe) > 0.5 with severe evidence
-    Evidence: .omo/evidence/task-16-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(fusion): pgmpy DBN probabilistic world state estimation`
-
-- [x] 17. Conformal calibration layer — MAPIE (Brier score, ECE, conformal prediction sets, reliability diagrams)
-  What to do / Must NOT do: `backend/app/fusion/calibration.py` — wrap ML model predictions with MAPIE conformal prediction intervals. `MapieTimeSeriesRegressor` for time series (EnbPI, `partial_fit` for streaming). `MapieRegressor` for static calibration. Compute and store: Brier score, expected calibration error (ECE), reliability diagram data, negative log likelihood, conformal coverage, interval width, false-confidence rate. Geographically weighted conformal: calibrate per H3 zone to handle spatial distribution shift. Calibration dashboard endpoint returning all metrics. Must NOT claim calibrated uncertainty without empirical validation — compute actual coverage.
-  SOTA spec ref: §6.5 (calibrated uncertainty), §14.5 (uncertainty metrics)
-  Parallelization: Wave 3 | Blocked by: T13 | Blocks: T44 (evaluation metrics)
-  References: SOTA spec §6.5: "Brier score; expected calibration error; reliability diagrams; negative log likelihood; conformal prediction coverage; selective-risk curves." SOTA spec §6.5: "Conformal prediction is particularly useful because it can produce prediction sets or intervals with statistical coverage guarantees." SOTA spec §6.5: "Geographically weighted conformal methods may improve calibration under spatial distribution shift." Research bg_ba8ac5cb: MAPIE v1.4.1 (June 2026), scikit-learn-contrib, `MapieTimeSeriesRegressor.partial_fit()`.
-  Acceptance criteria: `pytest tests/test_calibration.py -q` — wraps a mock classifier, computes Brier score + ECE, conformal coverage >= requested alpha; `partial_fit` updates intervals with new data.
-  QA scenarios:
-  ```
-  Scenario: conformal coverage meets target
-    Tool: bash
-    Steps: cd backend && pytest tests/test_calibration.py::test_coverage -q | tee ../.omo/evidence/task-17-resqnet-sage.txt
-    Expected: exit 0, coverage >= 0.89 for alpha=0.1 (90% target)
-    Evidence: .omo/evidence/task-17-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(fusion): conformal calibration (MAPIE) + uncertainty metrics`
-
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-<!-- WAVE 4: ML PERCEPTION — SOTA spec §4 (multimodal crisis perception) -->
-<!-- NOTE: This wave PARALLELIZES with Waves 2-3 (only depends on Wave 1 + T9) -->
-<!-- INTRA-WAVE ORDER: T22 (model serving infrastructure) MUST be completed FIRST, then T18-T21 can parallelize. T18-T21 all depend on T22's serving layer. -->
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-
-- [x] 18. SAR flood mapping pipeline — Sentinel-1 acquisition + TorchGeo + DOFA + probabilistic output
-  What to do / Must NOT do: `backend/app/perception/flood_mapping.py` — end-to-end SAR flood mapping pipeline. (1) Data acquisition: CDSETool (`from cdsetool.query import query_features; from cdsetool.download import download_features`) for Sentinel-1 GRD products from Copernicus Data Space Ecosystem — NOT sentinelsat (archived/dead). Support "sync when connected" pattern: download available scenes when internet is up, cache in MinIO. (2) Loading: TorchGeo `Sentinel1` dataset class (`from torchgeo.datasets import Sentinel1`, bands=['VV','VH'], separate_files=True) or rasterio for direct file access. (3) Model: DOFA foundation model (`from torchgeo.models import dofa_base_patch16_224, DOFABase16_Weights`) with wavelength=[5.405, 5.405] for C-band SAR. Fine-tune a segmentation head on flood dataset (Sen1Floods11 or WorldFloods). (4) Output: flood probability per pixel (softmax), water depth estimate (DEM fusion via HAND method), uncertainty interval (Monte Carlo Dropout, n=30 samples), model disagreement (ensemble variance), observation time, cloud/sensor quality flag, change from previous observation. Store as COG (Cloud Optimized GeoTIFF) in MinIO via rasterio + rio-cogeo. (5) Copernicus GFM integration: fuse GFM operational product with model output. Must NOT convert to binary flooded/not-flooded immediately — preserve probabilities.
-  SOTA spec ref: §4.2 (flood mapping from Earth observation), §4.2 (required outputs), §6.5 (calibrated uncertainty)
-  Parallelization: Wave 4 (parallel with W2-W3) | Blocked by: T1, T9 | Blocks: T23
-  References: SOTA spec §4.2: "Sentinel-1 synthetic-aperture radar can observe through cloud and at night." SOTA spec §4.2: "The flood model should produce: flood probability per pixel; estimated water depth distribution; uncertainty interval; observation time; model disagreement; cloud or sensor quality flag; change from previous observation." Research bg_bac2773d: CDSETool replaces sentinelsat, DOFA built into TorchGeo, `Sentinel1` dataset class, Monte Carlo Dropout for uncertainty, COG output via rio-cogeo, GFM via Sentinel Hub API.
-  Acceptance criteria: `pytest tests/test_flood_mapping.py -q` — loads sample SAR tensor [2, 224, 224], runs DOFA inference, outputs flood probability map [224, 224] in [0,1], uncertainty std map, writes COG to MinIO. (Use fixture tensor, no real satellite data needed for unit test.)
-  QA scenarios:
-  ```
-  Scenario: flood map produced from SAR tensor
-    Tool: bash
-    Steps: cd backend && pytest tests/test_flood_mapping.py::test_inference -q | tee ../.omo/evidence/task-18-resqnet-sage.txt
-    Expected: exit 0, flood_prob shape [224,224], values in [0,1], uncertainty map present
-    Evidence: .omo/evidence/task-18-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(perception): SAR flood mapping pipeline (DOFA + probabilistic output)`
-
-- [ ] 19. Foundation model ensemble + model disagreement tracking
-  What to do / Must NOT do: `backend/app/perception/ensemble.py` — ensemble of multiple flood mapping models: (1) DOFA fine-tuned, (2) TorchGeo ResNet50 with SENTINEL1_GRD_MOCO weights + segmentation head, (3) Copernicus GFM operational product. Ensemble output = weighted average of per-pixel probabilities. Model disagreement = variance across ensemble members per pixel (flag high-disagreement zones). Weight models by per-zone calibration performance (from T17). Must NOT hide model disagreement — preserve it as a separate output layer. Must NOT claim one model solves flood mapping universally.
-  SOTA spec ref: §4.2 ("the correct choice is an ensemble, not an unsupported claim that one foundation model solves flood mapping universally"), §4.2 ("Copernicus GFM uses multiple independent algorithms and harmonizes their outputs into an ensemble flood likelihood")
-  Parallelization: Wave 4 | Blocked by: T18 | Blocks: T23
-  References: SOTA spec §4.2: "A strong ensemble would include: a conventional U-Net or SegFormer baseline; a geospatial foundation model such as Clay, Prithvi, DOFA or TerraMind; weakly supervised SAR models; Copernicus Global Flood Monitoring outputs; local hydrodynamic forecasts; terrain and drainage priors." Research bg_bac2773d: DOFA, Tessera, ResNet50 S1 weights all available in TorchGeo. Clay via `claymodel.module.ClayMAEModule`. TerraMind via `rslearn.models.terramind`.
-  Acceptance criteria: `pytest tests/test_ensemble.py -q` — 3 models produce different flood maps, ensemble averages them, disagreement map shows non-zero variance where models disagree.
-  QA scenarios:
-  ```
-  Scenario: ensemble produces disagreement map
-    Tool: bash
-    Steps: cd backend && pytest tests/test_ensemble.py::test_disagreement -q | tee ../.omo/evidence/task-19-resqnet-sage.txt
-    Expected: exit 0, disagreement map has non-zero values where models differ
-    Evidence: .omo/evidence/task-19-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(perception): flood mapping ensemble with disagreement tracking`
-
-- [x] 20. Building & road damage assessment — xBD/xView2 + SpaceNet 8 + road passability probability
-  What to do / Must NOT do: `backend/app/perception/damage.py` — (1) Building damage: fine-tune model on xBD/xView2 dataset, classify buildings into {no damage, minor, major, destroyed} from post-event imagery (or pre+post pair when available). Support single-post-event-image models when pre-event imagery is missing. (2) Road network: SpaceNet 8 approach connecting building extraction, road extraction, and flood-status detection. Output per road segment: P(passable for vehicle class), expected traversal speed, expected failure time, last confirmation source, alternate route availability. A road can be passable for a boat while unsafe for an ambulance. (3) Output as GeoJSON features with damage probability + uncertainty. Must NOT output "road segmentation mIoU" — output operational passability.
-  SOTA spec ref: §4.3 (building and road damage), §4.3 (required operational output)
-  Parallelization: Wave 4 | Blocked by: T1 | Blocks: T28 (route reliability)
-  References: SOTA spec §4.3: "SpaceNet 8 is particularly relevant because it connects three tasks: building extraction; road-network extraction; flood-status detection." SOTA spec §4.3: "The operational output should not be 'road segmentation mIoU.' It should be: probability the road is passable for each vehicle class; likely traversal speed; expected failure time; last confirmation source; alternate route availability." Research bg_bac2773d: TorchGeo models available, fine-tune on xBD/SpaceNet 8.
-  Acceptance criteria: `pytest tests/test_damage.py -q` — classifies building damage from fixture image, outputs damage probability + class; road segment passability: ambulance P=0.2, boat P=0.9 (different vehicle classes).
-  QA scenarios:
-  ```
-  Scenario: road passability differs by vehicle class
-    Tool: bash
-    Steps: cd backend && pytest tests/test_damage.py::test_vehicle_class_passability -q | tee ../.omo/evidence/task-20-resqnet-sage.txt
-    Expected: exit 0, ambulance passability < boat passability for flooded road
-    Evidence: .omo/evidence/task-20-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(perception): building/road damage assessment + vehicle-class passability`
-
-- [x] 21. Social media & citizen report NLP pipeline — multilingual ASR, urgency, geolocation
-  What to do / Must NOT do: `backend/app/perception/nlp.py` — process citizen reports, social media, helpline calls through: (1) Language identification + multilingual ASR (Whisper or equivalent for speech-to-text). (2) PII detection + access control redaction before any LLM call. (3) Urgency extraction (low/medium/high/critical). (4) Humanitarian category extraction: trapped/missing person, medical emergency, flooding, structural collapse, fire/electrical, blocked route, shelter request, food/water/medication, infrastructure outage, rescue completed, irrelevant. (5) Place-name extraction + geolocation candidate generation: represent as exact coordinate, road segment, building, named place, ward, candidate-location distribution, or uncertainty polygon — NEVER invent exact GPS from vague report. (6) Image/OCR corroboration. (7) Duplicate/near-duplicate clustering (embedding similarity via FAISS). (8) Credibility + uncertainty estimation (feeds confidence vector). (9) Human review queue when operationally consequential. Must NOT send PII to unrestricted third-party models.
-  SOTA spec ref: §4.4 (social media, helplines and citizen reports), §4.4 (required humanitarian categories), §4.4 (geolocation), §4.4 (multimodal limitations), §12.3 (LLM isolation)
-  Parallelization: Wave 4 | Blocked by: T1, T4 | Blocks: T13 (confidence vector uses NLP output)
-  References: SOTA spec §4.4: pipeline: "Speech or text input → Language identification → Multilingual ASR → PII detection → Urgency/category extraction → Place-name extraction → Geolocation candidate generation → Image/OCR corroboration → Duplicate clustering → Credibility estimation → Human review". SOTA spec §4.4: "Never invent an exact GPS point from a vague report." Datasets: CrisisMMD, HumAID, CrisisBench, CrisisNLP.
-  Acceptance criteria: `pytest tests/test_nlp.py -q` — processes 5 test reports (mix of English, Hindi, code-mixed), extracts urgency + category + geolocation candidate (distribution, not point), flags PII for redaction, clusters 2 duplicate reports.
-  QA scenarios:
-  ```
-  Scenario: vague geolocation represented as distribution
-    Tool: bash
-    Steps: cd backend && pytest tests/test_nlp.py::test_vague_geolocation -q | tee ../.omo/evidence/task-21-resqnet-sage.txt
-    Expected: exit 0, "near the old market" produces candidate-location distribution, not exact point
-    Evidence: .omo/evidence/task-21-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(perception): multilingual NLP pipeline + geolocation + duplicate clustering`
-
-- [x] 22. ML model serving infrastructure — ONNX Runtime, model registry, lazy loading for local hardware
-  What to do / Must NOT do: `backend/app/perception/serving.py` — model serving layer for local hardware with limited resources. (1) ONNX Runtime for CPU-optimized inference (`onnxruntime.InferenceSession` with CPU execution provider). (2) Model registry: `models` table (`id`, `name`, `version`, `framework` (pytorch/onnx), `task` (flood_mapping/damage/nlp), `r2_key`, `input_schema`, `output_schema`, `calibration_metrics` JSONB, `created_at`). (3) Lazy loading: models loaded on first request, cached in memory, unloaded after idle timeout. (4) Pre-download script: `scripts/download_models.py` — downloads all required model weights + sample SAR data when internet is available, stores in MinIO + local cache. (5) Model versioning: every inference records model_version in observation's `model_version` field for provenance. Must NOT require internet at runtime for model inference — all models cached locally.
-  SOTA spec ref: §13.4 (ML stack: ONNX Runtime at edge), §12.4 (model versions in provenance)
-  Parallelization: Wave 4 | Blocked by: T1 | Blocks: T18-T21 (all ML todos use serving layer)
-  References: SOTA spec §13.4: "ONNX Runtime or TensorRT at edge". SOTA spec §13.4: "MLflow or a similar model registry". SOTA spec §12.4: "Model versions" in provenance. User constraint: "everything must work on local hardware with low internet connectivity."
-  Acceptance criteria: `pytest tests/test_serving.py -q` — lazy-loads a mock ONNX model, runs inference, unloads after timeout; `scripts/download_models.py --list` shows all models to pre-cache.
-  QA scenarios:
-  ```
-  Scenario: model lazy-loaded and cached
-    Tool: bash
-    Steps: cd backend && pytest tests/test_serving.py::test_lazy_loading -q | tee ../.omo/evidence/task-22-resqnet-sage.txt
-    Expected: exit 0, model loaded on first call, second call uses cache
-    Evidence: .omo/evidence/task-22-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(perception): ONNX model serving + registry + lazy loading`
-
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-<!-- WAVE 5: HAZARD & INFRASTRUCTURE DIGITAL TWIN — SOTA spec §7 -->
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-
-- [ ] 23. Scenario ensemble generator — N scenarios varying rainfall, surge, drainage, road failure
-  What to do / Must NOT do: `backend/app/twin/scenarios.py` — generate N scenarios Ω = {ω_1, ..., ω_N}. Each scenario varies: rainfall trajectory, storm-surge height, embankment failure, drainage blockage, road failure, power restoration, shelter inflow, hospital demand, communication availability. Each scenario has probability p_ω (or included in robust uncertainty set when reliable probabilities unavailable). Scenario generator reads current world state from DBN (T16) + flood maps (T18) + infrastructure status. Store scenarios in `scenarios` table. Generate 10-50 scenarios per operational cycle. Must NOT produce one forecast — produce an ensemble.
-  SOTA spec ref: §7.1 (scenario ensemble), §7.2 (cascading dependencies)
-  Parallelization: Wave 5 | Blocked by: T16 (world state), T18 (flood maps) | Blocks: T26 (optimizer uses scenarios)
-  References: SOTA spec §7.1: "Instead of one flood forecast, produce N scenarios: Ω = {ω_1, ω_2, ..., ω_N}. Each scenario has probability p_ω, or is included in a robust uncertainty set when reliable probabilities are unavailable."
-  Acceptance criteria: `pytest tests/test_scenarios.py -q` — generates 20 scenarios from mock world state, each has unique params + probability, probabilities sum to ~1.0.
-  QA scenarios:
-  ```
-  Scenario: 20 scenarios generated with probabilities
-    Tool: bash
-    Steps: cd backend && pytest tests/test_scenarios.py::test_ensemble_generation -q | tee ../.omo/evidence/task-23-resqnet-sage.txt
-    Expected: exit 0, 20 scenarios, probabilities sum to ~1.0
-    Evidence: .omo/evidence/task-23-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(twin): scenario ensemble generator`
-
-- [ ] 24. Cascading infrastructure dependency DAG — flooding → substation → tower → comms → observability
-  What to do / Must NOT do: `backend/app/twin/cascading.py` — model infrastructure dependencies as a DAG. Nodes: substations, cell towers, hospitals, shelters, roads, bridges, water supply, sewage. Edges: `POWERED_BY`, `PROVIDES_ACCESS_TO`, `DEPENDS_ON`. Cascade simulation: BFS/DFS over DAG when a node fails. Example chains from SOTA spec §7.2: (1) Flooding → substation failure → tower power loss → communication outage → fewer citizen reports → reduced observability. (2) Flooding → road closure → hospital travel-time increase → ambulance availability reduction → higher untreated-casualty risk. (3) Shelter congestion → sanitation/medical pressure → secondary evacuation demand. Track cascade depth + blast radius. Must NOT independently draw power, flood, telecom layers — model their dependencies.
-  SOTA spec ref: §7.2 (cascading infrastructure dependencies)
-  Parallelization: Wave 5 | Blocked by: T11 (knowledge graph), T16 (world state) | Blocks: T26
-  References: SOTA spec §7.2: "This is significantly more insightful than independently drawing power, flood and telecom layers on a map." SOTA spec §7.2 provides 3 example cascade chains. `backend/app/knowledge/graph.py` (T11) provides the graph.
-  Acceptance criteria: `pytest tests/test_cascading.py -q` — DAG with 10 nodes + 15 edges, simulate substation failure, verify cascade reaches cell tower (depth 2) + hospital access (depth 3); blast radius = 4 affected nodes.
-  QA scenarios:
-  ```
-  Scenario: cascade reaches expected nodes
-    Tool: bash
-    Steps: cd backend && pytest tests/test_cascading.py::test_substation_cascade -q | tee ../.omo/evidence/task-24-resqnet-sage.txt
-    Expected: exit 0, substation failure cascades to tower + hospital
-    Evidence: .omo/evidence/task-24-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(twin): cascading infrastructure dependency DAG`
-
-- [ ] 25. Telecom silence residual model — expected report rate, residual computation, bias correction
-  What to do / Must NOT do: `backend/app/twin/silence.py` — estimate expected report rate `r_hat_{z,t} = f(population, normal_activity, hazard_intensity, historical_reporting, network_availability)`. Compute observed report rate `r_{z,t}^observed` per zone z per time window. Residual = `r_hat - r_observed`. Large residual becomes meaningful when combined with: known tower failure, power outage, failed call attempts, previously active devices becoming unreachable, high vulnerability, increasing hazard. Must correct for areas with historically low smartphone ownership, weak network coverage, limited social-media use — otherwise systematically misrepresents poorer communities. Must NOT implement as "no reports = high danger" — must compare to expected rate.
-  SOTA spec ref: §7.3 (telecom silence as residual signal)
-  Parallelization: Wave 5 | Blocked by: T11 (graph), T24 (cascade — tower failures reduce observability) | Blocks: T30 (active sensing uses silence residual)
-  References: SOTA spec §7.3: "Your 'telecom silence' idea is strong, but it should not be implemented as: No reports = high danger." SOTA spec §7.3: "The model must correct for areas with historically low smartphone ownership, weak network coverage or limited social-media use."
-  Acceptance criteria: `pytest tests/test_silence.py -q` — zone with population 1000, expected 5 reports/hr, observed 0 reports, tower failed → residual = 5, flagged as meaningful; zone with population 100, expected 0.5 reports/hr, observed 0 → residual = 0.5, NOT flagged (low-connectivity area).
-  QA scenarios:
-  ```
-  Scenario: silence residual flags meaningful silence
-    Tool: bash
-    Steps: cd backend && pytest tests/test_silence.py::test_meaningful_silence -q | tee ../.omo/evidence/task-25-resqnet-sage.txt
-    Expected: exit 0, high-population zone with tower failure flagged, low-population zone not flagged
-    Evidence: .omo/evidence/task-25-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(twin): telecom silence residual model with bias correction`
-
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-<!-- WAVE 6: DECISION OPTIMIZATION + ACTIVE SENSING — SOTA spec §8 (optimization), §9 (active sensing) -->
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-
-- [ ] 26. Rolling-horizon risk-aware CVaR optimizer + constraint modeling — OR-Tools CP-SAT (merged with T27 to resolve circular dependency)
-  What to do / Must NOT do: `backend/app/optimizer/engine.py` + `backend/app/optimizer/constraints.py` — `EmergencyResponseOptimizer` class using OR-Tools CP-SAT. This todo MERGES the optimizer engine AND constraint modeling into one unit (they are co-developed — the optimizer cannot be built without constraints and vice versa). Objective: `A* = argmin_A [Σ p_ω L^ω(A) + λ CVaR_α(L^ω(A)) + C(A)]` where first term = expected harm, second = CVaR penalty, third = operational cost, λ controls risk aversion. CVaR via Rockafellar-Uryasev formulation: `theta` is a FREE DECISION VARIABLE (the VaR, not a parameter), `excess_s = max(0, cost_s - theta)` via `model.add_max_equality(a_s, [cost_s - theta, model.new_constant(0)])`, `CVaR = theta + 1/(1-α) * Σ p_s * a_s`. NOTE: all variables must be integer-scaled (CP-SAT is integer-only) — scale costs by 1000 and round. Constraints modeled simultaneously: responder availability (`add_cumulative`), skills (`add_allowed_assignments` + `x[r,t]==0` for incompatible), vehicle-road routing (`add_multiple_circuit` with conditional arcs skipping incompatible roads), shelter/hospital capacity (`add_reservoir_constraint`), shift duration (interval bounds), fairness (`Coverage_z >= C_min`), task precedence. FastAPI endpoint `POST /api/optimize` with BackgroundTasks async solve. Must NOT use online RL as sole controller — hard constraints always enforced.
-  SOTA spec ref: §8.1 (optimize prevented harm), §8.2 (constraints), §8.3 (OR-Tools CP-SAT), §8.6 (do not use online RL)
-  Parallelization: Wave 6 | Blocked by: T16 (world state), T23 (scenarios) | Blocks: T28 (route reliability), T29 (replan), T30 (EVI), T32 (UI)
-  References: SOTA spec §8.1-8.3, §12.5. Research bg_2871bc92: `add_cumulative`, `add_multiple_circuit`, `add_reservoir_constraint`, `add_max_equality`, `add_allowed_assignments`, `add_hint()` warm-start, `solver.parameters.max_time_in_seconds`, `num_search_workers=8`. CVaR: Rockafellar-Uryasev 2000, PyPSA implementation (research bg_2871bc92).
-  Acceptance criteria: `pytest tests/test_optimizer.py -q` — 3 zones, 4 responders, 3 scenarios → optimizer returns assignment portfolio with objective value, CVaR component, expected harm; skill gate (unqualified responder rejected); shelter over-capacity → infeasible; vehicle-road incompatibility (boat can't use flooded road → arc skipped); fairness minimum (vulnerable zone gets >= C_min); solve time < 30s; `POST /api/optimize` returns task_id, polling returns result within 30s.
-  QA scenarios:
-  ```
-  Scenario: optimizer produces feasible assignment with constraints
-    Tool: bash
-    Steps: cd backend && pytest tests/test_optimizer.py::test_feasible_with_constraints -q | tee ../.omo/evidence/task-26-resqnet-sage.txt
-    Expected: exit 0, all tasks assigned, skill/capacity/fairness constraints enforced, objective finite, CVaR >= 0
-    Evidence: .omo/evidence/task-26-resqnet-sage.txt
-  Scenario: infeasible problem (over-capacity) detected
-    Tool: bash
-    Steps: cd backend && pytest tests/test_optimizer.py::test_infeasible -q | tee ../.omo/evidence/task-26-resqnet-sage-error.txt
-    Expected: exit 0, solver returns INFEASIBLE status
-    Evidence: .omo/evidence/task-26-resqnet-sage-error.txt
-  ```
-  Commit: Y | `feat(optimizer): CVaR optimizer + constraint modeling (OR-Tools CP-SAT)`
-
-- [ ] 27. (MERGED into T26 — constraint modeling is co-developed with optimizer engine)
-
-- [ ] 28. Route reliability engine — P(route passable until arrival), travel-time variance, responder risk
-  What to do / Must NOT do: `backend/app/optimizer/routing.py` — for route r, maintain `P(route remains passable until arrival)`. Route cost: `Cost(r) = E[T_r] + η Var(T_r) + γ P(route failure) + ρ Risk_responders`. Compute P(passable) from: road damage assessment (T20), flood probability (T18), scenario ensemble (T23). E[T_r] from historical travel times + current road status. Var(T_r) from scenario variance. Risk_responders from hazard exposure along route. Support k-shortest paths for alternate route generation. Must NOT use fastest expected route as sole criterion — must consider safety.
-  SOTA spec ref: §8.5 (route reliability)
-  Parallelization: Wave 6 | Blocked by: T20 (road passability), T23 (scenarios), T26 | Blocks: T29
-  References: SOTA spec §8.5: "The fastest expected route is not necessarily the safest route." SOTA spec §8.5: `Cost(r) = E[T_r] + η Var(T_r) + γ P(route failure) + ρ Risk_responders`. Research bg_2871bc92: `add_multiple_circuit` for VRP in CP-SAT, conditional arcs for road compatibility.
-  Acceptance criteria: `pytest tests/test_routing.py -q` — route with 0.9 P(passable) preferred over route with 0.3 P(passable) even if slower; k-shortest paths returns 3 alternatives; responder risk added to flooded route.
-  QA scenarios:
-  ```
-  Scenario: safer route preferred over faster
-    Tool: bash
-    Steps: cd backend && pytest tests/test_routing.py::test_safety_over_speed -q | tee ../.omo/evidence/task-28-resqnet-sage.txt
-    Expected: exit 0, high-P(passable) route selected despite longer E[T]
-    Evidence: .omo/evidence/task-28-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(optimizer): route reliability engine (passability + variance + risk)`
-
-- [ ] 29. Stability threshold replanning — warm-start, deviation penalty, lock in-progress actions
-  What to do / Must NOT do: `backend/app/optimizer/replan.py` — rolling-horizon replanning per SOTA spec §8.4. Every operational cycle: (1) receive new observations, (2) update world-state probabilities, (3) generate short-term scenarios, (4) lock actions already in progress, (5) re-optimize remaining tasks, (6) compare new plan with current plan, (7) change assignments only when expected benefit exceeds stability threshold. Implement: `model.add_hint(x[r,t], prev_value)` for warm-start; deviation vars `changed[r,t]` = 1 if assignment differs; `model.add(total_deviations <= stability_threshold)` as hard constraint OR soft penalty in objective. Prevents responder thrashing from small score fluctuations. Must NOT re-route teams for trivial improvements.
-  SOTA spec ref: §8.4 (rolling-horizon replanning)
-  Parallelization: Wave 6 | Blocked by: T26, T28 | Blocks: T32 (UI shows plan changes)
-  References: SOTA spec §8.4: "The stability threshold prevents teams from being repeatedly rerouted because of small score fluctuations." Research bg_2871bc92: `add_hint()` warm-start, deviation penalty pattern, `solver.parameters.max_time_in_seconds` for real-time.
-  Acceptance criteria: `pytest tests/test_replan.py -q` — previous plan with 5 assignments, new plan changes only 1 (below threshold of 3); new plan with 6 changes (above threshold) → solver penalizes and finds solution with fewer changes.
-  QA scenarios:
-  ```
-  Scenario: stability threshold limits changes
-    Tool: bash
-    Steps: cd backend && pytest tests/test_replan.py::test_stability_threshold -q | tee ../.omo/evidence/task-29-resqnet-sage.txt
-    Expected: exit 0, deviations <= threshold
-    Evidence: .omo/evidence/task-29-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(optimizer): rolling-horizon replanning with stability threshold`
-
-- [ ] 30. Active sensing / EVI computation — expected value of information for sensing actions
-  What to do / Must NOT do: `backend/app/sensing/evi.py` — compute Expected Value of Information for each candidate sensing action y: `EVI(y) = E_y[max_A U(A|y)] - max_A U(A) - Cost(y)`. If EVI > 0, gathering the observation is expected to improve the decision. Candidate sensing actions: ask nearest responder for one-tap verification, task a drone, request geotagged citizen photo, call a shelter, poll a river sensor, request new satellite acquisition, deploy temporary LoRa relay, query traffic-probe data, contact a hospital, ask utility for feeder status, move mobile camera/UAV. Operational display: "Recommended information request: Verify Bridge 4 within eight minutes. Confirmation would change the assignment of two rescue boats and potentially improve expected rescue coverage by 18 people."
-  SOTA spec ref: §9 (active sensing and value of information), §9.2 (EVI formula), §9.3 (possible sensing actions), §9.4 (operational display)
-  Parallelization: Wave 6 | Blocked by: T26 (optimizer) | Blocks: T32 (UI shows sensing recommendations)
-  References: SOTA spec §9: "This can become ResQNet's strongest research contribution." SOTA spec §9.2: `EVI(y) = E_y[max_A U(A|y)] - max_A U(A) - Cost(y)`. SOTA spec §9.4: example operational display.
-  Acceptance criteria: `pytest tests/test_evi.py -q` — bridge with 45% P(impassable), Plan A uses bridge (60 people), Plan B avoids (42 people); EVI(verify_bridge) > 0 because resolving uncertainty changes plan; EVI(check_road_with_clear_alternative) ≈ 0 because it doesn't change decision.
-  QA scenarios:
-  ```
-  Scenario: EVI identifies high-value sensing
-    Tool: bash
-    Steps: cd backend && pytest tests/test_evi.py::test_bridge_verification_evi -q | tee ../.omo/evidence/task-30-resqnet-sage.txt
-    Expected: exit 0, EVI(verify_bridge) > 0, EVI(low_impact_check) ≈ 0
-    Evidence: .omo/evidence/task-30-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(sensing): expected value of information (EVI) computation`
-
-- [ ] 31. Sensing action catalog + operational display API
-  What to do / Must NOT do: `backend/app/sensing/catalog.py` — catalog of sensing actions with: action_type, cost (time, resource, risk), expected information gain, potential impact on plan. `backend/app/api/routes/sensing.py` — `GET /api/incidents/{id}/sensing-recommendations` returns top-N EVI sensing actions with operational display text. `POST /api/incidents/{id}/sensing/{action_id}/dispatch` creates a task for the sensing action. Must NOT dispatch sensing actions autonomously — human approval required for resource-consuming actions.
-  SOTA spec ref: §9.3 (possible sensing actions), §9.4 (operational display)
-  Parallelization: Wave 6 | Blocked by: T30 | Blocks: T32 (UI)
-  References: SOTA spec §9.3 (full list of sensing actions), §9.4 (operational display example).
-  Acceptance criteria: `curl -s http://localhost:8000/api/incidents/test/sensing-recommendations` returns top-3 EVI actions with display text; dispatch creates a task row.
-  QA scenarios:
-  ```
-  Scenario: sensing recommendations returned
-    Tool: bash
-    Steps: curl -s http://localhost:8000/api/incidents/test/sensing-recommendations | python -m json.tool | tee .omo/evidence/task-31-resqnet-sage.txt
-    Expected: JSON with top-3 actions, each with EVI, cost, display text
-    Evidence: .omo/evidence/task-31-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(sensing): action catalog + operational display API`
-
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-<!-- WAVE 7: HUMAN-CENTERED DECISION SUPPORT UI — SOTA spec §10 -->
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-
-- [ ] 32. Four interface modes — Situation, Hypothesis, Planning, Simulation
-  What to do / Must NOT do: `frontend/src/pages/` — four primary interface modes per SOTA spec §10.2: (1) **Situation mode** ("What is happening?"): current map, trends, unknowns, conflicting evidence, feed health. (2) **Hypothesis mode** ("Is Ward 11 becoming inaccessible?"): evidence supporting, evidence against, forecast, data gaps, suggested verification. (3) **Planning mode** ("How should six available teams be used?"): optimized action portfolios, trade-offs, alternatives, resource conflicts. (4) **Simulation mode** ("What happens if rainfall continues for three hours?"): scenario comparison, predicted closures, hospital accessibility, shelter overflow. Mode switcher in nav bar. Each mode renders relevant panels from API data. Must NOT show only "AI recommendation" — present evidence for and against.
-  SOTA spec ref: §10.2 (evaluative AI, 4 interface modes)
-  Parallelization: Wave 7 | Blocked by: T26 (optimizer), T30 (sensing), T31 (sensing API) | Blocks: T37
-  References: SOTA spec §10.2: "decision support can preserve operator agency by presenting evidence for and against hypotheses rather than asking users to accept or reject an opaque recommendation." SOTA spec §10.2 (4 mode descriptions).
-  Acceptance criteria: `cd frontend && npm run build` exits 0; Playwright test: switch between 4 modes, each renders different content; Situation mode shows feed health + conflicting evidence badges; Hypothesis mode shows supporting/against evidence lists.
-  QA scenarios:
-  ```
-  Scenario: all 4 modes render
-    Tool: bash
-    Steps: cd frontend && npx playwright test tests/modes.spec.ts | tee ../.omo/evidence/task-32-resqnet-sage.txt
-    Expected: all 4 mode tests pass
-    Evidence: .omo/evidence/task-32-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(ui): four interface modes (situation/hypothesis/planning/simulation)`
-
-- [ ] 33. Action cards — evidence, alternatives, uncertainty, contingencies, equity impact
-  What to do / Must NOT do: `frontend/src/components/ActionCard.tsx` — each action card contains all fields per SOTA spec §10.1: proposed action, operational objective, expected benefit range, time sensitivity, resources required, primary evidence (linked obs IDs), contradicting evidence, assumptions, confidence/calibration, alternative actions, failure contingency, equity impact, operator controls (approve/dismiss/modify). Example card: "Dispatch Boat B3 to Ward 11 via Canal Route C. Expected reach: 31-47 residents within 22 minutes. Evidence: 14 deduplicated distress reports, responder-confirmed 1.2m water depth, cell outage and elderly-resident registry. Uncertainty: exact group size is uncertain; distress locations span a 180m radius. Against: one six-minute-old traffic observation indicates limited vehicle movement. Alternative: Team R2 by high-clearance vehicle, with a 37% route-failure probability. Reassess after: bridge camera verification or ten minutes."
-  SOTA spec ref: §10.1 (do not show only AI recommendation), §10.1 (action card fields), §10.1 (example card)
-  Parallelization: Wave 7 | Blocked by: T26, T32 | Blocks: T35
-  References: SOTA spec §10.1 (full action card specification + example). API from T26 (optimizer) + T30 (sensing).
-  Acceptance criteria: Playwright test renders action card with all 13 fields; evidence links navigate to observation detail; uncertainty range displayed as [low, high]; approve/dismiss buttons call API.
-  QA scenarios:
-  ```
-  Scenario: action card shows all fields
-    Tool: bash
-    Steps: cd frontend && npx playwright test tests/action-card.spec.ts | tee ../.omo/evidence/task-33-resqnet-sage.txt
-    Expected: all 13 fields visible, evidence links clickable
-    Evidence: .omo/evidence/task-33-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(ui): action cards with evidence/alternatives/uncertainty/contingencies`
-
-- [ ] 34. Map system — MapLibre GL JS + deck.gl + TiTiler for COGs + PMTiles offline basemaps
-  What to do / Must NOT do: `frontend/src/components/MapView.tsx` — MapLibre GL JS operational map with: (1) PMTiles basemap (served from MinIO, offline-capable, Protomaps). (2) deck.gl layers for: flood probability raster (from COG via TiTiler), building footprints, road network with passability coloring, responder locations (live), shelter capacity, hospital status, cell tower status, hazard zones, observations. (3) Layer toggles per SOTA spec (flood, roads, buildings, shelters, hospitals, responders, sensors, alerts). (4) Confidence + data-age badges on all layers (stale data shown in different color). (5) Uncertainty visualization: flood probability as semi-transparent heatmap, hypothesis conflicts as warning icons. (6) Bbox-driven layer fetch. (7) Drawing tools for zones (terra-draw). Must NOT display stale data in normal colors — honest degradation.
-  SOTA spec ref: §13.3 (geospatial services: MapLibre, deck.gl, TiTiler, PMTiles, H3), §11.4 (honest degradation: do not display old information in normal colors)
-  Parallelization: Wave 7 | Blocked by: T1, T18 (flood COGs) | Blocks: T40
-  References: SOTA spec §13.3: "MapLibre GL for the operational map; deck.gl for large visual layers; TiTiler for cloud-optimized GeoTIFFs; PMTiles for offline basemaps." `platform/web/src/App.tsx` (existing React pattern to follow).
-  Acceptance criteria: `npm run build` exits 0; Playwright test loads map, toggles layers, flood probability renders as semi-transparent; stale data (>1h old) shown with different color.
-  QA scenarios:
-  ```
-  Scenario: map renders with flood layer
-    Tool: bash
-    Steps: cd frontend && npx playwright test tests/map.spec.ts | tee ../.omo/evidence/task-34-resqnet-sage.txt
-    Expected: map loads, flood layer visible, layer toggle works
-    Evidence: .omo/evidence/task-34-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(ui): MapLibre + deck.gl map with flood/road/shelter layers + offline basemaps`
-
-- [ ] 35. Real-time WebSocket updates — Redpanda consumer → WS fanout + PostgreSQL LISTEN/NOTIFY
-  What to do / Must NOT do: `backend/app/realtime/manager.py` — WebSocket connection manager per incident. (1) Redpanda consumer reads from `observations.normalized` topic in background. (2) On new observation → INSERT to PostgreSQL → `NOTIFY observation_created` → WS manager broadcasts `{type: 'new_observation', payload}` to connected clients for that incident. (3) On hypothesis update → broadcast `{type: 'hypothesis_changed'}`. (4) On optimizer result → broadcast `{type: 'plan_updated', payload}`. (5) Polling fallback every 15s for dropped WS connections. (6) Connection presence tracking. Must NOT require WebSocket for basic operation — polling fallback always available.
-  SOTA spec ref: §10.2 (real-time updates), §13.1 (event-time processing)
-  Parallelization: Wave 7 | Blocked by: T10 (streaming pipeline), T26 (optimizer results), T34 (map) | Blocks: T40
-  References: SOTA spec §13.1: streaming pipeline. Research bg_835b8072: PostgreSQL LISTEN/NOTIFY for instant dashboard updates, hybrid approach (LISTEN/NOTIFY + Redpanda).
-  Acceptance criteria: Playwright test connects WS, receives broadcast after observation POST; WS disconnect → polling fallback updates within 15s; 2 concurrent clients both receive broadcast.
-  QA scenarios:
-  ```
-  Scenario: WebSocket broadcasts new observation
-    Tool: bash
-    Steps: cd frontend && npx playwright test tests/websocket.spec.ts | tee ../.omo/evidence/task-35-resqnet-sage.txt
-    Expected: WS client receives new_observation event within 2s of POST
-    Evidence: .omo/evidence/task-35-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(realtime): WebSocket fanout + LISTEN/NOTIFY + polling fallback`
-
-- [ ] 36. LLM-based evidence summarization — grounded in structured observations, provenance-linked
-  What to do / Must NOT do: `backend/app/perception/llm.py` — LLM integration for: (1) parse free-text reports into structured observations, (2) summarize evidence across heterogeneous streams (retrieval-augmented, source-traceable), (3) translate languages, (4) answer natural-language queries about incident state, (5) generate briefing drafts, (6) explain optimizer outputs in natural language, (7) retrieve applicable operating procedures. **Offline LLM strategy (Metis GAP 15)**: primary = local Ollama model (llama3.1/8B or similar) for offline inference; secondary = cloud API (OpenAI-compatible) when internet available; fallback chain: cloud → local → disabled. Provider config `{base_url, api_key, model}` resolved org → incident → user. Every generated claim links to structured observation IDs (citation requirement). PII redaction before LLM call (regex + NER). Prompt injection defense (untrusted data fenced in delimited blocks). Output Pydantic-validated with 1 retry on parse fail. All outputs land as `review_status=draft`. Prompt versioning (`prompts` table). All calls logged (`ai_calls`: prompt_name+version, tokens, latency, cost, provider). Must NOT: invent missing values, convert uncertain locations to exact coordinates, decide casualty counts from ambiguous images, bypass optimization constraints, modify operational records without confirmation, issue field commands from free-form text, send PII to cloud API when offline.
-  SOTA spec ref: §10.3 (LLM role), §10.3 (LLM must NOT list), §12.3 (LLM isolation)
-  Parallelization: Wave 7 | Blocked by: T4 (auth), T21 (NLP pipeline) | Blocks: T48 (LLM isolation)
-  References: SOTA spec §10.3: "A language model may: parse reports; summarize evidence; translate; answer queries; generate briefings; explain optimizer outputs; retrieve procedures." SOTA spec §10.3: "Every generated claim should link to structured evidence." SOTA spec §12.3: "PII and medical details should not be sent to unrestricted third-party model."
-  Acceptance criteria: `pytest tests/test_llm.py -q` — LLM summarizes 5 observations into a briefing with citations; PII redacted before call; output validated against Pydantic schema; hallucination (uncited claim) rejected by validator.
-  QA scenarios:
-  ```
-  Scenario: LLM summary has citations
-    Tool: bash
-    Steps: cd backend && pytest tests/test_llm.py::test_citations -q | tee ../.omo/evidence/task-36-resqnet-sage.txt
-    Expected: exit 0, summary contains observation IDs as citations
-    Evidence: .omo/evidence/task-36-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(perception): LLM evidence summarization with provenance + PII redaction`
-
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-<!-- WAVE 8: RESILIENT COMMUNICATIONS & OFFLINE OPERATION — SOTA spec §11 -->
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-
-- [ ] 37. Edge-first topology + PWA offline — local vector map, cached state, append-only outbox
-  What to do / Must NOT do: `frontend/` — Progressive Web App (PWA) with Workbox service worker. Each edge node retains: local vector map (PMTiles from MinIO), latest risk state (IndexedDB via Dexie), active assignments, critical facility data, cached imagery (COG), local user identities and permissions, append-only offline event queue (IndexedDB outbox). `backend/app/realtime/edge_sync.py` — sync endpoint: `POST /api/sync` receives outbox items, deduplicates by content hash, applies in order. Must NOT require internet for basic field operation — local cache + offline queue.
-  SOTA spec ref: §11.1 (edge-first topology), §11.2 (store-and-forward synchronization)
-  Parallelization: Wave 8 | Blocked by: T32 (UI), T34 (map), T35 (realtime) | Blocks: T40
-  References: SOTA spec §11.1: "Deploy nodes at: emergency operations center; secondary command center; municipal data center; responder vehicles; temporary field posts." SOTA spec §11.1: "Each node should retain: local vector map; latest risk state; active assignments; critical facility data; cached imagery; local user identities and permissions; append-only offline event queue."
-  Acceptance criteria: Playwright test: load app, go offline (browser offline mode), submit a report (stored in IndexedDB outbox), go online, verify sync pushes to backend; `docker compose stop backend` → frontend still shows cached map + data.
-  QA scenarios:
-  ```
-  Scenario: offline report syncs when online
-    Tool: bash
-    Steps: cd frontend && npx playwright test tests/offline.spec.ts | tee ../.omo/evidence/task-37-resqnet-sage.txt
-    Expected: report queued offline, synced when online, appears in DB
-    Evidence: .omo/evidence/task-37-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(offline): PWA edge-first topology + IndexedDB outbox + sync`
-
-- [ ] 38. Store-and-forward synchronization — monotonic sequence, dedupe, conflict surfacing
-  What to do / Must NOT do: `backend/app/realtime/sync.py` — store-and-forward sync protocol. When connectivity disappears: (1) continue local operation, (2) append observations to outbox, (3) assign monotonic local sequence numbers, (4) synchronize when any path becomes available, (5) deduplicate by event ID + content hash, (6) surface conflicts rather than silently overwriting (return `{status: 'conflict', local: ..., remote: ...}` for same-entity edits), (7) prioritize text, coordinates, and task state before imagery. Conflict-free replicated structure for selected collaborative fields (e.g., task assignments). Must NOT silently overwrite conflicting edits.
-  SOTA spec ref: §11.2 (store-and-forward synchronization)
-  Parallelization: Wave 8 | Blocked by: T12 (federation outbox), T37 (PWA) | Blocks: T40
-  References: SOTA spec §11.2: 7-step sync protocol. SOTA spec §11.2: "surface conflicts rather than silently overwriting." SOTA spec §11.2: "prioritize text, coordinates and task state before imagery."
-  Acceptance criteria: `pytest tests/test_sync.py -q` — 3 offline observations sync in priority order (text first, imagery last); duplicate content hash deduped; conflicting edit on same entity returns conflict response.
-  QA scenarios:
-  ```
-  Scenario: sync prioritizes text over imagery
-    Tool: bash
-    Steps: cd backend && pytest tests/test_sync.py::test_priority_ordering -q | tee ../.omo/evidence/task-38-resqnet-sage.txt
-    Expected: exit 0, text observations synced before image observations
-    Evidence: .omo/evidence/task-38-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(offline): store-and-forward sync with conflict surfacing`
-
-- [ ] 39. Low-bandwidth fallback — SMS, cell broadcast, LoRa, text-first payloads
-  What to do / Must NOT do: `backend/app/comms/fallback.py` — low-bandwidth fallback channels: (1) SMS gateway adapter (Twilio/MSG91, stubbed in dev), (2) cell broadcast (note: government-gated, integration note only), (3) LoRa adapter interface (for sensor data via LoRaWAN), (4) delayed-tolerant networking (DTN) for store-carry-forward, (5) text-first payload compression (strip map, list-only, <2KB payloads). Fallback mode flag: when set, API returns minimal JSON (text lists, no GeoJSON, no images). Must NOT depend on internet for critical alerts — SMS + cell broadcast fallback.
-  SOTA spec ref: §11.3 (low-bandwidth fallback)
-  Parallelization: Wave 8 | Blocked by: T37 | Blocks: T40
-  References: SOTA spec §11.3: "Possible fallback channels: SMS; cell broadcast; LoRa; delayed-tolerant networking; Wi-Fi mesh; portable satellite gateways; UAV relays; radio operator gateways." SOTA spec §11.3: "These should be considered supplementary resilience layers, not replacements for established public-safety radio systems."
-  Acceptance criteria: `pytest tests/test_fallback.py -q` — low-bandwidth mode returns <2KB payload; SMS adapter sends formatted alert text; LoRa interface accepts sensor reading.
-  QA scenarios:
-  ```
-  Scenario: low-bandwidth payload <2KB
-    Tool: bash
-    Steps: curl -s -H 'X-Low-Bandwidth: true' http://localhost:8000/api/incidents/test/summary | wc -c | tee .omo/evidence/task-39-resqnet-sage.txt
-    Expected: byte count < 2048
-    Evidence: .omo/evidence/task-39-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(comms): low-bandwidth fallback (SMS + LoRa + text-first payloads)`
-
-- [ ] 40. Honest degradation display — data age, lost feeds, widening uncertainty, stale-data warnings
-  What to do / Must NOT do: `frontend/src/components/DegradationBanner.tsx` + `backend/app/api/routes/health.py` — each layer exposes: data age (time since last update), lost feeds (list of unavailable sources), current coverage (% of AOI with fresh data), queue backlog (unsynced items), synchronization state, widening uncertainty (confidence intervals expanding for stale data), unavailable capabilities (features disabled due to missing data). Stale data (>τ) shown in amber/red, not normal colors. `GET /api/incidents/{id}/feed-health` returns per-feed status. Must NOT display old information as if current.
-  SOTA spec ref: §11.4 (honest degradation)
-  Parallelization: Wave 8 | Blocked by: T34 (map), T35 (realtime) | Blocks: T44 (resilience metrics)
-  References: SOTA spec §11.4: "Each layer should expose: data age; lost feeds; current coverage; queue backlog; synchronization state; widening uncertainty; unavailable capabilities." SOTA spec §11.4: "Do not keep displaying old information in normal colors. A stale road status can be more dangerous than no road status."
-  Acceptance criteria: Playwright test: simulate feed loss (stop Redpanda consumer), degradation banner appears, stale data shown in amber; `GET /api/incidents/test/feed-health` returns per-feed status with age + status.
-  QA scenarios:
-  ```
-  Scenario: stale data shown in warning color
-    Tool: bash
-    Steps: cd frontend && npx playwright test tests/degradation.spec.ts | tee ../.omo/evidence/task-40-resqnet-sage.txt
-    Expected: degradation banner visible, stale data in amber
-    Evidence: .omo/evidence/task-40-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(ui): honest degradation display + feed health API`
-
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-<!-- WAVE 9: EVALUATION TESTBED — SOTA spec §14 -->
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-
-- [ ] 41. Replayable cyclone-flood digital twin — terrain, buildings, roads, population, sensors
-  What to do / Must NOT do: `backend/app/eval/testbed.py` — city-scale digital twin containing: terrain + drainage (DEM), building footprints, road graph, hospitals, shelters, population distribution (H3), vulnerability indicators, substations + towers, responder stations, simulated citizen devices. Run the same disaster repeatedly under different random seeds. Scenario: Indian coastal-city cyclone-flood (Mumbai/Chennai-style). Seed data generator: `scripts/seed_testbed.py` creates deterministic testbed scenario with configurable parameters (population, road density, hazard intensity). Each run produces reproducible observation stream. Must NOT be a one-shot demo — replayable with different parameters + seeds.
-  SOTA spec ref: §14.1 (build a replayable cyclone-flood testbed)
-  Parallelization: Wave 9 | Blocked by: all layers | Blocks: T42-T45
-  References: SOTA spec §14.1: "Use a city-scale digital twin containing: terrain and drainage; building footprints; road graph; hospitals; shelters; population distribution; vulnerability indicators; substations and towers; responder stations; simulated citizen devices." SOTA spec §14.1: "Run the same disaster repeatedly under different random seeds."
-  Acceptance criteria: `pytest tests/test_testbed.py -q` — generates testbed with 1000 buildings, 50 roads, 5 shelters, 2 hospitals, 10000 population; two runs with same seed produce identical output; two runs with different seeds produce different output.
-  QA scenarios:
-  ```
-  Scenario: testbed is deterministic per seed
-    Tool: bash
-    Steps: cd backend && pytest tests/test_testbed.py::test_deterministic -q | tee ../.omo/evidence/task-41-resqnet-sage.txt
-    Expected: exit 0, same seed = same output, different seed = different output
-    Evidence: .omo/evidence/task-41-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(eval): replayable cyclone-flood digital twin testbed`
-
-- [ ] 42. Failure injection framework — feed loss, delays, false reports, cloud cover, model errors
-  What to do / Must NOT do: `backend/app/eval/failures.py` — failure injection system. Configurable failure types: (1) 30%/50%/70% feed loss, (2) delayed official reports (add 15-60 min delay), (3) stale road data (don't update for 30 min), (4) false social-media posts (inject misinformation), (5) duplicate posts, (6) geolocation ambiguity (vague place names), (7) cloud-covered optical imagery (block S2), (8) SAR model errors (add noise to flood map), (9) tower failures (disable cell tower in testbed), (10) shelter capacity changes, (11) responder unavailability, (12) road failure during transit, (13) unexpected hospital closure, (14) multilingual + code-mixed reports, (15) adversarial misinformation, (16) database-node failure. `POST /api/eval/run` with failure config → runs testbed with injected failures → returns metrics. Must NOT only test happy path — failure injection is mandatory.
-  SOTA spec ref: §14.2 (inject realistic failures)
-  Parallelization: Wave 9 | Blocked by: T41 | Blocks: T43
-  References: SOTA spec §14.2 (full failure list). SOTA spec §14.2: "Test: 30%, 50% and 70% feed loss; delayed official reports; stale road data; false social-media posts; ..."
-  Acceptance criteria: `pytest tests/test_failures.py -q` — inject 50% feed loss, verify 50% of observations missing; inject false report, verify it's flagged by confidence vector; inject tower failure, verify cascade reaches silence residual.
-  QA scenarios:
-  ```
-  Scenario: feed loss reduces observations
-    Tool: bash
-    Steps: cd backend && pytest tests/test_failures.py::test_feed_loss -q | tee ../.omo/evidence/task-42-resqnet-sage.txt
-    Expected: exit 0, 50% feed loss → ~50% fewer observations
-    Evidence: .omo/evidence/task-42-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(eval): failure injection framework`
-
-- [ ] 43. Four baselines — independent dashboards, unified visualization, current ResQNet, ResQNet-SAGE
-  What to do / Must NOT do: `backend/app/eval/baselines.py` — implement 4 baselines for comparison per SOTA spec §14.3. **All baselines must be automated (no human operators required).** (1) **Baseline 1 — Independent dashboards**: simulated operator that randomly inspects one feed at a time with configurable attention model (reaction delay, miss probability). No fusion. (2) **Baseline 2 — Unified visualization**: all information displayed on one map, no fusion or prioritization — operator sees everything but no scoring. Simulated operator picks tasks by recency (FIFO). (3) **Baseline 3 — Current ResQNet**: confidence-weighted reports, scalar zone score (`w1*hazard + w2*exposure + ...`), threshold-based recommendations (simple rules: if flood_depth > X and distress > Y → dispatch boat). This is the simple approach the SOTA doc critiques. (4) **Baseline 4 — ResQNet-SAGE**: full system (probabilistic world model, scenario forecasting, robust optimization, active sensing, human-evaluable alternatives). Each baseline runs the same testbed scenario with the same simulated disaster. Output: per-baseline metrics for comparison. Must NOT require human operators for any baseline.
-  SOTA spec ref: §14.3 (baselines)
-  Parallelization: Wave 9 | Blocked by: T41, T42 | Blocks: T44
-  References: SOTA spec §14.3: "Compare four systems." Baselines 1-2 are operational modes — implement as simulated operators with configurable behavior (attention model, decision strategy) so they're automatable.
-  Acceptance criteria: `pytest tests/test_baselines.py -q` — all 4 baselines run on same testbed seed, produce different metrics (ResQNet-SAGE should outperform others on prevented harm).
-  QA scenarios:
-  ```
-  Scenario: baselines produce different metrics
-    Tool: bash
-    Steps: cd backend && pytest tests/test_baselines.py::test_comparison -q | tee ../.omo/evidence/task-43-resqnet-sage.txt
-    Expected: exit 0, 4 baselines with different prevented_harm values
-    Evidence: .omo/evidence/task-43-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(eval): 4-baseline comparison framework`
-
-- [ ] 44. Metrics collection — perception, uncertainty, operational, resilience, human-factors, equity
-  What to do / Must NOT do: `backend/app/eval/metrics.py` — collect all 6 metric categories per SOTA spec §14.4-14.9. **All metrics must be automatable (no human subjects required).** (1) **Perception** (§14.4): precision/recall/F1, mIoU flood extent, building-damage macro-F1, road-passability accuracy, distress-report recall, duplicate-removal precision, median geolocation error, % geolocated within 100m/500m/ward. (2) **Uncertainty** (§14.5): Brier score, ECE, conformal coverage, interval width, NLL, false-confidence rate, disagreement detection, uncertainty under domain shift. (3) **Operational** (§14.6): time to first correct high-priority ID, expected casualties avoided, urgent demand served, people reached before access loss, median/tail response time, route completion rate, responder exposure, shelter overflow, hospital overload, resource utilization, plan instability, optimization runtime, decision regret vs oracle. (4) **Resilience** (§14.7): p50/p95 sensor-to-map latency, p50/p95 report-to-recommendation latency, RTO, data-loss window, % capability under connectivity loss, sync convergence time, stale-data detection rate, performance loss at each feed-dropout level. (5) **Human-factors** (§14.8): **automated proxy metrics** — simulated operator decision time (time from recommendation availability to simulated approval), correct/harmful override rate (simulated override model), evidence-chain comprehension score (automated: does the simulated operator's decision match the optimal decision given the evidence?), **NASA-TLX proxy** (workload estimated from information density × ambiguity × conflict count — NOT a real NASA-TLX which requires human subjects, but an automated proxy that correlates with cognitive load). (6) **Equity** (§14.9): response delay by ward + vulnerability, unmet urgent demand by connectivity level, false-negative rate in low-reporting communities, resource-allocation disparity, coverage before/after fairness constraints. Store all metrics in `eval_results` table. `GET /api/eval/results/{run_id}` returns all metrics.
-  SOTA spec ref: §14.4 (perception metrics), §14.5 (uncertainty metrics), §14.6 (operational metrics), §14.7 (resilience metrics), §14.8 (human-factors metrics), §14.9 (equity metrics)
-  Parallelization: Wave 9 | Blocked by: T41, T43 | Blocks: T45
-  References: SOTA spec §14.4-14.9 (full metric lists for each category).
-  Acceptance criteria: `pytest tests/test_metrics.py -q` — runs testbed, collects all 6 metric categories, each has >0 metrics; Brier score in [0,1]; prevented_harm > 0 for SAGE baseline.
-  QA scenarios:
-  ```
-  Scenario: all 6 metric categories collected
-    Tool: bash
-    Steps: cd backend && pytest tests/test_metrics.py::test_all_categories -q | tee ../.omo/evidence/task-44-resqnet-sage.txt
-    Expected: exit 0, 6 categories with non-empty metrics
-    Evidence: .omo/evidence/task-44-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(eval): 6-category metrics collection (perception/uncertainty/ops/resilience/human/equity)`
-
-- [ ] 45. Ablation study runner — remove one component at a time, measure impact
-  What to do / Must NOT do: `backend/app/eval/ablation.py` — ablation study runner per SOTA spec §14.10. Remove one component at a time and re-run the testbed: (1) no calibrated uncertainty, (2) no provenance, (3) no active sensing, (4) no robust optimization (use greedy), (5) no infrastructure dependencies (no cascade), (6) no telecom-silence residual, (7) no fairness constraints, (8) no edge operation (online-only), (9) no human counterfactual display. `POST /api/eval/ablation` runs all ablations + full system, returns comparison table showing which components actually improve outcomes. Must NOT skip ablation — it identifies which components provide real value.
-  SOTA spec ref: §14.10 (required ablation studies)
-  Parallelization: Wave 9 | Blocked by: T44 | Blocks: final verification
-  References: SOTA spec §14.10: "Remove one component at a time: no calibrated uncertainty; no provenance; no active sensing; no robust optimization; no infrastructure dependencies; no telecom-silence residual; no fairness constraints; no edge operation; no human counterfactual display."
-  Acceptance criteria: `pytest tests/test_ablation.py -q` — runs 9 ablations + 1 full system, produces comparison table; at least 3 ablations show statistically significant degradation (prevented_harm decreases).
-  QA scenarios:
-  ```
-  Scenario: ablation shows component impact
-    Tool: bash
-    Steps: cd backend && pytest tests/test_ablation.py::test_component_impact -q | tee ../.omo/evidence/task-45-resqnet-sage.txt
-    Expected: exit 0, >=3 ablations show prevented_harm decrease vs full system
-    Evidence: .omo/evidence/task-45-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(eval): ablation study runner`
-
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-<!-- WAVE 10: PRIVACY, SECURITY & INTEGRATION — SOTA spec §12 -->
-<!-- ════════════════════════════════════════════════════════════════════════════ -->
-
-- [ ] 46. Data minimization + progressive precision — ward → shelter → dispatcher → rescue team → auditor
-  What to do / Must NOT do: `backend/app/lib/privacy.py` — progressive precision access control. Store exact personal locations only when operationally necessary. Precision levels: Public dashboard (ward-level aggregation), Shelter operator (shelter + assigned-person info), Dispatcher (task-relevant approximate or exact location), Assigned rescue team (exact rescue location), Auditor (controlled access to decision history). Implement as serializer layer: same entity serialized differently based on viewer's role + task assignment. Must NOT store exact personal locations in public-facing tables.
-  SOTA spec ref: §12.1 (data minimization), §12.1 (progressive precision levels)
-  Parallelization: Wave 10 (cross-cutting) | Blocked by: T3 (serializer), T4 (auth) | Blocks: final verification
-  References: SOTA spec §12.1 (5 precision levels).
-  Acceptance criteria: `pytest tests/test_privacy.py -q` — same observation serialized 3 ways (public=ward, dispatcher=approx, rescue=exact); public serializer strips PII.
-  QA scenarios:
-  ```
-  Scenario: public view has no exact coordinates
-    Tool: bash
-    Steps: cd backend && pytest tests/test_privacy.py::test_progressive_precision -q | tee ../.omo/evidence/task-46-resqnet-sage.txt
-    Expected: exit 0, public has ward-level, rescue has exact
-    Evidence: .omo/evidence/task-46-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(privacy): progressive precision + data minimization`
-
-- [ ] 47. Attribute-based access control — role + incident + jurisdiction + sensitivity + task + emergency override
-  What to do / Must NOT do: `backend/app/auth/abac.py` — attribute-based access control beyond role-based. Policy considers: user role, incident assignment, jurisdiction, data sensitivity, current operational task, emergency override status. `can(actor, action, subject, context)` function. Emergency override: admin can grant temporary elevated access during crisis (logged to audit). Must NOT rely on role-based access alone when multiple agencies participate.
-  SOTA spec ref: §12.2 (access control)
-  Parallelization: Wave 10 | Blocked by: T4 (auth) | Blocks: final verification
-  References: SOTA spec §12.2: "Use attribute-based policies considering: user role; incident assignment; jurisdiction; data sensitivity; current operational task; emergency override status." SOTA spec §12.2: "Role-based access alone may be too coarse when multiple agencies participate."
-  Acceptance criteria: `pytest tests/test_abac.py -q` — user without jurisdiction can't access data; emergency override grants temporary access + audit entry; override expires after configured time.
-  QA scenarios:
-  ```
-  Scenario: emergency override grants + expires
-    Tool: bash
-    Steps: cd backend && pytest tests/test_abac.py::test_emergency_override -q | tee ../.omo/evidence/task-47-resqnet-sage.txt
-    Expected: exit 0, override grants access, expires after TTL, audit entry created
-    Evidence: .omo/evidence/task-47-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(auth): attribute-based access control + emergency override`
-
-- [ ] 48. LLM isolation — PII redaction, local inference, tokenization, prompt injection defense
-  What to do / Must NOT do: `backend/app/perception/llm_safety.py` — LLM safety layer. (1) PII redaction: regex + NER model to strip PII/medical details before LLM call. (2) Local inference option: for sensitive reports, use local model (Ollama/llama.cpp) instead of third-party API. (3) Tokenization/pseudonymization: replace names with tokens before LLM, restore after. (4) Prompt injection defense: untrusted data fenced in delimited blocks with instruction firewall preamble. (5) Output validation: Pydantic schema validation with 1 retry. (6) Non-retention: LLM call logs don't store prompt content (only prompt version + metadata). (7) Model access audit records. Must NOT send PII or medical details to unrestricted third-party models.
-  SOTA spec ref: §12.3 (language-model isolation)
-  Parallelization: Wave 10 | Blocked by: T36 (LLM integration) | Blocks: final verification
-  References: SOTA spec §12.3: "Use: local or controlled inference for sensitive reports; tokenization or pseudonymization; structured redaction; narrowly scoped prompts; output validation; non-retention policies; model-access audit records."
-  Acceptance criteria: `pytest tests/test_llm_safety.py -q` — PII (phone, name, medical) redacted before LLM call; prompt injection attempt blocked by firewall; output schema validation rejects malformed response.
-  QA scenarios:
-  ```
-  Scenario: PII redacted before LLM call
-    Tool: bash
-    Steps: cd backend && pytest tests/test_llm_safety.py::test_pii_redaction -q | tee ../.omo/evidence/task-48-resqnet-sage.txt
-    Expected: exit 0, PII patterns absent in LLM input
-    Evidence: .omo/evidence/task-48-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(safety): LLM isolation (PII redaction + injection defense + audit)`
-
-- [ ] 49. Provenance & auditability — input obs IDs, model versions, optimizer params, operator decisions
-  What to do / Must NOT do: `backend/app/audit/provenance.py` — for every recommendation, preserve: input observation IDs, data versions, model versions, optimization parameters, scenario set, constraints, generated alternatives, operator decision, override reason, execution outcome. All stored in `decision_provenance` table linked to recommendation ID. Hash-chained audit log (T3) provides tamper evidence. `GET /api/decisions/{id}/provenance` returns full chain. Must NOT use blockchain — hash-chained append-only log is sufficient unless multiple distrustful organizations require shared consensus.
-  SOTA spec ref: §12.4 (provenance and auditability)
-  Parallelization: Wave 10 | Blocked by: T3 (audit), T26 (optimizer) | Blocks: final verification
-  References: SOTA spec §12.4: "For every recommendation, preserve: Input observation IDs; Data versions; Model versions; Optimization parameters; Scenario set; Constraints; Generated alternatives; Operator decision; Override reason; Execution outcome." SOTA spec §12.4: "A hash-chained append-only log is sufficient for tamper evidence. A blockchain is not necessary."
-  Acceptance criteria: `pytest tests/test_provenance.py -q` — optimizer produces recommendation, provenance chain has all 10 fields; tamper detection from T3 still works on provenance entries.
-  QA scenarios:
-  ```
-  Scenario: provenance chain complete
-    Tool: bash
-    Steps: cd backend && pytest tests/test_provenance.py::test_full_chain -q | tee ../.omo/evidence/task-49-resqnet-sage.txt
-    Expected: exit 0, all 10 provenance fields present
-    Evidence: .omo/evidence/task-49-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(audit): provenance chain + decision auditability`
-
-- [ ] 50. Fairness constraints — coverage minimums, response delay disparity, low-connectivity protection
-  What to do / Must NOT do: `backend/app/optimizer/fairness.py` — fairness constraints in optimizer. (1) Coverage constraint: `Coverage_z >= C_min` for designated vulnerable zones. (2) Response delay disparity: `max_z ResponseDelay_z - min_z ResponseDelay_z <= δ` subject to emergency severity. (3) Low-connectivity area protection: areas with historically low smartphone ownership / weak network / limited social-media use get minimum service guarantee. (4) Report: when equity constraints alter the mathematically highest-throughput plan, surface this to the operator ("Equity constraint applied: Ward 7 (low-connectivity) received priority allocation, reducing total throughput by 8%"). Must NOT maximize total benefit in a way that systematically ignores vulnerable communities.
-  SOTA spec ref: §12.5 (fairness constraints)
-  Parallelization: Wave 10 | Blocked by: T26 (optimizer + constraints, formerly T27) | Blocks: final verification
-  References: SOTA spec §12.5: "The optimizer should not maximize total expected benefit in a way that systematically ignores: low-connectivity areas; informal settlements; people with disabilities; elderly residents; people without social-media access; linguistic minorities; geographically isolated communities." SOTA spec §12.5: "The system should report when equity constraints alter the mathematically highest-throughput plan."
-  Acceptance criteria: `pytest tests/test_fairness.py -q` — optimizer without fairness: Ward 7 (low-connectivity) gets 0 coverage; with fairness: Ward 7 gets >= C_min; disparity <= δ; equity report flag shows throughput tradeoff.
-  QA scenarios:
-  ```
-  Scenario: fairness constraint protects vulnerable zone
-    Tool: bash
-    Steps: cd backend && pytest tests/test_fairness.py::test_coverage_minimum -q | tee ../.omo/evidence/task-50-resqnet-sage.txt
-    Expected: exit 0, Ward 7 coverage >= C_min with fairness, 0 without
-    Evidence: .omo/evidence/task-50-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(fairness): optimizer fairness constraints + equity impact reporting`
-
-- [ ] 52. Seed data package — fixtures for all layers (Metis GAP 8)
-  What to do / Must NOT do: Create `backend/app/seed/` directory with: (1) CAP 1.2 XML fixture files (sample alerts from SACHET/IPAWS format), (2) SensorThings JSON fixtures (rain gauge, river gauge, weather station data), (3) STAC item fixtures (sample Sentinel-1 metadata), (4) GeoJSON entity fixtures (roads, shelters, hospitals, buildings, substations, cell towers for a fictional coastal-city "Rivertown"), (5) Sample SAR scene crops (small 512×512 patches, not full scenes, stored in MinIO), (6) PMTiles basemap for the demo region (pre-generated from OSM extract via tippecanoe, stored in `frontend/public/basemaps/`), (7) Population grid (H3 hexes with population counts), (8) `seed_demo.py` script that populates DB with a cyclone-flood scenario: 1 incident, 5 zones, 20 roads, 3 shelters, 2 hospitals, 10 buildings, 5 responders, 3 vehicles, 50 observations (mix of sensor/citizen/official), 5 hypotheses (2 contradictory), 3 scenarios (best/expected/worst). (9) `backend/tests/fixtures/` with small sample tensors for ML model tests. Must NOT require internet to run seed — all fixtures are local files.
-  SOTA spec ref: §14.1 (testbed needs terrain, buildings, roads, hospitals, shelters, population, sensors), §14.10 (ablation needs deterministic fixtures)
-  Parallelization: Wave 1 | Blocked by: T1, T2 | Blocks: all acceptance criteria
-  References: Metis GAP 8. `DESIGN.md:213-220` (existing Rivertown seed concept to adapt). SOTA spec §14.1 (digital twin contents).
-  Acceptance criteria: `cd backend && python -m app.seed.seed_demo` populates DB with all entities; `docker compose exec db psql -U disaster -c "SELECT count(*) FROM observations;"` returns >= 50; seed is idempotent (run twice = same count).
-  QA scenarios:
-  ```
-  Scenario: seed creates demo scenario
-    Tool: bash
-    Steps: cd backend && python -m app.seed.seed_demo | tee ../.omo/evidence/task-52-resqnet-sage.txt
-    Expected: JSON summary with counts: observations>=50, roads>=20, shelters>=3, hypotheses>=5
-    Evidence: .omo/evidence/task-52-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(seed): fixture package for all layers + cyclone-flood demo scenario`
-
-- [x] 53. Offline pre-deployment preparation script (Metis GAP 11)
-  What to do / Must NOT do: Create `scripts/offline_prep.sh` that: (1) downloads and caches all ML model **base pretrained weights** (DOFA, TorchGeo ResNet50 S1, Clay, TerraMind) to `backend/models/cache/` — these are base foundation model weights, NOT fine-tuned models (fine-tuning happens in Wave 4 T18-T21, ONNX conversion of fine-tuned models happens in T22 after fine-tuning), (2) generates PMTiles basemap for demo region from pre-downloaded OSM extract via tippecanoe (tippecanoe must be installed on the build machine, not in Docker), stores in `frontend/public/basemaps/`, (3) builds the custom PostgreSQL Docker image (from T51 spike result), (4) pre-pulls all Docker images (`docker compose pull`), (5) vendors pip packages (`pip download -r requirements.txt -d backend/vendor/`), (6) vendors npm packages (`cd frontend && npm install --package-lock-only && npm ci --prefix ./node_modules-offline` or `npm pack` tarballs), (7) downloads sample Sentinel-1 scenes for testing, stores in MinIO, (8) pulls Ollama model (`ollama pull llama3.1:8b`), (9) downloads Whisper model for ASR, (10) downloads NER model for PII detection. Document minimum hardware: ~16 cores, 32 GB RAM, 256 GB SSD for full stack; ~8 cores, 16 GB RAM, 128 GB SSD for reduced stack (no ML, no Grafana). Per-service resource limits in `docker-compose.yml` (`deploy.resources`). Redpanda minimum 4GB RAM (not 1GB). Must NOT require internet after running this script.
-  SOTA spec ref: §11 (resilient communications and offline operation), §13.4 (ONNX Runtime at edge)
-  Parallelization: Wave 1 | Blocked by: T1, T51 | Blocks: T22 (model serving), T37 (offline PWA)
-  References: Metis GAP 11. User constraint: "everything must work on local hardware with low internet connectivity." Research bg_bac2773d: model weights 45MB-2.6GB per model, ONNX conversion via `torch.onnx.export()`, PMTiles via tippecanoe.
-  Acceptance criteria: `scripts/offline_prep.sh` exits 0; after running, `docker compose down && docker compose up -d --wait` starts all services with network disabled via `docker network disconnect`; `curl -s http://localhost:8000/healthz` returns ok. NOTE: ONNX conversion of fine-tuned models happens in Wave 4 (after T18-T21), NOT in this script — T53 only downloads base pretrained weights (DOFA, ResNet50 S1, Clay, TerraMind) and pre-pulls Docker images. Fine-tuned model ONNX conversion is handled in T22 (model serving) after fine-tuning completes.
-  QA scenarios:
-  ```
-  Scenario: stack boots offline after prep
-    Tool: bash
-    Steps: bash scripts/offline_prep.sh && docker compose down && docker network create --internal offline-net 2>/dev/null; docker compose up -d --wait && curl -s http://localhost:8000/healthz | tee .omo/evidence/task-53-resqnet-sage.txt
-    Expected: healthz returns ok:true with no internet (internal network)
-    Evidence: .omo/evidence/task-53-resqnet-sage.txt
-  ```
-  Commit: Y | `feat(offline): pre-deployment preparation script + resource limits`
+
+### Wave 1 — Gate A: Foundation
+
+- [x] 1. Create working branch and implementation audit docs
+  - **References:** prompt §4 (audit requirements), `evidence/baseline/` (new dir), all findings from `.omo/drafts/resqnet-sage.md`
+  - **Acceptance:** (a) `git checkout -b codex/resqnet-phase1-completion` creates the branch; (b) `docs/IMPLEMENTATION_AUDIT.md` exists with a capability table (capability, authoritative requirement, relevant files, actual implementation status, test status, defects/risds, dependency, recommended action) covering ALL items from prompt §4; each classified as verified working / implemented but unverified / partial / stub / broken / missing / historical; (c) `docs/EXECUTION_PLAN.md` exists with milestone ordering and gate definitions; (d) `evidence/baseline/` contains dated baseline command outputs (docker compose config output, alembic current, test count). Do NOT delete or overwrite existing evidence files — use dated/milestone-specific filenames.
+  - **QA happy:** Branch exists (`git branch --list codex/resqnet-phase1-completion`); audit covers all §4 capabilities (verify each: Docker stack, DB extensions, Alembic, ORM-schema, auth, tenant isolation, audit chain, idempotency, observation schema, source registry, all 5 ingestion adapters, Redpanda/Benthos, consumer lifecycle, knowledge graph, hypotheses, source reliability, freshness, confidence vector, world-state estimation, model calibration, perception modules, scenarios/digital twin, optimization, active sensing, privacy/ABAC, fairness, APIs, WebSockets, frontend, map, PWA/offline, seed data, evaluation framework, observability, documentation, test coverage, security weaknesses).
+  - **QA failure:** Branch not created → fail; any §4 capability missing from audit → fail.
+  - **Commit:** `docs(audit): add implementation audit and execution plan`
+
+- [x] 2. Migration 0002a: add missing entity columns + fix enum types
+  - **References:** `backend/app/seed/db_setup.py:16-43` (list of 26 missing columns — NOTE: list is incomplete, missing `hazards.hazard_type`, `hazards.severity`, `bridges.name`, `bridges.status`, `operational_tasks.title`, `operational_tasks.status`, `operational_tasks.priority` — cross-reference against entities.py to find ALL missing columns), `backend/app/models/entities.py:29-186` (ORM model definitions — cross-reference every model field against this list)
+  - **Acceptance:** New `backend/alembic/versions/0002a_entity_columns.py`. For each of the 13 entity tables, `op.add_column()` for every ORM-defined field not in migration 0001 (cross-reference entities.py:29-186 against db_setup.py:16-43 — verify db_setup.py list is complete; if ORM has fields not in db_setup.py, add those too). Drop the 6 native PG ENUM types (`sourcetype`, `corroborationstate`, `accesspolicy`, `hypothesisstatus`, `scenariolabel`, `scenariostatus`) and alter columns to VARCHAR. Add tenant-aware composite indexes on `(org_id, incident_id)` for all entity tables. Add time-series index on `observations(observed_at, org_id)`. Downgrade reverses all. `alembic upgrade head` from empty DB and from 0001 both succeed.
+  - **QA happy:** `docker compose exec backend alembic upgrade head` exits 0 from fresh DB; `docker compose exec backend python -c "from app.db import Base; from app.models import *; Base.metadata.create_all(bind=None)"` doesn't raise (metadata consistent); ORM field count matches DB column count for each entity table.
+  - **QA failure:** Migration fails on DB with existing data → fail; ORM field missing from migration → fail; enum drop fails → fail.
+  - **Commit:** `fix(db): add missing entity columns and fix enum types`
+
+- [x] 3. Migration 0002b: add missing tables (users, sources, idempotency, reliability, sync, h3, provenance)
+  - **References:** `backend/app/models/user.py:9-19`, `backend/app/models/source.py:51-78`, `backend/app/lib/idempotency.py:33-46`, `backend/app/fusion/reliability.py:44-59`, `backend/app/ingestion/federation.py` (federation_outbox), `backend/app/realtime/edge_sync.py` (edge_sync tables), `backend/app/realtime/sync.py` (sync tables), `backend/app/perception/models.py:80-95`, `backend/app/perception/llm_types.py` (llm_call_log), `backend/app/audit/provenance_types.py` (decision_provenance), prompt §5.1 (h3_geo_index table)
+  - **Acceptance:** New `backend/alembic/versions/0002b_missing_tables.py` creates: `users` (matching User model), `sources` (matching Source model), `idempotency_keys` (with unique constraint `uq_idempotency_source_external`), `source_reliability` (with unique constraint `(source_id, phenomenon_type)`), `federation_outbox`, `edge_sync_applied`, `edge_sync_state`, `sync_conflict`, `sync_applied`, `perception_models`, `prompt_records`, `llm_call_log`, `decision_provenance`, `h3_geo_index` (id BigInteger PK, entity_type String, entity_id String(26), h3 String, org_id String, incident_id String, unique constraint on `(entity_type, entity_id, h3)`). All with appropriate indexes. Downgrade drops all. After this migration, remove all `ensure_table()` / `ensure_tables()` function definitions AND calls from production code (idempotency.py:49-58, reliability.py:61-70, federation.py, edge_sync.py, sync.py, perception/models.py, llm_types.py, provenance_types.py). Remove `Base.metadata.create_all()` from `main.py:25` and `auth/seed.py:57`.
+  - **QA happy:** `grep -rn "ensure_table\|create_all" backend/app/ --include="*.py" | grep -v test | grep -v __pycache__ | grep -v ".pyc"` returns zero results; `alembic upgrade head` creates all tables.
+  - **QA failure:** Any `ensure_table()` or `create_all()` in non-test production code → fail; table missing from migration → fail.
+  - **Commit:** `fix(db): add missing tables and remove ensure_table workarounds`
+
+- [x] 4. Add Incident, Alert, and Recommendation models + migration 0003
+  - **References:** prompt §5.2 (incident fields), prompt §7.4 (alert fields), `backend/app/models/events.py:14-29` (Event=audit — preserve, do NOT modify), `backend/app/models/__init__.py:28-49` (exports)
+  - **Acceptance:** New files: `backend/app/models/incident.py` (`Incident`: ULID id, org_id, title, disaster_type, severity, status, declaration_level, description Text, geometry GEOMETRY SRID 4326, start_time BigInteger, expected_end BigInteger nullable, config JSONB, created_at, updated_at); `backend/app/models/alert.py` (`Alert`: ULID id, org_id, incident_id FK→incidents, alert_type, title, message Text, area GEOMETRY nullable, severity, recommended_action Text, confidence_vector JSONB, status default 'draft', created_by, created_at, updated_at, reviewed_by nullable, review_rationale Text nullable, reviewed_at BigInteger nullable); `backend/app/models/recommendation.py` (`Recommendation`: ULID id, org_id, incident_id, alert_id FK nullable, recommendation_type, title, description, reasoning Text, supporting_evidence JSONB, contradicting_evidence JSONB, confidence_vector JSONB, urgency, status default 'draft', assigned_team_id String nullable, created_at, updated_at). Migration `0003_incidents_alerts.py` creates all 3 tables with GiST geometry indexes, org_id+incident_id composite indexes. All exported from `__init__.py`. Event table untouched.
+  - **QA happy:** `alembic upgrade head` creates 3 new tables; `from app.models.incident import Incident; from app.models.alert import Alert; from app.models.recommendation import Recommendation` works; `alembic downgrade -1` drops all 3.
+  - **QA failure:** Event table modified → fail; missing GiST index → fail; missing FK alert→incident → fail.
+  - **Commit:** `feat(domain): add incident, alert, and recommendation models`
+
+- [x] 5. Expand OperationalTask model + migration 0004
+  - **References:** `backend/app/models/entities.py:167-177` (current minimal OperationalTask), prompt §7.5 (task fields)
+  - **Acceptance:** Migration `0004_task_expansion.py` adds to `operational_tasks`: `assigned_team_id` String nullable, `required_capability` String nullable, `assignment_history` JSONB nullable. Update `entities.py` OperationalTask class to match.
+  - **QA happy:** `alembic upgrade head` succeeds; `SELECT column_name FROM information_schema.columns WHERE table_name='operational_tasks'` includes assigned_team_id, required_capability, assignment_history.
+  - **QA failure:** Column missing → fail.
+  - **Commit:** `feat(tasks): expand operational task model with assignment fields`
+
+- [x] 6. Harden configuration: safe health, CORS, JWT, test endpoint
+  - **References:** `backend/app/main.py:100-113` (healthz leaks DATABASE_URL), `backend/app/main.py:160-163` (test error unrestricted), `backend/app/main.py:68-77` (CORS wildcard+credentials), `.env.example:24` (JWT_SECRET), `backend/app/config.py:1-44`
+  - **Acceptance:** (a) `/healthz` returns service names without full URLs (`"database": "connected"` not connection string); (b) `/healthz/deep` returns ok/false per service without credentials; (c) `/api/_test/error` returns 404 when `ENVIRONMENT != "development"`; (d) CORS: if `CORS_ORIGINS == "*"`, set `allow_credentials=False` and log warning; (e) `JWT_SECRET` must be ≥32 chars when `ENVIRONMENT != "development"` or app refuses to start (add validator to Settings); (f) MinIO credentials already aligned (minio/minio123) — verify consistency.
+  - **QA happy:** `curl /healthz` returns no DATABASE_URL; `ENVIRONMENT=production curl /api/_test/error` returns 404; `ENVIRONMENT=production JWT_SECRET=short` fails to start.
+  - **QA failure:** Secret in health → fail; test endpoint in prod → fail; wildcard CORS + credentials → fail.
+  - **Commit:** `fix(config): harden health, cors, jwt, and test endpoints`
+
+- [x] 7. Implement dedicated worker container with retry and topic creation
+  - **References:** `backend/app/streaming/consumer.py:28-171` (ConsumerManager), `backend/app/streaming/consumer.py:18` (import of `ensure_table` — remove after migration 0002b), `docker-compose.yml:139-180` (backend service), `benthos/disaster_pipeline.yaml`, prompt §5.4 (worker requirements including retry)
+  - **Acceptance:** (a) New `backend/app/worker/main.py` entry point: instantiates `ConsumerManager`, calls `start(["observations.normalized"])`, runs `consume()` with graceful SIGTERM/SIGINT shutdown; (b) `docker-compose.yml` adds `worker` service (build `./backend`, command `python -m app.worker.main`, depends_on db healthy + redpanda started, resource limits 1CPU/1G); (c) `scripts/create_topics.sh` creates `observations.raw`, `observations.normalized`, `observations.dlq` via `rpk topic create` (idempotent); (d) **Add retry logic to consumer**: transient errors (DB connection, timeout) retried 3x with exponential backoff (1s, 2s, 4s) before DLQ; permanent errors (ValueError, schema) go directly to DLQ; (e) worker healthcheck via process check (`pgrep -f app.worker.main`); (f) worker exposes Prometheus metrics on port 8001; (g) remove `ensure_table()` call from `consumer.py:59` AND remove `ensure_table` from the import on `consumer.py:18` (change to `from app.lib.idempotency import check_and_record`); (h) add confidence vector computation call after insert (wired in todo 13).
+  - **QA happy:** `docker compose up -d --build --wait` starts worker; `docker compose logs worker` shows "Consumer started"; test message to `observations.raw` appears in `observations` table within 10s; sending malformed message goes to DLQ; stopping DB briefly then restarting → consumer retries, doesn't crash.
+  - **QA failure:** Worker crashes on startup → fail; transient error goes to DLQ without retry → fail; worker doesn't shutdown on SIGTERM → fail.
+  - **Commit:** `feat(streaming): run normalized observation consumer in dedicated worker with retry`
+
+- [x] 8. Gate A checkpoint — verify foundation
+  - **References:** All Wave 1 todos, prompt §12 Gate A
+  - **Acceptance:** Run: `docker compose config` (valid); `docker compose up -d --build --wait` (all core services start); `docker compose exec backend alembic upgrade head` (from fresh DB); `docker compose exec backend python -c "from app.db import Base; from app.models import *; print(len(Base.metadata.tables))"` (matches expected count); `grep -rn "create_all\|ensure_table" backend/app/ --include="*.py" | grep -v test | grep -v __pycache__` (zero results); `curl http://localhost:8000/healthz` (no secrets); `docker compose exec backend pytest -q` (all existing tests pass — tests may need PostgreSQL, see todo 28 for test infra fix; for Gate A, run with `DATABASE_URL` pointing to Docker DB). Record evidence in `evidence/gate-a/`.
+  - **QA happy:** All checks pass; `evidence/gate-a/` contains dated outputs.
+  - **QA failure:** Any check fails → block Wave 2.
+  - **Commit:** `test(gate-a): verify foundation gate`
+
+### Wave 2 — Gate B: Phase 1 API
+
+- [x] 9. Build rescue-ball simulator core: device model and scenarios
+  - **References:** prompt §6 (simulator spec), `backend/app/lib/ulid.py:37-58`, `backend/app/seed/ids.py:1-41` (deterministic ID pattern), `backend/app/fusion/freshness.py:1-113` (phenomenon tau values)
+  - **Acceptance:** New `backend/app/simulator/rescue_ball.py` (<250 LOC) — `RescueBallDevice` dataclass with: device_id (ULID), org_id, incident_id, lon, lat, altitude, deployment_state, velocity, heading, battery_pct, estimated_remaining_runtime, link_type, signal_quality, packet_loss, device_temperature, enclosure_status, camera_status, thermal_sensor_status, imu_reading, acoustic_reading, last_seen_ts, health_flags. `step(delta_ms, rng)` advances state deterministically (seedable `random.Random`). New `backend/app/simulator/scenarios.py` (<250 LOC) — predefined Rivertown flood path (waypoints), fault injection functions (battery_drain, sensor_degradation, connectivity_loss, blocked_route, thermal_hotspot, human_heat_signature, water_depth, motion, vibration, environmental_temp). Prominent docstring: "DIGITAL SIMULATION — physical rescue ball, mobility, communications, thermal accuracy, and landing mechanism have NOT been validated."
+  - **QA happy:** `from app.simulator.rescue_ball import RescueBallDevice; d = RescueBallDevice(...); d.step(1000, random.Random(42))` produces deterministic output; running with seed 42 twice gives identical state.
+  - **QA failure:** Non-deterministic with same seed → fail; missing simulation disclaimer → fail; file >250 LOC → fail.
+  - **Commit:** `feat(simulator): add deterministic rescue-ball device model and scenarios`
+
+- [x] 10. Build simulator engine, API, and CLI — publishes through ingestion
+  - **References:** `backend/app/streaming/producer.py:19-68` (ProducerManager), `backend/app/streaming/consumer.py:114-147` (_build_observation payload format — simulator must produce matching fields), prompt §6 (start/pause/resume/stop/replay/speed)
+  - **Acceptance:** New `backend/app/simulator/engine.py` (<250 LOC) — `SimulationEngine` with start/pause/resume/stop/replay, configurable speed, deterministic seed, publishes observations through `ProducerManager.send("observations.raw", payload)` where payload contains: `observation_id` (ULID), `event_type`, `phenomenon`, `geometry` (GeoJSON Point), `observed_at`, `source_id`, `source_type`, `org_id`, `incident_id`, `value`, `unit`, `provenance_chain` (includes `{"simulated": true}`), `raw_data_hash`. Large artifacts (thermal frames) stored in MinIO, observation contains `quality_flags.artifact_ref` pointing to MinIO object. New `backend/app/api/routes/simulator.py` — `POST /api/simulator/start`, `POST /api/simulator/stop`, `GET /api/simulator/status`, `POST /api/simulator/inject-fault`. New `scripts/run_rescue_ball_demo.py` — CLI runner with `--seed` flag.
+  - **QA happy:** `python -m scripts.run_rescue_ball_demo --seed 42` twice → identical observation_ids and values; `rpk topic consume observations.raw` shows messages with `"simulated": true` in provenance; `POST /api/simulator/start` returns 202 with device IDs.
+  - **QA failure:** Simulator writes directly to DB → fail; payload missing `observation_id` → fail; no simulated flag → fail.
+  - **Commit:** `feat(simulator): add engine, api, and cli publishing through ingestion`
+
+- [x] 11. Complete auth API: login, /me, logout, role enforcement, tenant isolation
+  - **References:** `backend/app/api/routes/auth.py:19-37` (login only), `backend/app/auth/jwt.py:1-23`, `backend/app/auth/roles.py:1-38`, `backend/app/auth/abac.py:1-229`, `backend/app/middleware/org_context.py:1-39`, `backend/app/deps.py:1-55`, `backend/app/auth/seed.py:1-83`
+  - **Acceptance:** (a) `GET /api/auth/me` returns user from JWT; (b) `POST /api/auth/logout` adds JWT to Redis denylist (`revoked_tokens` SET with TTL = remaining token lifetime); if Redis unavailable, log warning and still return 204 (best-effort); (c) `get_current_user` checks Redis denylist before accepting token; (d) `require_roles(*roles)` applied to all state-changing endpoints; (e) `OrgContextMiddleware` already extracts org_id from JWT only (`org_context.py:31` — already implemented, no change needed); (f) demo users with `demo1234` only when `ENVIRONMENT=development`.
+  - **QA happy:** Login → JWT; /me → user info; logout → 204; subsequent /me → 401; org A user → empty result for org B observations; viewer POST → 403.
+  - **QA failure:** org_id from request body accepted → fail; viewer can POST → fail; revoked token works → fail.
+  - **Commit:** `feat(auth): complete login, me, logout with token revocation`
+
+- [x] 12. Implement real Observation API (replace stub)
+  - **References:** `backend/app/api/routes/observations.py:1-14` (STUB), `backend/app/models/observation.py:16-104` (23-field model), `backend/app/fusion/confidence.py:140-284` (ConfidenceVectorCalculator), `backend/app/lib/ulid.py:37-58`, `backend/app/lib/audit.py:1-120`
+  - **Acceptance:** Replace stub with: (a) `POST /api/observations` — create from GeoJSON, generate ULID, compute confidence vector via `ConfidenceVectorCalculator.compute_vector()`, `attach_to_observation()`, write audit, return GeoJSON Feature; (b) `GET /api/observations` — list with pagination + filters: incident_id, source_id, phenomenon, time range, bbox (ST_MakeEnvelope + ST_Intersects), freshness threshold, confidence dimension filters (quality_flags->confidence_vector->s >= X), visibility (access_policy by role); (c) `GET /api/observations/{id}` — detail as GeoJSON; (d) all responses are GeoJSON Feature/FeatureCollection, never WKT; (e) `require_roles()` applied; (f) org_id from `request.state.org_id`. If file exceeds 250 LOC, split into `observations.py` (routes) + `observations_queries.py` (filter logic).
+  - **QA happy:** POST returns 201 with ULID + confidence_vector; GET with bbox excludes out-of-bounds; org B user → empty for org A.
+  - **QA failure:** WKT in response → fail; org_id from client → fail; no confidence_vector → fail.
+  - **Commit:** `feat(observations): implement real observation api with filters and geojson`
+
+- [x] 13. Wire confidence vector and hypothesis engine to API and streaming
+  - **References:** `backend/app/fusion/confidence.py:140-284` (REAL), `backend/app/knowledge/graph.py:1-262` (REAL), `backend/app/api/routes/hypotheses.py:1-14` (STUB), `backend/app/streaming/consumer.py:80-112` (_process — add confidence call), `backend/app/models/hypotheses.py:1-29`
+  - **Acceptance:** (a) After consumer inserts observation, call `ConfidenceVectorCalculator.compute_vector()` + `attach_to_observation()` before commit; (b) POST /api/observations also computes; (c) Replace hypotheses stub: `GET /api/incidents/{incident_id}/hypotheses` (list with supporting_evidence, contradicting_evidence, probability, status, data_age); `POST /api/incidents/{incident_id}/hypotheses` (create); (d) After new observation, if corroborates/contradicts existing hypothesis, update evidence arrays + probability; (e) contradictory hypotheses remain stored and visible; (f) scalar display confidence available but 6D vector is source of truth.
+  - **QA happy:** 2 same-phenomenon observations near same location → both have confidence_vector with C > 0; GET hypotheses returns supporting + contradicting evidence.
+  - **QA failure:** Vector missing → fail; contradicting hypothesis deleted → fail; scalar used for reasoning → fail.
+  - **Commit:** `feat(fusion): wire confidence vector and hypothesis engine to api`
+
+- [x] 14. Implement alert and human-approval workflow
+  - **References:** prompt §7.4, `backend/app/models/alert.py` (todo 4), `backend/app/audit/provenance.py:1-194` (ProvenanceChain), `backend/app/lib/audit.py:1-120`, `backend/app/realtime/manager.py:1-172`
+  - **Acceptance:** (a) New `backend/app/alerts/rules.py` (<250 LOC) — `evaluate_alerts(db, incident_id)`: if thermal human-detection observation has `confidence_vector.s >= 0.5` AND `C >= 0.2` (documented as configurable thresholds), create draft Alert; (b) `GET /api/incidents/{incident_id}/alerts` — list with status filter; (c) `POST /api/incidents/{incident_id}/alerts/{id}/approve` — admin/emergency_manager only: sets status='approved', reviewed_by, reviewed_at, rationale; creates audit + provenance; triggers task creation; (d) `POST .../alerts/{id}/dismiss` — dismiss with rationale; (e) `POST .../alerts/{id}/modify` — modify recommended_action before approving; (f) system NEVER auto-dispatches; (g) all changes broadcast via WebSocketManager.
+  - **QA happy:** Corroborated thermal observation → draft alert appears; approve with admin token → status='approved', audit entry exists, task created.
+  - **QA failure:** Auto-dispatch without approval → fail; viewer can approve → fail; no audit → fail.
+  - **Commit:** `feat(alerts): implement human-approved alert workflow`
+
+- [x] 15. Implement response tasks and deterministic team assignment
+  - **References:** `backend/app/models/entities.py:167-177` (OperationalTask expanded in todo 5), `backend/app/optimizer/routing.py:130-145` (compute_cost method — verified at line 130, NOT 210), `backend/app/optimizer/routing.py:1-260` (RouteReliabilityEngine), prompt §7.5 (must include workload factor)
+  - **Acceptance:** (a) `GET /api/incidents/{incident_id}/tasks` — list with status filter; (b) `POST /api/incidents/{incident_id}/tasks` — create task; (c) `PATCH /api/tasks/{id}` — update status (field responder); (d) `POST /api/incidents/{incident_id}/tasks/{id}/assign` — deterministic assignment: query eligible teams (matching capability, status='available'), compute travel cost via `RouteReliabilityEngine.compute_cost()`, exclude teams behind blocked/dangerous roads, **factor in workload** (teams with fewer active assignments preferred), pick lowest combined cost+workload team; (e) assignment creates audit entry + assignment_history entry; (f) documented as initial deterministic method, separate from CVaR optimizer.
+  - **QA happy:** Create task → assign → nearest available team with matching capability + lowest workload assigned; team status → 'assigned'; audit entry exists.
+  - **QA failure:** No workload factor → fail; assigned team doesn't match capability → fail; no audit → fail.
+  - **Commit:** `feat(response): add rescue task workflow with deterministic assignment`
+
+- [x] 16. Wire realtime WebSocket broadcasts and polling fallback
+  - **References:** `backend/app/api/routes/ws.py:1-32` (ping/pong), `backend/app/realtime/manager.py:1-172` (REAL WebSocketManager + polling endpoint), prompt §7.6 (event types)
+  - **Acceptance:** (a) Replace ws.py: on connect, validate JWT, subscribe to incident_id channel via `manager.connect()`; (b) After observation insert → `manager.broadcast_observation()`; (c) After hypothesis update → `manager.broadcast_hypothesis()`; (d) After alert created/approved/dismissed → broadcast; (e) After task assigned/status changed → broadcast; (f) After team location updated → broadcast; (g) After road status changed → broadcast; (h) Feed degradation → broadcast; (i) `GET /api/incidents/{incident_id}/events?since={ts}` polling endpoint returns events since timestamp; (j) **Register `manager.router` in `main.py`** — the WebSocketManager's router (containing `/ws/realtime/{incident_id}` and `/api/incidents/{incident_id}/updates` polling endpoint) is currently NOT included in `main.py`; add `from app.realtime.manager import router as realtime_router` and `app.include_router(realtime_router)` to `main.py`.
+  - **QA happy:** WebSocket with JWT → insert observation → client receives `{"type":"new_observation"}` within 2s; polling endpoint returns same event.
+  - **QA failure:** No JWT validation → fail; no polling fallback → fail.
+  - **Commit:** `feat(realtime): wire websocket broadcasts and polling fallback`
+
+- [x] 17. Implement idempotent seed scenario with full demo data
+  - **References:** `backend/app/seed/seed_demo.py:34-59` (remove ensure_columns call), `backend/app/seed/db_setup.py:16-79` (remove — migration handles columns), `backend/app/seed/entities.py:1-227`, `backend/app/seed/observations.py:1-239`, `backend/app/seed/hypotheses.py:1-122`, `backend/app/seed/scenarios.py:1-94`, `backend/app/seed/ids.py:1-41`, `backend/app/auth/seed.py:1-83` (6 users), prompt §7.7
+  - **Acceptance:** (a) Remove `ensure_columns()` call from seed_demo.py; (b) **Reconcile ORG_ID**: `seed/ids.py:39` has `ORG_ID = "demo_org"` but `auth/seed.py:18` has `DEMO_ORG_ID = "org_demo"` — change `seed/ids.py` to use `ORG_ID = "org_demo"` so demo users and demo observations share the same org; (c) Add rescue-ball device seed (2 simulated devices as Sensor rows); (d) Ensure 6 demo users seeded; (e) Add 1 draft trapped-person alert; (f) Add 1 proposed action (recommendation); (g) Add 1 assigned task; (h) Add population/vulnerability data to zone properties; (i) Running twice → identical row counts (delete-then-insert by org_id+incident_id); (j) `clean_demo_data` deletes from all tables including new ones (alerts, recommendations, incidents if demo-scoped).
+  - **QA happy:** `python -m app.seed.seed_demo` twice → identical counts; `SELECT count(*) FROM observations WHERE org_id='org_demo'` = 50 both times; rescue-ball devices in sensors table; alert + task exist.
+  - **QA failure:** Second run doubles counts → fail; ensure_columns still called → fail; no alert/task → fail.
+  - **Commit:** `feat(seed): idempotent demo scenario with rescue-ball devices and alerts`
+
+- [x] 18. Implement situation report, incident, entity, and audit API routes
+  - **References:** `backend/app/models/incident.py` (todo 4), `backend/app/audit/provenance.py:1-194` (REAL), `backend/app/lib/audit.py:1-120` (REAL), `backend/app/models/entities.py:29-186`, `backend/app/perception/llm.py:1-276` (LLM for prose), prompt §7.8, prompt §7.1
+  - **Acceptance:** (a) `GET /api/incidents/{id}/situation-report?format=text|json` — JSON includes: incident status, data freshness, active hazards, hypotheses, contradictions, affected infrastructure, shelters, open tasks, alerts, resource status, known unknowns, provenance links; LLM prose has `review_status: draft` + evidence links; LLM disabled → structured data only; (b) Incident CRUD: `GET /api/incidents`, `POST /api/incidents`, `GET /api/incidents/{id}`, `PATCH /api/incidents/{id}` (geometry as GeoJSON); (c) Entity routes: `GET /api/incidents/{id}/entities?type=zones|roads|shelters|hospitals|teams|vehicles|sensors` (GeoJSON FeatureCollection, bbox filter); `PATCH /api/entities/{type}/{id}` (status/location update, broadcast); (d) Audit: `GET /api/incidents/{id}/audit-logs` (paginated), `GET /api/decisions/{rec_id}/provenance`, `GET /api/audit/verify?incident_id=X` (hash chain verification). All org_id+incident_id tenancy enforced. Split into separate route files if >250 LOC each.
+  - **QA happy:** Situation report JSON has all fields; LLM-disabled report still works; entity routes return GeoJSON; audit verify returns valid.
+  - **QA failure:** LLM prose without evidence → fail; WKT in response → fail; cross-org visible → fail.
+  - **Commit:** `feat(api): implement situation report, incident, entity, and audit routes`
+
+- [x] 19. Gate B checkpoint — verify Phase 1 API
+  - **References:** All Wave 2 todos, prompt §12 Gate B
+  - **Acceptance:** Run: `docker compose exec backend python -m app.seed.seed_demo` (idempotent); `curl -X POST /api/auth/login -d "username=admin@demo.disaster&password=demo1234"` (JWT); `curl /api/auth/me` (user); `curl /api/incidents` (incidents); `curl '/api/observations?incident_id=X&bbox=...'` (filtered); start simulator → `rpk topic consume observations.raw` (messages); wait 10s → `SELECT count(*) FROM observations` (increased); `GET /api/incidents/X/hypotheses` (hypotheses with confidence); insert corroborated thermal observation → `GET /api/incidents/X/alerts` (draft alert); `POST .../alerts/{id}/approve` → task created; `GET /api/incidents/X/audit-logs` (audit entry). Record evidence in `evidence/gate-b/`.
+  - **QA happy:** All checks pass.
+  - **QA failure:** Any check fails → block Wave 3.
+  - **Commit:** `test(gate-b): verify phase one api gate`
+
+### Wave 3 — Gate C: Frontend
+
+- [x] 20. Build frontend: routing, auth context, typed API client, TanStack Query
+  - **References:** `frontend/src/App.tsx:1-5`, `frontend/src/main.tsx:1-10`, `frontend/package.json:11-31` (react-router-dom + @tanstack/react-query unused), `frontend/vite.config.ts:1-11`
+  - **Acceptance:** (a) `main.tsx` wraps app in `BrowserRouter` + `QueryClientProvider`; (b) `src/api/client.ts` — typed API client with baseURL from `VITE_API_BASE`, JWT in memory + localStorage, typed methods for all endpoints (generate types from FastAPI `/openapi.json` or hand-type matching backend schemas); (c) `src/auth/AuthContext.tsx` — `user`, `login()`, `logout()`, `isAuthenticated`; (d) `App.tsx` — React Router with routes: `/login`, `/dashboard`, `/hypotheses`, `/planning`, `/simulation`, `/field`, `/devices/:id`, `/audit`; (e) protected routes redirect to `/login`; (f) reusable `LoadingState`, `EmptyState`, `ErrorState`, `StaleState`, `OfflineState` components; (g) all interactive elements have ARIA labels; (h) `npm run build` succeeds.
+  - **QA happy:** Build succeeds; unauthenticated `/dashboard` → redirect to `/login`; after login → dashboard loads.
+  - **QA failure:** Build fails → fail; unauthenticated access → fail; no ARIA labels → fail.
+  - **Commit:** `feat(ui): add routing, auth context, typed api client, tanstack query`
+
+- [x] 21. Build situation dashboard with map
+  - **References:** `frontend/src/components/MapView.tsx:1-198` (enhance), `frontend/src/components/mapLayers.ts:1-238`, `frontend/src/hooks/useMapLayers.ts:1-207` (replace mock with real API), `frontend/src/types/map.ts:1-224`, `scripts/offline_prep.sh:44-70` (PMTiles)
+  - **Acceptance:** (a) Dashboard renders MapView with all layers: incident boundary, flood/hazard, rescue-ball path + current location, thermal detections, observations, blocked/dangerous roads, shelters + capacity, hospitals, teams, tasks, alerts, infrastructure; (b) Replace mock data with real API via TanStack Query; (c) Try local PMTiles (`/basemaps/rivertown.pmtiles`), fallback to simple vector style (background color + labels) if PMTiles unavailable — run `scripts/offline_prep.sh` step 2 as part of `make bootstrap`; (d) Stale layers visually distinct (grayscale/opacity); (e) Conflicting observations visible separately; (f) uncertainty + data-age indicators; (g) no commercial map key required.
+  - **QA happy:** Dashboard shows seeded data from real API; stale observations visually distinct; no external map tiles loaded (check Network tab).
+  - **QA failure:** Online tiles used → fail; stale looks same as fresh → fail; conflicts merged → fail.
+  - **Commit:** `feat(ui): implement command center map with real data and local basemap`
+
+- [x] 22. Build action cards, hypothesis view, and planning view
+  - **References:** `frontend/src/components/ActionCard.tsx:1-250` (enhance), prompt §8 (action card fields), prompt §7.3 (hypothesis display)
+  - **Acceptance:** (a) ActionCard shows: proposed action, objective, benefit range, urgency, required resources, supporting evidence, contradicting evidence, assumptions, uncertainty, alternatives, failure contingency, equity impact, approve/modify/dismiss controls — all from real API; (b) Hypothesis page: list with supporting/contradicting evidence, data age, uncertainty; (c) Planning page: action proposals with approve/modify/dismiss; (d) approve/dismiss calls real API; (e) success toast after approval; (f) task appears in task list.
+  - **QA happy:** Planning page shows seeded alert; approve calls API; task appears.
+  - **QA failure:** Missing equity impact → fail; approve doesn't call API → fail.
+  - **Commit:** `feat(ui): implement action cards, hypothesis and planning views`
+
+- [x] 23. Build simulation, field responder, device detail, and audit views
+  - **References:** prompt §8 (pages), prompt §7.6 (field responder)
+  - **Acceptance:** (a) Simulation page: start/stop/pause/resume, speed slider, device list, telemetry display, fault injection buttons, "SIMULATED DATA" banner; (b) Field responder: mobile-first (renders correctly at 375px, touch targets ≥44px, no horizontal scroll), assigned tasks, quick report form (category, geolocate, urgency, description, optional photo/water_depth/people), mark road blocked/open, update task status, optimistic UI; (c) Device detail: device state, battery, signal, sensor status, path history, last-seen, "SIMULATED DATA" label; (d) Audit: hash-chained event log, provenance chain viewer, verify chain button; (e) all pages have loading/empty/error/stale/offline states.
+  - **QA happy:** Simulation starts via API; field responder at 375px renders correctly; task status update reflects on dashboard via WebSocket.
+  - **QA failure:** Missing simulation banner → fail; field responder not mobile-first → fail; no offline state → fail.
+  - **Commit:** `feat(ui): implement simulation, field responder, device, and audit views`
+
+- [x] 24. Gate C checkpoint — verify frontend
+  - **References:** All Wave 3 todos, prompt §12 Gate C
+  - **Acceptance:** `cd frontend && npm ci && npm run build` (build); Playwright login flow; map renders seeded data (check for deck.gl canvas + layer elements); simulator moves (device position changes on map); alert appears (check for alert element); operator approves (click approve button); task appears in field view; task update reaches command centre (WebSocket event received); polling fallback works (disable WebSocket, verify polling gets events). Record Playwright screenshots in `evidence/gate-c/`.
+  - **QA happy:** All checks pass.
+  - **QA failure:** Any check fails → block Wave 4.
+  - **Commit:** `test(gate-c): verify frontend gate`
+
+### Wave 4 — Gate D: Offline
+
+- [x] 25. Implement PWA manifest, service worker, and app-shell caching
+  - **References:** prompt §9, `frontend/index.html:1-12`, `frontend/vite.config.ts:1-11`
+  - **Acceptance:** (a) `frontend/public/manifest.json` — PWA manifest (name, icons, theme_color, display: standalone); (b) Service worker registered in `main.tsx`, caches app shell (HTML/CSS/JS) on install, serves from cache offline; (c) local basemap cached by SW; (d) `npm run build` generates SW + manifest.
+  - **QA happy:** DevTools > Application > Service Workers shows SW; DevTools > Network > Offline → app shell loads from cache.
+  - **QA failure:** No manifest → fail; app doesn't load offline → fail.
+  - **Commit:** `feat(offline): add pwa manifest, service worker, and app-shell caching`
+
+- [x] 26. Implement IndexedDB outbox and conflict-aware replay
+  - **References:** prompt §9, `backend/app/realtime/edge_sync.py:1-267` (REAL), `backend/app/realtime/sync.py:1-275` (REAL), `backend/app/lib/idempotency.py:61-74`
+  - **Acceptance:** (a) `frontend/src/lib/outbox.ts` — IndexedDB outbox storing pending mutations with content hash, timestamp, priority; (b) online → direct API; offline → outbox; (c) pending count badge in UI; (d) on reconnect → sync in priority order (text > coordinates > task_state > imagery); (e) idempotency key per item; (f) conflict policy: last-write-wins for non-critical, manual resolution for critical — audit the resolution; (g) no silent discard.
+  - **QA happy:** Offline → create observation + update task → both "pending"; online → both sync; observation on dashboard; task updated; re-sync → no duplicate.
+  - **QA failure:** Offline mutation lost → fail; duplicate on re-sync → fail; conflict silently overwritten → fail.
+  - **Commit:** `feat(offline): add indexeddb outbox and conflict-aware replay`
+
+- [x] 27. Implement feed-health tracking and low-bandwidth mode
+  - **References:** `backend/app/api/routes/health.py:44-226` (REAL FeedHealthTracker), `backend/app/comms/fallback.py:1-289` (REAL), prompt §9 step 8 (data age shown during outage)
+  - **Acceptance:** (a) Dashboard shows feed-health indicators per source (healthy/degraded/down with data age); (b) Low-bandwidth toggle: reduces polling from 2s to 30s, strips map imagery, text-first payloads; (c) Stale/degraded visually distinct on map; (d) During outage: dashboard shows "data stale" or "unavailable" indicators, not current timestamps pretending to be fresh; (e) **Register `health.router` in `main.py`** — the FeedHealthTracker endpoints (`/api/incidents/{id}/feed-health`, `/api/incidents/{id}/degradation-summary`) in `backend/app/api/routes/health.py` are currently NOT included in `main.py`; add `from app.api.routes.health import router as health_router` and `api_router.include_router(health_router)` to `main.py`.
+  - **QA happy:** No observations for 60s (tau=60s phenomenon) → "degraded"; low-bandwidth reduces requests; outage shows stale indicator.
+  - **QA failure:** Stale data displayed as current → fail; low-bandwidth toggle missing → fail.
+  - **Commit:** `feat(offline): add feed-health tracking and low-bandwidth mode`
+
+- [x] 28. Gate D checkpoint — verify offline
+  - **References:** All Wave 4 todos, prompt §12 Gate D, prompt §9 (8-step demonstration)
+  - **Acceptance:** Run the 8-step offline demonstration: (1) responder opens field interface online; (2) connectivity disabled; (3) responder records observation + changes task status; (4) changes show as "pending"; (5) connectivity returns; (6) outbox syncs without duplication; (7) command centre receives updates; (8) data age + unavailable capabilities shown during outage. Record evidence in `evidence/gate-d/`. Also: `docker compose down` for ollama/prometheus/grafana → core stack still boots.
+  - **QA happy:** All 8 steps pass.
+  - **QA failure:** Any step fails → block Wave 5.
+  - **Commit:** `test(gate-d): verify offline gate`
+
+### Wave 5 — Gate E: SOTA, Testing, Automation, Docs
+
+- [x] 29. Replace SQLite test infrastructure with PostgreSQL/PostGIS
+  - **References:** `backend/tests/conftest.py:14` (SQLite), `backend/tests/test_ogc_adapter.py:33-53` (ALTER TABLE), prompt §11
+  - **Acceptance:** (a) `conftest.py` — use `DATABASE_URL` env var pointing to Docker PostgreSQL test DB; (b) `alembic upgrade head` in test setup (not `create_all`); (c) remove all `ALTER TABLE` workarounds from test files; (d) remove `ensure_table()` calls from tests; (e) fresh schema per test session; (f) `pytest-asyncio` configured.
+  - **QA happy:** `pytest -q` runs against PostgreSQL; `grep -r "create_all\|ensure_table\|ALTER TABLE" backend/tests/` → zero.
+  - **QA failure:** SQLite used → fail; ALTER TABLE remains → fail.
+  - **Commit:** `test(infra): replace sqlite with postgresql postgis integration tests`
+
+- [x] 30. Add Phase 1 integration tests
+  - **References:** prompt §11 (test list)
+  - **Acceptance:** New test files: `test_tenant_isolation.py`, `test_role_denial.py`, `test_geometry_roundtrip.py`, `test_invalid_bbox.py`, `test_concurrent_idempotency.py`, `test_migration_correctness.py`, `test_audit_tampering.py`, `test_stale_data.py`, `test_contradictions.py`, `test_worker_restart.py`, `test_dlq.py`, `test_websocket_fallback.py`, `test_seed_idempotency.py`, `test_simulator_determinism.py`, `test_low_connectivity.py` (degraded mode when Redpanda/Redis unavailable). All real assertions, no `assert True`, no mocking SUT.
+  - **QA happy:** `pytest backend/tests/test_tenant_isolation.py backend/tests/test_role_denial.py backend/tests/test_geometry_roundtrip.py backend/tests/test_invalid_bbox.py backend/tests/test_concurrent_idempotency.py backend/tests/test_migration_correctness.py backend/tests/test_audit_tampering.py backend/tests/test_stale_data.py backend/tests/test_contradictions.py backend/tests/test_worker_restart.py backend/tests/test_dlq.py backend/tests/test_websocket_fallback.py backend/tests/test_seed_idempotency.py backend/tests/test_simulator_determinism.py backend/tests/test_low_connectivity.py -v` all pass.
+  - **QA failure:** Any test is fake/tautological → fail.
+  - **Commit:** `test(phase1): add integration tests for all phase one scenarios`
+
+- [x] 31. Add frontend testing: typecheck, lint, unit, Playwright e2e
+  - **References:** `frontend/package.json:6-9`, `frontend/playwright.config.ts:1-27`, prompt §11, prompt §12 Gate C
+  - **Acceptance:** (a) `package.json` scripts: `typecheck` (`tsc --noEmit`), `lint` (`eslint src/`), `test` (`vitest run`); (b) Install eslint, @typescript-eslint/*, vitest, @testing-library/react, jsdom; (c) Unit tests for API client, auth context, outbox; (d) Playwright e2e: login, dashboard map renders seeded data, simulator moves, alert appears, operator approves, task in field view, task update reaches command centre (WebSocket), polling fallback. Prerequisite: `docker compose up -d --build --wait && docker compose exec backend python -m app.seed.seed_demo` before Playwright (NOT `make bootstrap` — the Makefile is created in todo 37). (e) `npm run typecheck && npm run lint && npm run test && npm run build` all pass. (f) `npx playwright test` passes. (g) No test uses mock data exclusively.
+  - **QA happy:** `cd frontend && npm run typecheck && npm run lint && npm run test && npm run build && npx playwright test` all exit 0.
+  - **QA failure:** TypeScript errors → fail; test uses mock exclusively → fail.
+  - **Commit:** `test(frontend): add typecheck, lint, vitest, and playwright e2e`
+
+- [x] 32. Wire SOTA fusion and perception to API routes
+  - **References:** `backend/app/fusion/world_state.py:1-265` (REAL DBN), `backend/app/fusion/calibration.py:1-292` (REAL MAPIE), `backend/app/perception/serving.py:1-258` (REAL ONNX), `backend/app/perception/flood_mapping.py:1-292`, `backend/app/perception/ensemble.py:1-228`, `backend/app/perception/nlp.py:1-280`, `backend/app/perception/damage.py:1-321`, `backend/app/api/routes/scenarios.py:1-14` (STUB), `backend/app/api/routes/sensing.py:1-14` (STUB), `backend/app/api/routes/eval.py:1-14` (STUB)
+  - **Acceptance:** (a) Replace scenarios stub: `GET /api/incidents/{id}/scenarios` (best/expected/worst from ScenarioGenerator); (b) Replace sensing stub: `GET /api/incidents/{id}/sensing-actions` (EVI-ranked), `POST .../sensing-actions/{id}/dispatch` (pending task); (c) Replace eval stub: `POST /api/eval/run` (testbed), `GET /api/eval/results/{task_id}`; (d) `GET /api/incidents/{id}/world-state` (DBN state); (e) `GET /api/incidents/{id}/calibration` (Brier/ECE/coverage); (f) **Heavy ML features**: deterministic fixture tests, cached sample data in `backend/data/`, optional model packs via download script, "model unavailable" degraded behavior for ALL ML features (flood mapping, ensemble, damage, NLP) — not just one; (g) rescue ball added as sensing resource in `SensingActionCatalog`.
+  - **QA happy:** Scenarios endpoint returns 3 scenarios; sensing-actions returns ranked actions; all ML endpoints degrade gracefully when weights missing (test each: flood_mapping, ensemble, damage, nlp).
+  - **QA failure:** Stub remains → fail; missing model crashes → fail; rescue ball not in catalog → fail.
+  - **Commit:** `feat(sota): wire fusion and perception engines to api`
+
+- [x] 33. Wire SOTA optimizer, twin, evaluation, privacy/ABAC, and fairness to API
+  - **References:** `backend/app/optimizer/engine.py:58-278`, `backend/app/optimizer/api.py:1-138` (existing optimize route at `/api/optimize` — already included in `main.py:180`), `backend/app/api/routes/optimize.py:1-9` (re-exports optimizer router), `backend/app/optimizer/fairness.py:1-190`, `backend/app/twin/cascading.py:1-190`, `backend/app/twin/silence.py:1-146`, `backend/app/auth/abac.py:1-229` (REAL ABAC), `backend/app/lib/privacy.py` (REAL progressive precision), `backend/app/audit/provenance.py:1-194`
+  - **Acceptance:** (a) Modify existing `/api/optimize` route (or add `/api/incidents/{id}/optimize`) to return assignments + alternatives + trade-offs (not opaque command); infeasible → explanation; (b) `GET /api/incidents/{id}/cascade` (blast radius); (c) `GET /api/incidents/{id}/silence` (telecom silence); (d) `GET /api/incidents/{id}/fairness-report` (equity report from `FairnessEngine.compute_equity_report()`); (e) ABAC enforcement: `GET /api/incidents/{id}/access-check?action=X&resource=Y` returns allowed/denied with jurisdiction/sensitivity/override reasoning; (f) Progressive precision: coordinates rounded by user role (viewer → ~1km, field_responder → ~100m, admin → exact); (g) Privacy: PII redaction on citizen reports by default; (h) Eval: ablation endpoint (`POST /api/eval/ablation`), baselines (`POST /api/eval/baselines`); (i) Tests do NOT guarantee system wins by construction — use meaningful scenarios with transparent assumptions.
+  - **QA happy:** Optimize returns alternatives + trade-offs; infeasible returns explanation; fairness-report returns equity data; access-check returns ABAC reasoning; viewer sees ~1km-precision coordinates.
+  - **QA failure:** Opaque single command → fail; no fairness endpoint → fail; no ABAC endpoint → fail; tests tautological → fail.
+  - **Commit:** `feat(sota): wire optimizer, twin, privacy, fairness to api`
+
+- [x] 34. Add social media ingestion adapters (X/Twitter, Reddit, Instagram, YouTube)
+  - **References:** Existing adapter pattern: `backend/app/ingestion/adapters/sensorthings.py:30-60` (SensorThingsClient pattern), `backend/app/models/enums.py:6-16` (SourceType.social_media already exists), `backend/app/models/source.py:22-33` (SourceKind.social_media already exists), `backend/app/streaming/producer.py:19-68` (ProducerManager for publishing), `backend/app/perception/nlp.py:1-280` (NLP pipeline for text processing), `backend/app/perception/llm_safety.py:1-305` (PII redaction), `backend/app/lib/idempotency.py:61-74` (check_and_record). API research: X API v2 uses Bearer Token auth, `GET /2/tweets/search/stream` with `point_radius`/`bounding_box` geo operators, place-level bounding boxes (no exact lat/lon), `tweepy` SDK, $0.005/post read. Reddit uses OAuth2, PRAW library, 100 QPM, NO geolocation. Instagram Graph API uses OAuth2 via Facebook Login, hashtag search only (`GET /ig_hashtag_search` + `GET /{id}/recent_media`), NO geolocation (removed v22 May 2025), `facebook-business` SDK. YouTube Data API v3 uses API key, `search.list` with `location`+`locationRadius`, `recordingDetails` deprecated, `google-api-python-client`, 10,000 units/day.
+  - **Acceptance:** New adapter files under `backend/app/ingestion/adapters/` (each <250 LOC). NOTE: these adapters follow a publish-to-Kafka pattern (via `ProducerManager.send`), NOT the direct-DB-insert pattern used by `sensorthings.py`. (a) `twitter.py` — `TwitterAdapter` with `TwitterClient` class: Bearer Token auth from `Source.config["bearer_token"]`, `pull_observations()` uses tweepy `StreamingClient` or `GET /2/tweets/search/recent`, filters by keywords + `point_radius`/`bounding_box` from incident geometry, maps tweets to observations with `source_type=social_media`, `geometry` from Place bounding box centroid, `provenance_chain={"platform":"twitter","tweet_id":...}`, `access_policy=sensitive`, `corroboration_state=uncorroborated`; idempotency via tweet ID; degrades gracefully (returns empty, logs warning) when bearer token missing; (b) `reddit.py` — `RedditAdapter` with PRAW: OAuth2 from `Source.config`, monitors disaster subreddits (`r/emergency+r/weather+...`), `subreddit.stream.submissions()`, maps posts to observations with `geometry=None` (no geo — NLP extracts location from text), same provenance/access/corroboration pattern; idempotency via post ID; (c) `instagram.py` — `InstagramAdapter` with `facebook-business` SDK or `requests`: OAuth2 from `Source.config`, hashtag search (`GET /ig_hashtag_search` + `GET /{id}/recent_media`), maps posts to observations with `geometry=None` (geo removed v22), processes caption through NLP for location extraction; idempotency via media ID; (d) `youtube.py` — `YouTubeAdapter` with `google-api-python-client`: API key from `Source.config`, `search.list` with `location`+`locationRadius` from incident geometry + `publishedAfter` for recent disasters, `videos.list` with `recordingDetails` for geo (partial), maps videos to observations; idempotency via video ID; (e) All adapters publish to `observations.raw` via `ProducerManager`; (f) All text content processed through `perception/nlp.py` for urgency, category, PII redaction before storage; (g) `GET /api/sources` lists registered social media sources with status; (h) `POST /api/incidents/{id}/ingest/social-media` triggers manual pull; (i) Add `tweepy`, `praw`, `facebook-business`, `google-api-python-client` to `requirements.txt` (optional — adapters degrade without them); (j) Each adapter has fixture-based tests with mock HTTP responses (no real API calls in tests).
+  - **QA happy:** Register a Twitter source with a mock bearer token → `POST /api/incidents/X/ingest/social-media?source_type=twitter` returns 202; mock tweet fixture produces an observation with `source_type=social_media` and `access_policy=sensitive`; PII in tweet text is redacted before storage; adapter returns empty gracefully when credentials missing.
+  - **QA failure:** Adapter crashes when API key missing → fail; PII not redacted → fail; observation has `access_policy=public` → fail; file >250 LOC → fail.
+  - **Commit:** `feat(ingestion): add social media adapters for twitter, reddit, instagram, youtube`
+
+- [x] 35. Add event detection and unified communication adapters (Event Registry, Ayrshare, Unipile)
+  - **References:** Same adapter pattern as todo 34. Event Registry API: API key auth, `GET /api/v1/minuteStreamArticles` (poll 1/min for real-time), `GET /api/v1/minuteStreamEvents`, `locationUri` for geo filtering, `sentiment` field, `eventregistry` Python SDK, free 2,000 tokens. Ayrshare API: Bearer token, `POST /api/post` (publish to 13 networks), `social-post-api` Python package, $149/month min. Unipile API: `X-API-KEY` header + DSN, `POST /api/v1/chats/{id}/messages` (send), webhook `message.new` (receive), REST only (no Python SDK), €49/month min. `backend/app/comms/fallback.py:1-289` (existing low-bandwidth fallback), `backend/app/realtime/manager.py:1-172` (broadcast).
+  - **Acceptance:** New adapter files under `backend/app/ingestion/adapters/` (each <250 LOC): (a) `event_registry.py` — `EventRegistryAdapter` with `eventregistry` SDK: API key from `Source.config`, `GetRecentArticles` polled every 60s, `mandatorySourceLocation=True` for geo-located articles, `keywords` filter for disaster terms, maps articles to observations with `source_type=official_feed`, `geometry` from article location, `quality_flags.sentiment` from article sentiment score; idempotency via article URI; (b) `ayrshare.py` — `AyrshareClient` (outbound): Bearer token from `Source.config`, `POST /api/post` to broadcast emergency alerts to 13 social networks simultaneously, `POST /api/comments` for community engagement, `GET /api/analytics/{id}` for engagement metrics; used by alert workflow (todo 14) to broadcast approved alerts; (c) `unipile.py` — `UnipileClient` (inbound messaging): `X-API-KEY` from `Source.config`, webhook endpoint `POST /api/webhooks/unipile` receives `message.new` events, maps incoming DMs to observations with `source_type=citizen_report`, `geometry=None` (no geo — NLP extracts from text), `access_policy=sensitive`; `POST /api/incidents/{id}/messages/send` sends targeted response messages via WhatsApp/Telegram; (d) All adapters degrade gracefully when credentials unavailable; (e) Add `eventregistry`, `social-post-api` to `requirements.txt` (optional); (f) Fixture-based tests with mock responses.
+  - **QA happy:** Register Event Registry source → `POST /api/incidents/X/ingest/event-registry` returns 202; mock article fixture produces observation with sentiment; Ayrshare `POST /api/alerts/{id}/broadcast` publishes to configured platforms; Unipile webhook receives mock DM → observation created with `source_type=citizen_report`; all degrade gracefully without credentials.
+  - **QA failure:** Adapter crashes without credentials → fail; Unipile DM not PII-redacted → fail; file >250 LOC → fail.
+  - **Commit:** `feat(ingestion): add event registry, ayrshare, and unipile adapters`
+
+- [x] 36. Add structured logging, OpenTelemetry, and dependency locks
+  - **References:** `backend/app/lib/telemetry.py`, `backend/app/middleware/request_id.py:1-33`, `backend/app/middleware/org_context.py:1-39`, `backend/requirements.txt:1-40` (>= pins), `frontend/package-lock.json` (exists), prompt §5.3
+  - **Acceptance:** (a) Structured JSON logging with: timestamp, level, request_id, trace_id, org_id, incident_id, message, safe_error_context; (b) context vars from middleware; (c) OpenTelemetry traces (exporter from env or `OTEL_EXPORTER=none`); (d) no secrets logged (`grep -r "password\|secret\|token" backend/app/ --include="*.py" | grep "logger\.\|log\."` → zero); (e) `backend/requirements.lock` with pinned `==` versions (or `pip-compile` output); (f) `backend/Dockerfile` uses lock file; (g) `frontend/Dockerfile` uses `npm ci`; (h) run `pip-audit` and `npm audit` (where locally available).
+  - **QA happy:** API request logs contain request_id + org_id; no secrets; `docker compose build` deterministic; `pip-audit` runs (warnings OK, no crashes).
+  - **QA failure:** Secret in logs → fail; npm install instead of npm ci → fail.
+  - **Commit:** `feat(observability): add structured logging, otel, and dependency locks`
+
+- [x] 37. Add Makefile, automation scripts, and reduced-resource profile
+  - **References:** prompt §13, `scripts/offline_prep.sh`, `docker-compose.yml:103-229` (ollama/prometheus/grafana), `grafana/provisioning/` (exists)
+  - **Acceptance:** (a) `Makefile` with targets: `bootstrap`, `migrate`, `seed`, `test`, `lint`, `typecheck`, `build` (`cd frontend && npm run build`), `demo`, `verify`; (b) `scripts/demo_phase1.sh`: reset demo state, seed, start simulator, wait for observations, validate draft alert, call demo approval endpoint, validate task, print URLs + IDs, exit nonzero on failure; (c) docker-compose: `ollama`, `prometheus`, `grafana` have `profiles: ["full"]`; `docker compose up` starts 8 core services; `docker compose --profile full up` starts 11; (d) Grafana provisioning mounted and verified (dashboard loads).
+  - **QA happy:** `make bootstrap && make migrate && make seed && make test && make build && make demo` all succeed; `docker compose up -d` starts 8 services; Grafana shows dashboard.
+  - **QA failure:** Any target fails → fail; ollama starts without profile → fail.
+  - **Commit:** `feat(automation): add makefile, demo script, and reduced-resource profile`
+
+- [x] 38. Update documentation: README, env, architecture, security, limitations
+  - **References:** `README.md:1-49`, `.env.example:1-38`, prompt §14
+  - **Acceptance:** (a) `README.md` updated (quick start, architecture, testing, demo); (b) `.env.example` updated with all new vars; (c) `docs/PHASE1_DEMO.md` (step-by-step demo); (d) `docs/SIMULATOR.md` (usage, CLI, API, seed, fault injection, simulation disclaimer); (e) `docs/OFFLINE_OPERATION.md` (PWA, outbox, reconciliation, conflict policy); (f) `docs/SECURITY_MODEL.md` (auth, RBAC, ABAC, tenancy, JWT, emergency override, PII redaction); (g) `docs/KNOWN_LIMITATIONS.md` with ALL 6 required disclaimers as separate sections: (1) rescue ball is simulated, (2) physical deployment/landing not validated, (3) simulated thermal not certified human detection, (4) no medical/emergency authority reliance, (5) ML depends on available weights/calibration, (6) local demo ≠ real disaster performance.
+  - **QA happy:** All 6 docs exist with substantive content; KNOWN_LIMITATIONS has all 6 disclaimers as separate sections; README has working quick start.
+  - **QA failure:** Any doc missing → fail; KNOWN_LIMITATIONS missing any disclaimer → fail.
+  - **Commit:** `docs: update readme, add all required documentation`
+
+- [x] 39. Implement blocker handling protocol
+  - **References:** prompt §16 (6-step protocol), `backend/app/perception/serving.py:1-258` (model availability), `backend/app/perception/llm.py:1-276` (LLM availability)
+  - **Acceptance:** (a) Each external dependency (ONNX models, Ollama LLM, PMTiles basemap, model weights) has a `GET /api/capabilities` endpoint returning `{"feature": "...", "status": "available|degraded|unavailable", "activation_steps": "..."}`; (b) Safe degraded behavior implemented for each: ONNX → "model_unavailable" response, LLM → structured-data-only report, PMTiles → vector fallback; (c) `scripts/download_models.py` (already exists) documented with licensing; (d) blockers documented in `docs/KNOWN_LIMITATIONS.md`; (e) system continues with unblocked work when a blocker is hit.
+  - **QA happy:** `GET /api/capabilities` returns status for each feature; stopping Ollama → LLM features degrade gracefully; system doesn't crash.
+  - **QA failure:** Missing model crashes → fail; no capabilities endpoint → fail.
+  - **Commit:** `feat(resilience): implement blocker handling protocol with capability status`
+
+- [x] 40. Produce final report and reconcile active-plan checkboxes
+  - **References:** prompt §17 (10-item final report), prompt §4 (active-plan reconciliation)
+  - **Acceptance:** `docs/FINAL_REPORT.md` containing: (1) branch + commit list (`git log --oneline codex/resqnet-phase1-completion`); (2) implemented milestones; (3) architecture decisions; (4) database revisions added (list migrations 0002a, 0002b, 0003, 0004); (5) exact verification commands + results; (6) Phase 1 demo steps; (7) Playwright evidence paths (`evidence/gate-c/`); (8) test + coverage summaries (`pytest --tb=short -q` output, `npm run test` output); (9) remaining optional dependencies (model weights, Ollama, PMTiles); (10) incomplete features with reasons. Reconcile active-plan checkboxes against fresh evidence (rerun relevant tests, don't trust stale state).
+  - **QA happy:** All 10 items present in FINAL_REPORT.md; active-plan checkboxes match fresh test evidence.
+  - **QA failure:** Missing any of 10 items → fail; checkboxes not reconciled → fail.
+  - **Commit:** `docs(report): add final report and reconcile plan checkboxes`
+
+- [x] 41. Gate E checkpoint — verify SOTA
+  - **References:** All Wave 5 todos, prompt §12 Gate E
+  - **Acceptance:** Run: all fusion tests pass (confidence_vector, reliability, calibration, world_state, freshness); all perception tests pass (llm, nlp, flood_mapping, damage, ensemble, serving); all twin tests pass (scenarios, cascading, silence); all optimizer tests pass (engine, constraints, fairness, routing, replan); all sensing tests pass (evi, catalog); all privacy tests pass (abac, privacy, llm_safety); all eval tests pass (testbed, metrics, failures, baselines, ablation). All against PostgreSQL. Record evidence in `evidence/gate-e/`.
+  - **QA happy:** All SOTA tests pass.
+  - **QA failure:** Any SOTA test fails → block.
+  - **Commit:** `test(gate-e): verify sota gate`
 
 ## Final verification wave
-> Runs in parallel; ALL must APPROVE; surface results and wait for user's explicit okay before declaring complete.
-- F1: Plan compliance audit — every SOTA spec section (3-14) mapped to a todo; zero orphan sections
-- F2: Code quality review — all files under 250 pure LOC; type annotations; no `Any` in logic code; hash-chain audit verifies
-- F3: Real manual QA — full Docker Compose stack boots; seeded cyclone-flood scenario runs end-to-end; optimizer produces action portfolios; evaluation testbed runs ablation
-- F4: Scope fidelity — no FEATURES.md dependencies; no Cloudflare code; no cloud runtime dependencies; offline mode verified
+
+- [x] F1. Plan compliance audit — verify every §1-17 requirement has a completed todo; verify no stub API responses remain; verify all gates A-E pass.
+  - **References:** This plan, prompt §1-17. Depends on: all todos including 39.
+  - **Acceptance:** `grep -r "status.*ok.*endpoint\|stub\|placeholder\|not implemented" backend/app/api/routes/ --include="*.py"` → zero; all gate evidence files exist in `evidence/`.
+  - **QA:** Run `make verify`; nonzero exit → fail.
+  - **Commit:** `verify(compliance): audit all requirements against completed todos`
+
+- [x] F2. Code quality review — ruff + mypy + eslint + tsc strict on all changed code.
+  - **References:** `backend/`, `frontend/`
+  - **Acceptance:** `cd backend && ruff check . && mypy app/` exits 0; `cd frontend && npm run typecheck && npm run lint` exits 0. No type weakening (check diff for `any` additions).
+  - **QA:** Any error → fail.
+  - **Commit:** `verify(quality): code quality review passes`
+
+- [x] F3. Real manual QA via Playwright — run full demo with assertions.
+  - **References:** `scripts/demo_phase1.sh`, `docs/PHASE1_DEMO.md`. Prerequisite: `make bootstrap && make seed`.
+  - **Acceptance:** `make demo` succeeds; Playwright asserts: `expect(page.locator('[data-testid="observation-marker"]')).toBeVisible()` (observations on map); `expect(page.locator('[data-testid="alert-card"]')).toBeVisible()` (alert appears); `page.click('[data-testid="approve-button"]')` (operator approves); `expect(page.locator('[data-testid="task-card"]')).toBeVisible()` (task in field view); offline: `page.context.setOffline(true)` → `expect(page.locator('[data-testid="pending-badge"]')).toBeVisible()` → `page.context.setOffline(false)` → `expect(page.locator('[data-testid="synced-badge"]')).toBeVisible()`.
+  - **QA:** Any assertion fails → fail.
+  - **Commit:** `verify(qa): manual qa passes via playwright assertions`
+
+- [x] F4. Scope fidelity — verify no unrequested features; Must-NOT-Have respected.
+  - **References:** This plan's Scope OUT section
+  - **Acceptance:** `git diff main -- platform/` empty; `grep -r "random\." backend/app/ --include="*.py" | grep -v test | grep -v simulator | grep -v eval | grep -v __pycache__` → zero; no LLM dispatches commands autonomously; no fabricated accuracy claims.
+  - **QA:** Any violation → fail.
+  - **Commit:** `verify(scope): scope fidelity check passes`
 
 ## Commit strategy
-- Conventional commits: `feat(scope): description` (e.g., `feat(fusion): add confidence vector computation`)
-- One commit per todo (implementation + tests together)
-- Phase gate commits: `feat(phase-WN): ... gate`
-- Evidence committed alongside code in `.omo/evidence/`
+
+Conventional commits, one per todo. Branch: `codex/resqnet-phase1-completion`. Do NOT push to main. Push branch and open draft PR only after all Phase 1 gates pass. If GitHub credentials unavailable: leave branch + commits locally, report that publishing was unavailable. Pre-commit: run relevant focused tests + type checks + inspect diff for secrets/large files.
 
 ## Success criteria
-- Docker Compose `up` brings up the full stack (PostGIS, Redpanda, Benthos, MinIO, FastAPI, React, Redis, Prometheus, Grafana) on local hardware
-- Seeded cyclone-flood scenario produces: probabilistic flood map, confidence vectors, knowledge graph with hypotheses, scenario ensemble, optimized action portfolio, active sensing recommendation, 4-mode UI with action cards
-- Evaluation testbed runs 4 baselines and ablation studies with all 6 metric categories
-- System operates in degraded/offline mode with honest degradation (stale data flagged, uncertainty widens)
-- All tests pass: `cd backend && pytest -q && cd ../frontend && npm run build && npx playwright test`
+
+- `docker compose up -d --build --wait` starts all core services reproducibly
+- `alembic upgrade head` succeeds from empty DB and from 0001
+- No `create_all()` or `ensure_table()` in production code paths
+- All API routes return real data (no stubs)
+- `make demo` runs the full Phase 1 loop: seed → simulator → observations → confidence → hypothesis → alert → approval → task → map
+- Frontend `npm run build` + `npx playwright test` pass
+- Offline PWA loads from cache, outbox syncs on reconnect
+- All backend tests pass against PostgreSQL/PostGIS
+- Documentation reflects actual implementation
+- `KNOWN_LIMITATIONS.md` honestly states simulation boundaries
+- Privacy/ABAC and fairness endpoints exist (Gate E requirement)
+- Active-plan checkboxes reconciled only after fresh evidence
+- Final report (§17) produced with all 10 items

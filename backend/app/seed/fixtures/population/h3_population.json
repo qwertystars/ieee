@@ -1,0 +1,57 @@
+{
+  "type": "FeatureCollection",
+  "description": "H3 population grid for Rivertown demo region (resolution 8). Each feature is an H3 hex with population counts.",
+  "h3_resolution": 8,
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Polygon", "coordinates": [[[72.85, 19.05], [72.86, 19.05], [72.865, 19.06], [72.86, 19.07], [72.85, 19.07], [72.845, 19.06]]]},
+      "properties": {"h3_index": "886e23a651fffff", "population": 12500, "ward": "Ward-1-Coastal", "vulnerability": "high"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Polygon", "coordinates": [[[72.86, 19.05], [72.87, 19.05], [72.875, 19.06], [72.87, 19.07], [72.86, 19.07], [72.855, 19.06]]]},
+      "properties": {"h3_index": "886e23a652fffff", "population": 9800, "ward": "Ward-1-Coastal", "vulnerability": "high"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Polygon", "coordinates": [[[72.87, 19.05], [72.88, 19.05], [72.885, 19.06], [72.88, 19.07], [72.87, 19.07], [72.865, 19.06]]]},
+      "properties": {"h3_index": "886e23a653fffff", "population": 15200, "ward": "Ward-2-Riverside", "vulnerability": "high"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Polygon", "coordinates": [[[72.88, 19.05], [72.89, 19.05], [72.895, 19.06], [72.89, 19.07], [72.88, 19.07], [72.875, 19.06]]]},
+      "properties": {"h3_index": "886e23a654fffff", "population": 8300, "ward": "Ward-2-Riverside", "vulnerability": "high"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Polygon", "coordinates": [[[72.85, 19.07], [72.86, 19.07], [72.865, 19.08], [72.86, 19.09], [72.85, 19.09], [72.845, 19.08]]]},
+      "properties": {"h3_index": "886e23a655fffff", "population": 18700, "ward": "Ward-3-Lowland", "vulnerability": "medium"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Polygon", "coordinates": [[[72.86, 19.07], [72.87, 19.07], [72.875, 19.08], [72.87, 19.09], [72.86, 19.09], [72.855, 19.08]]]},
+      "properties": {"h3_index": "886e23a656fffff", "population": 22400, "ward": "Ward-3-Lowland", "vulnerability": "medium"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Polygon", "coordinates": [[[72.87, 19.07], [72.88, 19.07], [72.885, 19.08], [72.88, 19.09], [72.87, 19.09], [72.865, 19.08]]]},
+      "properties": {"h3_index": "886e23a657fffff", "population": 11600, "ward": "Ward-4-Uptown", "vulnerability": "low"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Polygon", "coordinates": [[[72.88, 19.07], [72.89, 19.07], [72.895, 19.08], [72.89, 19.09], [72.88, 19.09], [72.875, 19.08]]]},
+      "properties": {"h3_index": "886e23a658fffff", "population": 19800, "ward": "Ward-4-Uptown", "vulnerability": "low"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Polygon", "coordinates": [[[72.89, 19.09], [72.90, 19.09], [72.905, 19.10], [72.90, 19.11], [72.89, 19.11], [72.885, 19.10]]]},
+      "properties": {"h3_index": "886e23a659fffff", "population": 7400, "ward": "Ward-5-Industrial", "vulnerability": "medium"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Polygon", "coordinates": [[[72.88, 19.09], [72.89, 19.09], [72.895, 19.10], [72.89, 19.11], [72.88, 19.11], [72.875, 19.10]]]},
+      "properties": {"h3_index": "886e23a65afffff", "population": 9100, "ward": "Ward-5-Industrial", "vulnerability": "medium"}
+    }
+  ]
+}

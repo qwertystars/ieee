@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import hashlib
 import re
-from collections.abc import Callable
 
 import pytest
 
@@ -63,19 +62,27 @@ def processor() -> CitizenReportProcessor:
 # 5 reports: English, Hindi (Devanagari), code-mixed, and two near-duplicates.
 _REPORTS = [
     # 1. English, critical urgency, trapped person.
-    "Help! People are trapped on the roof of Sharma Hospital near the old "
-    "market. Water is rising fast. Call 9876543210.",
+    (
+        "Help! People are trapped on the roof of Sharma Hospital near the old "
+        "market. Water is rising fast. Call 9876543210."
+    ),
     # 2. Hindi (Devanagari), high urgency, flooding.
     "बाढ़ का पानी तेजी से बढ़ रहा है। गांव में लोग परेशान हैं। जल्दी मदद भेजें।",
     # 3. Code-mixed (Devanagari + Latin), medium urgency, shelter.
-    "Need shelter in Gandhi Nagar colony, पानी ghar mein ghus gaya, "
-    "family needs bhojan and medicine.",
+    (
+        "Need shelter in Gandhi Nagar colony, पानी ghar mein ghus gaya, "
+        "family needs bhojan and medicine."
+    ),
     # 4. Near-duplicate of report 1 (same incident, different wording).
-    "People trapped on roof of Sharma Hospital near old market, water "
-    "rising, urgent rescue needed. Contact 9876543210.",
+    (
+        "People trapped on roof of Sharma Hospital near old market, water "
+        "rising, urgent rescue needed. Contact 9876543210."
+    ),
     # 5. English, low urgency, rescue completed.
-    "All safe now near the railway station. Everyone was saved, minor "
-    "flooding only. Everyone is fine.",
+    (
+        "All safe now near the railway station. Everyone was saved, minor "
+        "flooding only. Everyone is fine."
+    ),
 ]
 
 

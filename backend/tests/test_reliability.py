@@ -1,8 +1,8 @@
 """Tests for source reliability tracking via Beta(alpha, beta) conjugate prior (T14).
 
-Uses the real PostgreSQL database via SessionLocal. The source_reliability table
-is created on demand via ensure_table() since it is not in the Alembic migration
-(follows the idempotency.py pattern). All test rows are cleaned up after each test.
+Uses the real PostgreSQL database via SessionLocal. The source_reliability
+table is created by Alembic migrations. All test rows are cleaned up after
+each test.
 """
 
 from __future__ import annotations
@@ -10,23 +10,15 @@ from __future__ import annotations
 import pytest
 from sqlalchemy import delete
 
-from app.db import SessionLocal, engine
+from app.db import SessionLocal
 from app.fusion.reliability import (
     SourceReliability,
     SourceReliabilityTracker,
-    ensure_table,
 )
 from app.lib.time import now_ms
 
 # Unique source_id per test module to avoid collisions with other test modules.
 SOURCE = "test_reliability_source"
-
-
-@pytest.fixture(scope="module", autouse=True)
-def _table():
-    """Create the source_reliability table once for the test module."""
-    ensure_table(engine)
-    yield
 
 
 @pytest.fixture

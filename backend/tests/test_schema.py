@@ -6,7 +6,7 @@ import pytest
 from geoalchemy2.elements import WKTElement
 from sqlalchemy import text
 
-from app.db import SessionLocal, engine
+from app.db import SessionLocal
 from app.models import Observation
 from app.models.enums import (
     AccessPolicy,

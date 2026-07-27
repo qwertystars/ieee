@@ -248,4 +248,4 @@ def ingest_cap_alert(
     return obs.observation_id
 
 
-__all__ = ["parse_cap_alert", "ingest_cap_alert"]
+__all__ = ["ingest_cap_alert", "parse_cap_alert"]

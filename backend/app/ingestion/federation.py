@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from sqlalchemy import BigInteger, Integer, String, Text, select
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, Session
+from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from app.db import Base
 from app.lib.time import now_ms
@@ -39,20 +39,10 @@ class OutboxEntry(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
-def ensure_tables(engine=None) -> None:
-    """Create sources and federation_outbox tables if they don't exist."""
-    if engine is None:
-        from app.db import engine as _engine
-
-        engine = _engine
-    Source.__table__.create(bind=engine, checkfirst=True)
-    OutboxEntry.__table__.create(bind=engine, checkfirst=True)
-
-
 class SourceManager:
     """Manage federated data sources — registration, status, listing."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session) -> None:
         self.db = db
 
     def register_source(
@@ -125,7 +115,7 @@ class OutboxManager:
     are NOT centralized — their outbox entries are marked as skipped.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session) -> None:
         self.db = db
 
     def add_to_outbox(
@@ -228,7 +218,6 @@ class OutboxManager:
 
 __all__ = [
     "OutboxEntry",
-    "SourceManager",
     "OutboxManager",
-    "ensure_tables",
+    "SourceManager",
 ]

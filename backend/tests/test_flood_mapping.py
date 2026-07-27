@@ -10,11 +10,10 @@ import os
 
 import pytest
 import torch
-import torch.nn as nn
+from torch import nn
 
 from app.perception.flood_mapping import SARFloodMapper
 from app.perception.flood_types import FloodMapResult, QualityFlag
-
 
 # ─── Mocks ──────────────────────────────────────────────────────────────────
 

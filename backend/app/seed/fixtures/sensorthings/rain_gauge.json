@@ -1,0 +1,95 @@
+{
+  "@iot.count": 5,
+  "value": [
+    {
+      "@iot.id": "RG-01",
+      "phenomenonTime": "2026-07-20T02:00:00Z",
+      "result": 12.5,
+      "Datastream": {
+        "@iot.id": "RG-01-rainfall",
+        "name": "Rain Gauge RG-01 rainfall rate",
+        "unitOfMeasurement": {"symbol": "mm/h", "name": "millimeters per hour"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Riverside Station",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.870, 19.072]
+        }
+      }
+    },
+    {
+      "@iot.id": "RG-01",
+      "phenomenonTime": "2026-07-20T03:00:00Z",
+      "result": 45.2,
+      "Datastream": {
+        "@iot.id": "RG-01-rainfall",
+        "name": "Rain Gauge RG-01 rainfall rate",
+        "unitOfMeasurement": {"symbol": "mm/h", "name": "millimeters per hour"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Riverside Station",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.870, 19.072]
+        }
+      }
+    },
+    {
+      "@iot.id": "RG-02",
+      "phenomenonTime": "2026-07-20T03:30:00Z",
+      "result": 78.9,
+      "Datastream": {
+        "@iot.id": "RG-02-rainfall",
+        "name": "Rain Gauge RG-02 rainfall rate",
+        "unitOfMeasurement": {"symbol": "mm/h", "name": "millimeters per hour"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Coastal Station",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.885, 19.060]
+        }
+      }
+    },
+    {
+      "@iot.id": "RG-01",
+      "phenomenonTime": "2026-07-20T04:00:00Z",
+      "result": 120.3,
+      "Datastream": {
+        "@iot.id": "RG-01-rainfall",
+        "name": "Rain Gauge RG-01 rainfall rate",
+        "unitOfMeasurement": {"symbol": "mm/h", "name": "millimeters per hour"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Riverside Station",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.870, 19.072]
+        }
+      }
+    },
+    {
+      "@iot.id": "RG-02",
+      "phenomenonTime": "2026-07-20T04:30:00Z",
+      "result": 95.6,
+      "Datastream": {
+        "@iot.id": "RG-02-rainfall",
+        "name": "Rain Gauge RG-02 rainfall rate",
+        "unitOfMeasurement": {"symbol": "mm/h", "name": "millimeters per hour"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Coastal Station",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.885, 19.060]
+        }
+      }
+    }
+  ]
+}

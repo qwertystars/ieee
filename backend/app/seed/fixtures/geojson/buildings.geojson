@@ -1,0 +1,365 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.85,
+              19.06
+            ],
+            [
+              72.8515,
+              19.06
+            ],
+            [
+              72.8515,
+              19.0615
+            ],
+            [
+              72.85,
+              19.0615
+            ],
+            [
+              72.85,
+              19.06
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Building-1",
+        "building_type": "residential",
+        "floors": 1
+      },
+      "id": "building_1"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.862,
+              19.06
+            ],
+            [
+              72.8635,
+              19.06
+            ],
+            [
+              72.8635,
+              19.0615
+            ],
+            [
+              72.862,
+              19.0615
+            ],
+            [
+              72.862,
+              19.06
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Building-2",
+        "building_type": "commercial",
+        "floors": 2
+      },
+      "id": "building_2"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.874,
+              19.06
+            ],
+            [
+              72.8755,
+              19.06
+            ],
+            [
+              72.8755,
+              19.0615
+            ],
+            [
+              72.874,
+              19.0615
+            ],
+            [
+              72.874,
+              19.06
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Building-3",
+        "building_type": "government",
+        "floors": 3
+      },
+      "id": "building_3"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.886,
+              19.06
+            ],
+            [
+              72.8875,
+              19.06
+            ],
+            [
+              72.8875,
+              19.0615
+            ],
+            [
+              72.886,
+              19.0615
+            ],
+            [
+              72.886,
+              19.06
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Building-4",
+        "building_type": "school",
+        "floors": 4
+      },
+      "id": "building_4"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.898,
+              19.06
+            ],
+            [
+              72.8995,
+              19.06
+            ],
+            [
+              72.8995,
+              19.0615
+            ],
+            [
+              72.898,
+              19.0615
+            ],
+            [
+              72.898,
+              19.06
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Building-5",
+        "building_type": "hospital",
+        "floors": 1
+      },
+      "id": "building_5"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.85,
+              19.075
+            ],
+            [
+              72.8515,
+              19.075
+            ],
+            [
+              72.8515,
+              19.0765
+            ],
+            [
+              72.85,
+              19.0765
+            ],
+            [
+              72.85,
+              19.075
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Building-6",
+        "building_type": "warehouse",
+        "floors": 2
+      },
+      "id": "building_6"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.862,
+              19.075
+            ],
+            [
+              72.8635,
+              19.075
+            ],
+            [
+              72.8635,
+              19.0765
+            ],
+            [
+              72.862,
+              19.0765
+            ],
+            [
+              72.862,
+              19.075
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Building-7",
+        "building_type": "residential",
+        "floors": 3
+      },
+      "id": "building_7"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.874,
+              19.075
+            ],
+            [
+              72.8755,
+              19.075
+            ],
+            [
+              72.8755,
+              19.0765
+            ],
+            [
+              72.874,
+              19.0765
+            ],
+            [
+              72.874,
+              19.075
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Building-8",
+        "building_type": "commercial",
+        "floors": 4
+      },
+      "id": "building_8"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.886,
+              19.075
+            ],
+            [
+              72.8875,
+              19.075
+            ],
+            [
+              72.8875,
+              19.0765
+            ],
+            [
+              72.886,
+              19.0765
+            ],
+            [
+              72.886,
+              19.075
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Building-9",
+        "building_type": "government",
+        "floors": 1
+      },
+      "id": "building_9"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.898,
+              19.075
+            ],
+            [
+              72.8995,
+              19.075
+            ],
+            [
+              72.8995,
+              19.0765
+            ],
+            [
+              72.898,
+              19.0765
+            ],
+            [
+              72.898,
+              19.075
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Building-10",
+        "building_type": "school",
+        "floors": 2
+      },
+      "id": "building_10"
+    }
+  ]
+}

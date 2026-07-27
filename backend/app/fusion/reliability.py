@@ -4,12 +4,10 @@ Each source's reliability is modeled as a Beta distribution. Field verification
 updates alpha (correct) or beta (disproven). Per-phenomenon-type conditioning
 allows a source to be reliable for roads but poor for flood_depth.
 
-The source_reliability table is created on demand via ensure_table(engine)
-since it is not part of the Alembic migration (follows the idempotency.py
-pattern). All credibility is updatable — no permanent scores are assigned.
+All credibility is updatable — no permanent scores are assigned.
 """
 
-from typing import Optional
+from __future__ import annotations
 
 from sqlalchemy import BigInteger, Column, Float, Integer, String, select
 from sqlalchemy.orm import Session
@@ -53,18 +51,6 @@ class SourceReliability(Base):
     updated_at = Column(BigInteger, nullable=False, default=now_ms)
 
 
-def ensure_table(engine=None) -> None:
-    """Create the source_reliability table if it does not exist.
-
-    Pass an engine to target a specific database; defaults to the app engine.
-    """
-    if engine is None:
-        from app.db import engine as _engine
-
-        engine = _engine
-    SourceReliability.__table__.create(bind=engine, checkfirst=True)
-
-
 class SourceReliabilityTracker:
     """Tracks source reliability via Beta(alpha, beta) with field verification.
 
@@ -76,12 +62,12 @@ class SourceReliabilityTracker:
     - All scores are always updatable (no permanent credibility)
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session) -> None:
         self.db = db
 
     def _get_row(
-        self, source_id: str, phenomenon_type: Optional[str]
-    ) -> Optional[SourceReliability]:
+        self, source_id: str, phenomenon_type: str | None
+    ) -> SourceReliability | None:
         """Fetch the reliability row for (source_id, phenomenon_type)."""
         stmt = select(SourceReliability).where(
             SourceReliability.source_id == source_id
@@ -95,7 +81,7 @@ class SourceReliabilityTracker:
         return self.db.execute(stmt).scalars().first()
 
     def get_reliability(
-        self, source_id: str, phenomenon_type: Optional[str] = None
+        self, source_id: str, phenomenon_type: str | None = None
     ) -> tuple[float, float, float]:
         """Return (expected_reliability, ci_lower, ci_upper).
 
@@ -105,7 +91,7 @@ class SourceReliabilityTracker:
         row = self._get_row(source_id, phenomenon_type)
         if row is None:
             return (_PRIOR_EXPECTED, _PRIOR_CI_LOWER, _PRIOR_CI_UPPER)
-        alpha, beta = row.alpha, row.beta
+        alpha, beta = float(row.alpha), float(row.beta)
         expected = alpha / (alpha + beta)
         ci_lo, ci_hi = _beta_ci(alpha, beta)
         return (expected, ci_lo, ci_hi)
@@ -114,7 +100,7 @@ class SourceReliabilityTracker:
         self,
         source_id: str,
         verified_correct: bool,
-        phenomenon_type: Optional[str] = None,
+        phenomenon_type: str | None = None,
     ) -> None:
         """Update alpha (correct) or beta (disproven).
 
@@ -132,10 +118,10 @@ class SourceReliabilityTracker:
             )
             self.db.add(row)
         if verified_correct:
-            row.alpha += 1
+            row.alpha = float(row.alpha) + 1  # type: ignore[assignment]
         else:
-            row.beta += 1
-        row.updated_at = now_ms()
+            row.beta = float(row.beta) + 1  # type: ignore[assignment]
+        row.updated_at = now_ms()  # type: ignore[assignment]
         self.db.commit()
 
     def apply_time_decay(
@@ -153,9 +139,9 @@ class SourceReliabilityTracker:
             )
         ).scalars().all()
         for row in rows:
-            row.alpha *= decay_factor
-            row.beta *= decay_factor
-            row.updated_at = now_ms()
+            row.alpha = float(row.alpha) * decay_factor  # type: ignore[assignment]
+            row.beta = float(row.beta) * decay_factor  # type: ignore[assignment]
+            row.updated_at = now_ms()  # type: ignore[assignment]
         self.db.commit()
 
     def get_conditioned_reliability(self, source_id: str) -> dict:
@@ -174,11 +160,11 @@ class SourceReliabilityTracker:
         ).scalars().all()
         result: dict[str, tuple[float, float, float]] = {}
         for row in rows:
-            alpha, beta = row.alpha, row.beta
+            alpha, beta = float(row.alpha), float(row.beta)
             expected = alpha / (alpha + beta)
             ci_lo, ci_hi = _beta_ci(alpha, beta)
-            result[row.phenomenon_type] = (expected, ci_lo, ci_hi)
+            result[str(row.phenomenon_type)] = (expected, ci_lo, ci_hi)
         return result
 
 
-__all__ = ["SourceReliability", "SourceReliabilityTracker", "ensure_table"]
+__all__ = ["SourceReliability", "SourceReliabilityTracker"]

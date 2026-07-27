@@ -3,10 +3,9 @@
 Provides `check_and_record(db, source, external_id)` for HTTP/queue/webhook
 handlers. The first call with a given (source, external_id) pair inserts a row
 and returns True; subsequent calls return False without inserting.
-
-The `idempotency_keys` table is created on demand via `ensure_table(engine)`
-since it is not part of the Alembic migration.
 """
+
+from __future__ import annotations
 
 from sqlalchemy import (
     BigInteger,
@@ -14,7 +13,6 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
-    create_engine,
 )
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -39,18 +37,6 @@ class IdempotencyKey(Base):
     created_at = Column(BigInteger, nullable=False, default=now_ms)
 
 
-def ensure_table(engine=None) -> None:
-    """Create the idempotency_keys table if it does not exist.
-
-    Pass an engine to target a specific database; defaults to the app engine.
-    """
-    if engine is None:
-        from app.db import engine as _engine
-
-        engine = _engine
-    IdempotencyKey.__table__.create(bind=engine, checkfirst=True)
-
-
 def check_and_record(db: Session, source: str, external_id: str) -> bool:
     """Try to record (source, external_id).
 
@@ -67,4 +53,4 @@ def check_and_record(db: Session, source: str, external_id: str) -> bool:
     return True
 
 
-__all__ = ["IdempotencyKey", "ensure_table", "check_and_record"]
+__all__ = ["IdempotencyKey", "check_and_record"]

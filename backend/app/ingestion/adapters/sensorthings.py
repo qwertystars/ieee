@@ -31,7 +31,7 @@ _MAX_PAGES = 100  # Safety guard against infinite pagination loops.
 class SensorThingsClient:
     """Async client for OGC SensorThings API v1.0."""
 
-    def __init__(self, base_url: str, timeout: float = DEFAULT_TIMEOUT):
+    def __init__(self, base_url: str, timeout: float = DEFAULT_TIMEOUT) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self._client: httpx.AsyncClient | None = None
@@ -50,7 +50,7 @@ class SensorThingsClient:
         await self._get_client()
         return self
 
-    async def __aexit__(self, *args: Any) -> None:
+    async def __aexit__(self, *args: object) -> None:
         await self.close()
 
     async def _fetch_json(self, url: str) -> dict[str, Any] | None:
@@ -111,12 +111,14 @@ class SensorThingsClient:
         return observations
 
 
-def _is_numeric(val: Any) -> bool:
-    try:
-        float(val)
-        return True
-    except (TypeError, ValueError):
-        return False
+def _is_numeric(val: object) -> bool:
+    if isinstance(val, (int, float, str)):
+        try:
+            float(val)
+            return True
+        except ValueError:
+            return False
+    return False
 
 
 def _feature_to_wkt(feature: dict[str, Any]) -> WKTElement:

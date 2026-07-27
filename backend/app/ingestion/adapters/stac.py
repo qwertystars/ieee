@@ -38,7 +38,7 @@ class STACClient:
       - A file path to a local GeoJSON FeatureCollection (offline/cached)
     """
 
-    def __init__(self, catalog_url: str, timeout: float = DEFAULT_TIMEOUT):
+    def __init__(self, catalog_url: str, timeout: float = DEFAULT_TIMEOUT) -> None:
         self.catalog_url = catalog_url.rstrip("/")
         self.timeout = timeout
         self._client: httpx.AsyncClient | None = None
@@ -58,7 +58,7 @@ class STACClient:
         await self._get_client()
         return self
 
-    async def __aexit__(self, *args: Any) -> None:
+    async def __aexit__(self, *args: object) -> None:
         await self.close()
 
     async def search_items(

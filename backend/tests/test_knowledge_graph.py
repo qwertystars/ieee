@@ -6,11 +6,10 @@ fallback. Uses the real PostgreSQL database via SessionLocal.
 """
 
 import pytest
-from sqlalchemy import delete, text
+from sqlalchemy import text
 
 from app.db import SessionLocal
 from app.knowledge.graph import KnowledgeGraph
-from app.models.relationships import GraphEdge
 
 ORG_ID = "org_test_kg"
 INCIDENT_ID = "inc_kg_001"

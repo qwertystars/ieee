@@ -1,15 +1,14 @@
 """Role-based access control — require_roles dependency factory."""
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from fastapi import Depends, HTTPException, status
-from sqlalchemy.orm import Session
 
 from app.deps import get_current_user
 from app.models.user import User
 
 
-def require_roles(*roles: str):
+def require_roles(*roles: str) -> Callable[..., User]:
     """Return a dependency that checks the current user has one of the given roles.
 
     If no roles are passed, any authenticated user is allowed.
@@ -35,4 +34,4 @@ def check_roles(user: User, roles: Sequence[str]) -> None:
         )
 
 
-__all__ = ["require_roles", "check_roles"]
+__all__ = ["check_roles", "require_roles"]

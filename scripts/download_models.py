@@ -15,6 +15,21 @@ Environment variables (MinIO):
     MINIO_ACCESS_KEY (default: minioadmin)
     MINIO_SECRET_KEY (default: minioadmin)
     MINIO_BUCKET      (default: models)
+
+Licensing:
+    Models are hosted on HuggingFace under the ``resqnet`` organization.
+    Each model's license is documented on its HuggingFace model card:
+      - sar-flood-mapping: https://huggingface.co/resqnet/sar-flood-mapping
+      - building-damage:    https://huggingface.co/resqnet/building-damage
+      - incident-nlp:       https://huggingface.co/resqnet/incident-nlp
+
+    Review and comply with each model's license before deploying in
+    production. The download script does not modify model artifacts — it
+    fetches them verbatim from their upstream ``source_url`` and uploads
+    them to MinIO without transformation.
+
+    ONNX Runtime itself is licensed under the MIT License
+    (https://github.com/microsoft/onnxruntime/blob/main/LICENSE).
 """
 
 from __future__ import annotations

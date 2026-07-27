@@ -1,0 +1,32 @@
+=== Environment info ===
+Timestamp: 2026-07-26T19:02:42Z
+
+=== OS info ===
+PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
+NAME="Debian GNU/Linux"
+VERSION_ID="12"
+VERSION="12 (bookworm)"
+VERSION_CODENAME=bookworm
+ID=debian
+HOME_URL="https://www.debian.org/"
+SUPPORT_URL="https://www.debian.org/support"
+BUG_REPORT_URL="https://bugs.debian.org/"
+
+=== Python version ===
+Python 3.11.2
+
+=== Node version ===
+v22.23.1
+
+=== npm version ===
+10.9.8
+
+=== pnpm version ===
+/bin/bash: line 18: pnpm: command not found
+pnpm not found
+
+=== Docker availability ===
+/bin/bash: line 21: docker: command not found
+Docker NOT available
+/bin/bash: line 22: docker: command not found
+docker compose NOT available

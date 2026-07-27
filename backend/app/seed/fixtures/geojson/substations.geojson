@@ -1,0 +1,53 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.876,
+          19.078
+        ]
+      },
+      "properties": {
+        "name": "SS-01 Central Substation",
+        "status": "operational",
+        "capacity_mw": 50
+      },
+      "id": "substation_1"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.872,
+          19.068
+        ]
+      },
+      "properties": {
+        "name": "SS-02 Riverside Substation",
+        "status": "offline",
+        "capacity_mw": 40
+      },
+      "id": "substation_2"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.89,
+          19.09
+        ]
+      },
+      "properties": {
+        "name": "SS-03 Industrial Substation",
+        "status": "degraded",
+        "capacity_mw": 30
+      },
+      "id": "substation_3"
+    }
+  ]
+}

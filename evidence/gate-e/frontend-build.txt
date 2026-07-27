@@ -1,0 +1,18 @@
+
+> resqnet-sage-frontend@0.1.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 965 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     0.61 kB │ gzip:   0.35 kB
+dist/assets/index-6OmyzJlp.css     85.52 kB │ gzip:  13.43 kB
+dist/assets/index-D4kImHB5.js   1,872.86 kB │ gzip: 527.62 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 9.84s

@@ -1,0 +1,67 @@
+=== ensure_table / create_all usage grep ===
+--- grep -rn 'ensure_table\|create_all\|ensure_tables\|ensure_columns' backend/app/ --include='*.py' ---
+backend/app/auth/seed.py:53:    here via Base.metadata.create_all scoped to just the users table.
+backend/app/auth/seed.py:57:        Base.metadata.create_all(bind=engine, tables=[User.__table__])
+backend/app/seed/seed_demo.py:17:from app.seed.db_setup import clean_demo_data, ensure_columns
+backend/app/seed/seed_demo.py:41:        ensure_columns(db)
+backend/app/seed/db_setup.py:68:def ensure_columns(db: Session) -> None:
+backend/app/perception/llm.py:33:    ensure_tables,
+backend/app/perception/llm.py:276:__all__ = ["LLMIntegration", "ensure_tables"]
+backend/app/perception/models.py:80:def ensure_table(engine: Engine) -> None:
+backend/app/perception/models.py:83:    Follows the same pattern as ``ensure_table`` in ``idempotency.py``
+backend/app/perception/models.py:84:    and ``ensure_tables`` in ``federation.py`` — the table is not in the
+backend/app/perception/models.py:95:    "ensure_table",
+backend/app/perception/llm_types.py:13:  (call logging), created on demand via ``ensure_tables``.
+backend/app/perception/llm_types.py:201:def ensure_tables(engine: Engine) -> None:
+backend/app/perception/llm_types.py:204:    Follows the same pattern as ``ensure_table`` in ``idempotency.py``
+backend/app/perception/llm_types.py:205:    and ``ensure_table`` in ``serving.py`` — tables are not in the Alembic
+backend/app/perception/llm_types.py:309:    "ensure_tables",
+backend/app/ingestion/federation.py:47:def ensure_tables(engine: Engine | None = None) -> None:
+backend/app/ingestion/federation.py:238:    "ensure_tables",
+backend/app/fusion/reliability.py:7:The source_reliability table is created on demand via ensure_table(engine)
+backend/app/fusion/reliability.py:61:def ensure_table(engine: Engine | None = None) -> None:
+backend/app/fusion/reliability.py:189:__all__ = ["SourceReliability", "SourceReliabilityTracker", "ensure_table"]
+backend/app/lib/idempotency.py:7:The `idempotency_keys` table is created on demand via `ensure_table(engine)`
+backend/app/lib/idempotency.py:49:def ensure_table(engine: Engine | None = None) -> None:
+backend/app/lib/idempotency.py:77:__all__ = ["IdempotencyKey", "ensure_table", "check_and_record"]
+backend/app/realtime/sync.py:58:def ensure_tables(engine: Engine | None = None) -> None:
+backend/app/realtime/sync.py:275:__all__ = ["StoreAndForwardSync", "SyncConflict", "ensure_tables"]
+backend/app/realtime/edge_sync.py:62:def ensure_tables(engine: Engine | None = None) -> None:
+backend/app/realtime/edge_sync.py:265:    "ensure_tables",
+backend/app/audit/provenance_types.py:6:``ensure_table`` since the Alembic migration is not modified.
+backend/app/audit/provenance_types.py:94:def ensure_table(engine: Engine | None = None) -> None:
+backend/app/audit/provenance_types.py:110:    "ensure_table",
+backend/app/streaming/consumer.py:18:from app.lib.idempotency import check_and_record, ensure_table
+backend/app/streaming/consumer.py:59:        ensure_table()
+backend/app/main.py:25:    Base.metadata.create_all(bind=engine, tables=[User.__table__])
+
+=== Also check backend/tests/ ===
+--- grep -rn 'ensure_table\|create_all\|ensure_tables\|ensure_columns' backend/tests/ --include='*.py' ---
+backend/tests/test_confidence_vector.py:3:Uses in-memory SQLite for the source_reliability table (via ensure_table)
+backend/tests/test_confidence_vector.py:18:from app.fusion.reliability import SourceReliabilityTracker, ensure_table
+backend/tests/test_confidence_vector.py:145:    ensure_table(engine)
+backend/tests/test_edge_sync.py:4:and edge_sync_state tables are created on demand via ensure_tables() since
+backend/tests/test_edge_sync.py:18:    ensure_tables,
+backend/tests/test_edge_sync.py:28:    ensure_tables(engine)
+backend/tests/test_serving.py:6:The ``models`` table is created via ``ensure_table()`` on the SQLite engine.
+backend/tests/test_serving.py:7:``JSONBCompat`` falls back to ``JSON`` on SQLite, so ``create_all`` works.
+backend/tests/test_serving.py:25:    ensure_table,
+backend/tests/test_serving.py:99:    ensure_table(eng)
+backend/tests/test_federation.py:4:federation_outbox tables are created on demand via ensure_tables() since
+backend/tests/test_federation.py:13:    OutboxEntry, OutboxManager, SourceManager, ensure_tables,
+backend/tests/test_federation.py:26:    ensure_tables(engine)
+backend/tests/test_sync.py:4:edge_sync_applied tables are created on demand via ensure_tables() since they
+backend/tests/test_sync.py:16:    ensure_tables as ensure_edge_tables,
+backend/tests/test_sync.py:21:    ensure_tables as ensure_sync_tables,
+backend/tests/test_ogc_adapter.py:10:following the same pattern as test_idempotency.py's ensure_table().
+backend/tests/test_ogc_adapter.py:57:def _ensure_columns():
+backend/tests/test_provenance.py:25:    ensure_table,
+backend/tests/test_provenance.py:47:def _ensure_table():
+backend/tests/test_provenance.py:49:    ensure_table(engine)
+backend/tests/test_idempotency.py:4:is created on demand via ensure_table() since it is not in the Alembic
+backend/tests/test_idempotency.py:12:from app.lib.idempotency import IdempotencyKey, check_and_record, ensure_table
+backend/tests/test_idempotency.py:21:    ensure_table(engine)
+backend/tests/test_reliability.py:4:is created on demand via ensure_table() since it is not in the Alembic migration
+backend/tests/test_reliability.py:17:    ensure_table,
+backend/tests/test_reliability.py:28:    ensure_table(engine)
+backend/tests/conftest.py:38:    Base.metadata.create_all(bind=engine)

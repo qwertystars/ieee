@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>RIVERTOWN-FLOOD-2026-001</identifier>
+  <sender>imd.rivertown@gov.in</sender>
+  <sent>2026-07-20T03:30:00+05:30</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <language>en-IN</language>
+    <category>Met</category>
+    <event>Flood Warning</event>
+    <urgency>Immediate</urgency>
+    <severity>Severe</severity>
+    <certainty>Likely</certainty>
+    <effective>2026-07-20T03:30:00+05:30</effective>
+    <onset>2026-07-20T04:00:00+05:30</onset>
+    <expires>2026-07-21T03:30:00+05:30</expires>
+    <headline>Flood Warning — Rivertown coastal area</headline>
+    <description>Heavy rainfall (180mm in 6h) has caused the Rivulet river to breach its banks. Low-lying wards 1-3 are at immediate risk of flooding. Residents advised to move to higher ground.</description>
+    <instruction>Move to designated shelters. Avoid riverfront roads. Do not drive through flooded streets.</instruction>
+    <area>
+      <areaDesc>Rivertown Wards 1-3, coastal Rivulet basin</areaDesc>
+      <polygon>19.05,72.85 19.05,72.90 19.10,72.90 19.10,72.85</polygon>
+      <geocode value="RIVERTOWN-W1">Ward 1</geocode>
+      <geocode value="RIVERTOWN-W2">Ward 2</geocode>
+      <geocode value="RIVERTOWN-W3">Ward 3</geocode>
+    </area>
+  </info>
+</alert>

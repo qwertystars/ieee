@@ -1,0 +1,25 @@
+{
+  "type": "Collection",
+  "stac_version": "1.0.0",
+  "id": "sentinel-1-grd",
+  "title": "Sentinel-1 GRD (IW mode) — Rivertown demo",
+  "description": "Synthetic Aperture Radar Ground Range Detected imagery from Sentinel-1 (Interferometric Wide swath mode) covering the Rivertown demo region. Used for flood mapping via DOFA ensemble (T18/T19).",
+  "license": "proprietary",
+  "extent": {
+    "spatial": {"bbox": [[72.83, 19.04, 72.93, 19.12]]},
+    "temporal": {"interval": [["2026-07-19T00:00:00Z", "2026-07-21T00:00:00Z"]]}
+  },
+  "summaries": {
+    "platform": ["sentinel-1a", "sentinel-1b"],
+    "constellation": ["sentinel-1"],
+    "instruments": [["c-sar"]],
+    "sar:instrument_mode": ["IW"],
+    "sar:polarizations": [["VV", "VH"]]
+  },
+  "links": [
+    {"rel": "self", "href": "fixtures/stac_items/collection.json"},
+    {"rel": "item", "href": "sentinel1_flood_001.json"},
+    {"rel": "item", "href": "sentinel1_flood_002.json"},
+    {"rel": "item", "href": "sentinel1_preflood_001.json"}
+  ]
+}

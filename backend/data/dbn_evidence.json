@@ -1,0 +1,15 @@
+{
+  "hazard_type": "flood",
+  "evidence": [
+    {"node": "flood_sensor_reading", "value": 3},
+    {"node": "flood_citizen_report", "value": "severe"},
+    {"node": "flood_satellite_observation", "value": 3}
+  ],
+  "prior": {
+    "none": 0.4,
+    "minor": 0.25,
+    "moderate": 0.15,
+    "severe": 0.1,
+    "extreme": 0.1
+  }
+}

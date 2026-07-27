@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any
 
 from app.perception.nlp_types import ProcessedReport
 
@@ -168,4 +167,4 @@ class DuplicateClusterer:
         return list(groups.values())
 
 
-__all__: list[Any] = ["DuplicateClusterer"]
+__all__: list[str] = ["DuplicateClusterer"]

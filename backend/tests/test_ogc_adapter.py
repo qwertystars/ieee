@@ -2,23 +2,18 @@
 
 Mocks the OGC HTTP endpoint via unittest.mock, pulls GeoJSON features, and
 verifies that RoadSegment / Shelter rows are created in the real Postgres DB.
-
-The init migration (0001) only created basic columns (id, org_id, incident_id,
-created_at, updated_at, geometry, properties) for entity tables. The ORM models
-define additional columns (name, status, capacity, occupancy, etc.) that are
-not yet in a migration. We add them on-demand via ALTER TABLE IF NOT EXISTS,
-following the same pattern as test_idempotency.py's ensure_table().
+The schema is built by Alembic migrations (see conftest.py).
 """
 
 import asyncio
 import json
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
 from sqlalchemy import text
-from unittest.mock import AsyncMock, patch
 
-from app.db import SessionLocal, engine
+from app.db import SessionLocal
 from app.ingestion.adapters.ogc_features import (
     OGCFeaturesClient,
     sync_collection,
@@ -27,42 +22,6 @@ from app.models.entities import RoadSegment, Shelter
 
 ORG_ID = "org_test_ogc"
 INCIDENT_ID = "inc_test_ogc"
-
-# Columns missing from migration 0001 but defined in the ORM models.
-# (table, column, sql_type) tuples for ALTER TABLE IF NOT EXISTS.
-_MISSING_COLUMNS = [
-    ("road_segments", "name", "VARCHAR"),
-    ("road_segments", "status", "VARCHAR"),
-    ("shelters", "name", "VARCHAR"),
-    ("shelters", "status", "VARCHAR"),
-    ("shelters", "capacity", "INTEGER"),
-    ("shelters", "occupancy", "INTEGER"),
-    ("hospitals", "name", "VARCHAR"),
-    ("hospitals", "status", "VARCHAR"),
-    ("hospitals", "capacity", "INTEGER"),
-    ("zones", "name", "VARCHAR"),
-    ("zones", "zone_type", "VARCHAR"),
-    ("buildings", "name", "VARCHAR"),
-    ("buildings", "building_type", "VARCHAR"),
-    ("bridges", "name", "VARCHAR"),
-    ("bridges", "status", "VARCHAR"),
-    ("power_substations", "name", "VARCHAR"),
-    ("power_substations", "status", "VARCHAR"),
-    ("cell_towers", "name", "VARCHAR"),
-    ("cell_towers", "status", "VARCHAR"),
-]
-
-
-@pytest.fixture(scope="module", autouse=True)
-def _ensure_columns():
-    """Add missing entity columns to the DB (not yet in a migration)."""
-    with engine.connect() as conn:
-        for table, col, sql_type in _MISSING_COLUMNS:
-            conn.execute(
-                text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {sql_type}")
-            )
-        conn.commit()
-    yield
 
 
 def _road_features(n: int = 10) -> dict:

@@ -1,16 +1,18 @@
 """Tests for federated data fabric — source management and delayed sync.
 
 Uses the real PostgreSQL database via SessionLocal. The sources and
-federation_outbox tables are created on demand via ensure_tables() since
-they are not in the Alembic migration. All test rows are cleaned up.
+federation_outbox tables are created by Alembic migrations. All test rows
+are cleaned up.
 """
 
 import pytest
 from sqlalchemy import delete
 
-from app.db import SessionLocal, engine
+from app.db import SessionLocal
 from app.ingestion.federation import (
-    OutboxEntry, OutboxManager, SourceManager, ensure_tables,
+    OutboxEntry,
+    OutboxManager,
+    SourceManager,
 )
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy
@@ -18,13 +20,6 @@ from app.models.observation import Observation
 from app.models.source import Ownership, Source, SourceKind, SourceStatus
 
 ORG_ID = "org_test_federation"
-
-
-@pytest.fixture(scope="module", autouse=True)
-def _tables():
-    """Create sources and federation_outbox tables once for the test module."""
-    ensure_tables(engine)
-    yield
 
 
 @pytest.fixture

@@ -33,8 +33,8 @@ from app.perception.nlp_types import (
     Category,
     GeoCandidate,
     GeoType,
-    PIIType,
     PIISpan,
+    PIIType,
     ProcessedReport,
     Urgency,
 )

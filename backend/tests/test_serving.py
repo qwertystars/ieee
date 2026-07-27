@@ -1,10 +1,8 @@
 """Tests for ML model serving layer — lazy loading, inference, idle eviction.
 
-Uses in-memory SQLite (no PostgreSQL dependency) and mock ONNX sessions
-(no real model weights required). MinIO is mocked — no real S3 needed.
-
-The ``models`` table is created via ``ensure_table()`` on the SQLite engine.
-``JSONBCompat`` falls back to ``JSON`` on SQLite, so ``create_all`` works.
+Uses the real PostgreSQL DB (models table created by Alembic) and mock ONNX
+sessions (no real model weights required). MinIO is mocked — no real S3
+needed.
 """
 
 from __future__ import annotations
@@ -13,16 +11,15 @@ import os
 from dataclasses import dataclass
 
 import pytest
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app.db import engine
 from app.lib.time import now_ms
 from app.lib.ulid import generate_ulid
 from app.perception.models import (
     ModelFramework,
     ModelRecord,
     ModelTask,
-    ensure_table,
 )
 from app.perception.serving import (
     MODEL_CATALOG,
@@ -93,18 +90,9 @@ class _MockMinioClient:
 
 
 @pytest.fixture
-def engine():
-    """In-memory SQLite with only the models table created."""
-    eng = create_engine("sqlite://")
-    ensure_table(eng)
-    yield eng
-    eng.dispose()
-
-
-@pytest.fixture
-def session_factory(engine):
-    factory = sessionmaker(bind=engine)
-    return factory
+def session_factory():
+    """Session factory bound to the shared PostgreSQL test engine."""
+    return sessionmaker(bind=engine)
 
 
 @pytest.fixture

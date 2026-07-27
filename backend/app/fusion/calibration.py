@@ -16,17 +16,24 @@ to a per-zone sub-calibrator.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Protocol
 
 import numpy as np
-from sklearn.linear_model import LinearRegression
-
 from mapie.regression import SplitConformalRegressor, TimeSeriesRegressor
+from sklearn.linear_model import LinearRegression
 
 # Default miscoverage rate alpha = 0.1 -> 90% confidence level.
 _DEFAULT_ALPHA = 0.1
 # Train/calibration split ratio for the internal conformalization.
 _CALIB_FRACTION = 0.3
+
+
+class _EstimatorLike(Protocol):
+    """Structural type for sklearn-compatible estimators."""
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> object: ...
+
+    def predict(self, X: np.ndarray) -> np.ndarray: ...
 
 
 class ConformalCalibrator:
@@ -44,7 +51,7 @@ class ConformalCalibrator:
 
     def __init__(
         self,
-        estimator: Any | None = None,
+        estimator: _EstimatorLike | None = None,
         alpha: float = _DEFAULT_ALPHA,
         mode: str = "static",
     ) -> None:
@@ -124,7 +131,7 @@ class ConformalCalibrator:
         if cal is None:
             raise RuntimeError("Calibrator not fitted — call fit() first")
         if not isinstance(cal, TimeSeriesRegressor):
-            raise RuntimeError("partial_fit requires mode='streaming'")
+            raise TypeError("partial_fit requires mode='streaming'")
         cal.update(np.asarray(X, dtype=float), np.asarray(y, dtype=float))
         return self
 

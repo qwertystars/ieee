@@ -6,16 +6,21 @@ idempotency_keys table, and INSERTs valid observations into PostgreSQL with
 audit provenance. Malformed messages are forwarded to `observations.dlq`.
 """
 
+import asyncio
 import json
 import logging
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.config import settings
 from app.db import SessionLocal
+from app.fusion.confidence import ConfidenceVectorCalculator
+from app.fusion.hypothesis_update import update_hypotheses_for_observation
 from app.lib.audit import write_audit
-from app.lib.idempotency import check_and_record, ensure_table
+from app.lib.idempotency import check_and_record
 from app.lib.time import now_ms
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
 from app.models.observation import Observation
@@ -56,26 +61,57 @@ class ConsumerManager:
         )
         await self._dlq_producer.start()
 
-        ensure_table()
         logger.info("Consumer started on topics %s", topics)
 
     async def consume(self) -> None:
-        """Main consume loop — read, dedup, INSERT, commit offset.
+        """Main consume loop — read, retry, INSERT, commit offset.
 
-        On processing error, the message is forwarded to the DLQ and the
-        offset is committed to avoid infinite reprocessing.
+        Transient errors are retried with exponential backoff. Permanent
+        errors and exhausted retries forward the message to the DLQ. The
+        offset is always committed to avoid infinite reprocessing.
         """
         if self._consumer is None:
             raise RuntimeError("Consumer not started — call start() first")
 
         async for msg in self._consumer:
             try:
-                await self._process(msg.value)
+                await self._retry_with_backoff(msg.value)
             except Exception as exc:
-                logger.error("Failed to process message: %s", exc)
+                logger.error("Failed to process message after retries: %s", exc)
                 await self._send_to_dlq(msg.value, str(exc))
             finally:
                 await self._consumer.commit()
+
+    def _should_retry(self, exc: Exception) -> bool:
+        """Classify an exception as transient (retry) or permanent (DLQ)."""
+        if isinstance(exc, (ValueError, KeyError, TypeError, AttributeError)):
+            return False
+        if isinstance(exc, IntegrityError):
+            return False
+        return True
+
+    async def _retry_with_backoff(self, payload: dict) -> None:
+        """Process a message with exponential backoff on transient errors.
+
+        Permanent errors raise immediately. Transient errors are retried up
+        to 3 times with 1s, 2s, 4s delays before re-raising.
+        """
+        delays = [1.0, 2.0, 4.0]
+        for attempt in range(len(delays) + 1):
+            try:
+                await self._process(payload)
+                return
+            except Exception as exc:
+                if not self._should_retry(exc) or attempt == len(delays):
+                    raise
+                logger.warning(
+                    "Transient error (attempt %d/%d), retrying in %ss: %s",
+                    attempt + 1,
+                    len(delays) + 1,
+                    delays[attempt],
+                    exc,
+                )
+                await asyncio.sleep(delays[attempt])
 
     async def _process(self, payload: dict) -> None:
         """Parse, dedup, and INSERT a single observation."""
@@ -94,6 +130,33 @@ class ConsumerManager:
             obs = self._build_observation(payload)
             db.add(obs)
             db.commit()
+
+            try:
+                calc = ConfidenceVectorCalculator()
+                vector = calc.compute_vector(obs, db_session=db)
+                calc.attach_to_observation(obs, vector)
+                obs.quality_flags["display_confidence"] = (
+                    calc.compute_display_confidence(vector)
+                )
+                flag_modified(obs, "quality_flags")
+                db.commit()
+            except Exception as exc:
+                logger.warning(
+                    "Confidence vector computation failed for %s: %s",
+                    observation_id,
+                    exc,
+                )
+                db.rollback()
+
+            try:
+                update_hypotheses_for_observation(db, obs)
+            except Exception as exc:
+                logger.warning(
+                    "Hypothesis update failed for %s: %s",
+                    observation_id,
+                    exc,
+                )
+                db.rollback()
 
             write_audit(
                 db,

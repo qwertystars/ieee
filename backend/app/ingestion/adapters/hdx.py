@@ -53,7 +53,7 @@ class HDXClient:
     https://hapi.humdata.org/api/v1
     """
 
-    def __init__(self, base_url: str, timeout: float = DEFAULT_TIMEOUT):
+    def __init__(self, base_url: str, timeout: float = DEFAULT_TIMEOUT) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self._client: httpx.AsyncClient | None = None
@@ -72,7 +72,7 @@ class HDXClient:
         await self._get_client()
         return self
 
-    async def __aexit__(self, *args: Any) -> None:
+    async def __aexit__(self, *args: object) -> None:
         await self.close()
 
     async def pull_indicators(
@@ -132,10 +132,12 @@ def _extract_value(
     if value is None:
         value = indicator.get("#value")
     unit = indicator.get("#indicator+unit") or indicator.get("#unit")
-    try:
-        return float(value), unit
-    except (TypeError, ValueError):
-        return None, unit
+    if isinstance(value, (int, float, str)):
+        try:
+            return float(value), unit if isinstance(unit, str) else None
+        except (TypeError, ValueError):
+            return None, unit if isinstance(unit, str) else None
+    return None, unit if isinstance(unit, str) else None
 
 
 def map_to_observations(

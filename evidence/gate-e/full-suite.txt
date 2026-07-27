@@ -1,0 +1,41 @@
+........................................................................ [ 14%]
+........................................................................ [ 29%]
+........................................................................ [ 43%]
+........................................................................ [ 58%]
+........................................................................ [ 73%]
+........................................................................ [ 87%]
+...........................................................              [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/fastapi/testclient.py:1
+  /root/srijan/ieee/backend/.venv/lib/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+app/eval/testbed_types.py:178
+  /root/srijan/ieee/backend/app/eval/testbed_types.py:178: PytestCollectionWarning: cannot collect test class 'TestbedObservation' because it has a __init__ constructor (from: tests/test_failures.py)
+    @dataclass(frozen=True, slots=True)
+
+.venv/lib/python3.11/site-packages/pgmpy/estimators/__init__.py:4
+  /root/srijan/ieee/backend/.venv/lib/python3.11/site-packages/pgmpy/estimators/__init__.py:4: FutureWarning: `pgmpy.estimators.StructureScore` is deprecated and will be removed in v1.3.0. Use `pgmpy.structure_score` instead.
+    from .StructureScore import (
+
+tests/test_calibration.py::test_partial_fit
+  /root/srijan/ieee/backend/.venv/lib/python3.11/site-packages/mapie/regression/time_series_regression.py:395: UserWarning: 
+          This function behavior has been changed to allow updating the scores even when using ACI.
+          Currently the parameters confidence_level and optimize_beta have no effect. They are kept
+          for API stability and will be removed in a future release.
+          If you want to adapt confidence level, use adapt_conformal_inference instead.
+          
+    warn("""
+
+tests/test_invalid_bbox.py::test_bbox_non_numeric_rejected
+tests/test_invalid_bbox.py::test_bbox_wrong_count_rejected
+tests/test_invalid_bbox.py::test_bbox_empty_string_rejected
+  /root/srijan/ieee/backend/app/api/routes/observations.py:221: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    bbox_tuple = _parse_bbox(bbox)
+
+tests/test_social_media_adapters.py::test_ingest_route_rejects_invalid_source_type
+  /root/srijan/ieee/backend/.venv/lib/python3.11/site-packages/fastapi/routing.py:350: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    return await dependant.call(**values)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+491 passed, 8 warnings in 59.21s

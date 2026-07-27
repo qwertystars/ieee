@@ -1,0 +1,67 @@
+=== ls backend/alembic/versions/ ===
+total 20
+drwxrwxr-x 2 1000 1000 4096 Jul 18 08:43 .
+drwxrwxr-x 3 1000 1000 4096 Jul 18 08:07 ..
+-rw-rw-r-- 1 1000 1000 9253 Jul 18 08:47 0001_init_schema.py
+
+=== Migration 0001 header (first 60 lines) ===
+"""init schema — observations, entities, graph_edges, hypotheses, scenarios, events.
+
+Revision ID: 0001
+Revises:
+Create Date: 2026-07-18
+"""
+
+from alembic import op
+import sqlalchemy as sa
+from geoalchemy2 import Geometry
+
+from app.models.enums import (
+    AccessPolicy,
+    CorroborationState,
+    HypothesisStatus,
+    ScenarioLabel,
+    ScenarioStatus,
+    SourceType,
+)
+
+
+# revision identifiers, used by Alembic.
+revision = "0001"
+down_revision = None
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    # Extensions
+    op.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
+    op.execute("CREATE EXTENSION IF NOT EXISTS age;")
+    op.execute("CREATE EXTENSION IF NOT EXISTS h3;")
+
+    # observations
+    op.create_table(
+        "observations",
+        sa.Column("observation_id", sa.String(26), primary_key=True),
+        sa.Column("event_type", sa.String, nullable=False),
+        sa.Column("phenomenon", sa.String, nullable=False),
+        sa.Column("value", sa.Float, nullable=True),
+        sa.Column("unit", sa.String, nullable=True),
+        sa.Column("geometry", Geometry(geometry_type="GEOMETRY", srid=4326), nullable=False),
+        sa.Column("geometry_uncertainty", sa.Float, nullable=False),
+        sa.Column("observed_at", sa.BigInteger, nullable=False),
+        sa.Column("valid_from", sa.BigInteger, nullable=False),
+        sa.Column("valid_until", sa.BigInteger, nullable=True),
+        sa.Column("received_at", sa.BigInteger, nullable=False),
+        sa.Column("source_id", sa.String, nullable=False),
+        sa.Column("source_type", sa.Enum(SourceType, name="sourcetype"), nullable=False),
+        sa.Column("collection_method", sa.String, nullable=False),
+        sa.Column("source_reliability", sa.Float, nullable=False),
+        sa.Column("freshness", sa.Float, nullable=False),
+        sa.Column("corroboration_state", sa.Enum(CorroborationState, name="corroborationstate"), nullable=False),
+        sa.Column("model_uncertainty", sa.Float, nullable=True),
+        sa.Column("quality_flags", sa.dialects.postgresql.JSONB, nullable=False),
+        sa.Column("access_policy", sa.Enum(AccessPolicy, name="accesspolicy"), nullable=False),
+        sa.Column("provenance_chain", sa.dialects.postgresql.JSONB, nullable=False),
+        sa.Column("raw_data_hash", sa.String, nullable=False),
+        sa.Column("model_version", sa.String, nullable=True),

@@ -4,8 +4,11 @@ Uses Apache AGE for Cypher queries when available, with a recursive CTE fallback
 over the graph_edges table. AGE runs inside PostgreSQL — no separate graph DB.
 """
 
+from __future__ import annotations
+
 import logging
 import re
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -20,7 +23,7 @@ from app.models.relationships import GraphEdge
 logger = logging.getLogger(__name__)
 
 
-def _parse_agtype(val):
+def _parse_agtype(val: object) -> Any:
     """Parse an AGE agtype value to a Python value."""
     if val is None:
         return None
@@ -43,7 +46,7 @@ class KnowledgeGraph:
     querying. Queries prefer AGE Cypher, falling back to a recursive CTE.
     """
 
-    def __init__(self, db: Session, org_id: str, incident_id: str):
+    def __init__(self, db: Session, org_id: str, incident_id: str) -> None:
         self.db = db
         self.org_id = org_id
         self.incident_id = incident_id
@@ -90,7 +93,7 @@ class KnowledgeGraph:
         if self.age_available:
             self._cypher("MATCH (n) DETACH DELETE n", "r agtype")
 
-    def add_entity(self, entity_type: str, entity_id: str, properties: dict = None) -> None:
+    def add_entity(self, entity_type: str, entity_id: str, properties: dict | None = None) -> None:
         """Add vertex to AGE graph (no-op if AGE unavailable)."""
         if not self.age_available:
             return
@@ -103,7 +106,7 @@ class KnowledgeGraph:
     def add_edge(
         self, source_type: str, source_id: str, edge_type: str,
         target_type: str, target_id: str,
-        properties: dict = None, valid_from: int = None, valid_until: int = None,
+        properties: dict | None = None, valid_from: int | None = None, valid_until: int | None = None,
     ) -> int:
         """Add edge to graph_edges table (and AGE if available)."""
         edge = GraphEdge(
@@ -139,8 +142,8 @@ class KnowledgeGraph:
 
     def add_hypothesis(
         self, entity_type: str, entity_id: str, claim: str,
-        probability: float = 0.5, supporting_evidence: dict = None,
-        contradicting_evidence: dict = None,
+        probability: float = 0.5, supporting_evidence: dict | None = None,
+        contradicting_evidence: dict | None = None,
     ) -> str:
         """Create a Hypothesis. Contradictory hypotheses are both preserved."""
         hid = generate_ulid()
@@ -158,7 +161,7 @@ class KnowledgeGraph:
 
     def link_observation(
         self, observation_id: str, hypothesis_id: str, relationship: str,
-        properties: dict = None,
+        properties: dict | None = None,
     ) -> int:
         """Link an observation to a hypothesis (supports/contradicts)."""
         return self.add_edge(
