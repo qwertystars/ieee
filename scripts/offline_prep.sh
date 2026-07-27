@@ -41,8 +41,12 @@ step_01_models() {
 }
 
 # ── Step 2: Generate PMTiles basemap ───────────────────────────────────────
+# Mumbai bounding box (lon_min,lat_min,lon_max,lat_max) — matches the simulator
+# waypoints in backend/app/simulator/scenarios.py (lon≈72.85, lat≈19.07) and
+# the locked decision D6 (demo region = Mumbai).
+MUMBAI_BBOX="72.7,18.9,73.0,19.3"
 step_02_pmtiles() {
-    local out="$BASEMAPS_DIR/rivertown.pmtiles"
+    local out="$BASEMAPS_DIR/mumbai.pmtiles"
     if [[ -f "$out" && -s "$out" ]]; then
         log_info "PMTiles already generated: $out"
         return 0
@@ -53,19 +57,58 @@ step_02_pmtiles() {
         return 0
     fi
     ensure_dir "$BASEMAPS_DIR"
-    local tmp_geojson="$BASEMAPS_DIR/rivertown.geojson"
-    # Small OSM extract via Overpass API (demo region placeholder).
-    local overpass='[out:json][timeout:25];area[name="Rivertown"]->.a;(node(area.a);way(area.a);relation(area.a););out;'
-    if curl -fL --retry 2 --connect-timeout 30 -o "$tmp_geojson" \
-            "https://overpass-api.de/api/interpreter?data=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$overpass")" 2>/dev/null; then
-        if tippecanoe -o "$out" -zg "$tmp_geojson" 2>/dev/null; then
+    local tmp_geojson="$BASEMAPS_DIR/mumbai.geojson"
+    # OSM extract for the Mumbai bounding box via Overpass API. The bbox
+    # query is preferred over `area[name="Mumbai"]` because area lookups
+    # are flaky for the Mumbai administrative boundary and frequently
+    # return empty results or rate-limit. The bbox covers Greater Mumbai.
+    # Query is limited to basemap-relevant features (highways, buildings,
+    # water, landuse) — querying all elements for a city of 20M people
+    # always times out.
+    local overpass="[out:json][timeout:120][bbox:${MUMBAI_BBOX}];(way[\"highway\"];way[\"building\"];way[\"natural\"=\"water\"];way[\"waterway\"];way[\"landuse\"];way[\"leisure\"];);out geom;"
+    local overpass_url="https://overpass-api.de/api/interpreter?data=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$overpass")"
+    if curl -fL --retry 3 --connect-timeout 30 --max-time 300 -o "$tmp_geojson" "$overpass_url" 2>/dev/null; then
+        if tippecanoe -o "$out" -zg \
+                --layer=mumbai \
+                --drop-densest-as-needed \
+                --extend-zooms-if-still-dropping \
+                --force "$tmp_geojson" 2>/dev/null; then
             log_success "Generated PMTiles: $out"
         else
             log_warn "tippecanoe failed — PMTiles not generated"
         fi
         rm -f "$tmp_geojson"
     else
-        log_warn "Overpass API unavailable — skipping PMTiles (no Rivertown OSM data)"
+        log_warn "Overpass API unavailable — falling back to Geofabrik Mumbai extract"
+        # Geofabrik fallback: download the India western-zone extract (~200 MB)
+        # and filter to the Mumbai bbox using osmium + tippecanoe. Requires
+        # osmium-tool (apt-get install osmium-tool on Debian/Ubuntu).
+        local geofabrik_url="https://download.geofabrik.de/asia/india/western-zone-latest.osm.pbf"
+        local tmp_pbf="$BASEMAPS_DIR/western-zone-latest.osm.pbf"
+        local tmp_mumbai_pbf="$BASEMAPS_DIR/mumbai.osm.pbf"
+        if curl -fL --retry 2 --connect-timeout 30 --max-time 600 -o "$tmp_pbf" "$geofabrik_url" 2>/dev/null; then
+            if check_command osmium; then
+                if osmium extract --bbox="${MUMBAI_BBOX}" -o "$tmp_mumbai_pbf" "$tmp_pbf" 2>/dev/null \
+                        && osmium export -o "$tmp_geojson" "$tmp_mumbai_pbf" 2>/dev/null; then
+                    if tippecanoe -o "$out" -zg \
+                            --layer=mumbai \
+                            --drop-densest-as-needed \
+                            --extend-zooms-if-still-dropping \
+                            --force "$tmp_geojson" 2>/dev/null; then
+                        log_success "Generated PMTiles from Geofabrik extract: $out"
+                    else
+                        log_warn "tippecanoe failed on Geofabrik extract — PMTiles not generated"
+                    fi
+                else
+                    log_warn "osmium extract/export failed — PMTiles not generated"
+                fi
+            else
+                log_warn "osmium not installed — install with 'apt-get install osmium-tool' to use Geofabrik fallback"
+            fi
+            rm -f "$tmp_pbf" "$tmp_mumbai_pbf" "$tmp_geojson"
+        else
+            log_warn "Geofabrik extract also unavailable — PMTiles not generated (no Mumbai OSM data)"
+        fi
     fi
 }
 

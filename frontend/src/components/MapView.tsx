@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
+import type { StyleSpecification } from 'maplibre-gl'
 import { MapboxOverlay } from '@deck.gl/mapbox'
 import { PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers'
 import type { Layer } from '@deck.gl/core'
+import { Protocol } from 'pmtiles'
 import type { Bbox, LayerConfig, Position } from '../types/map'
 import { useMapLayers, MAP_CENTER } from '../hooks/useMapLayers'
 import { buildLayers } from './mapLayers'
@@ -13,12 +15,91 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 
 const INITIAL_ZOOM = 12
 
-/** Fallback style: solid dark background, no external tiles. PMTiles: install `pmtiles` pkg. */
-const FALLBACK_STYLE = {
-  version: 8 as const,
+const PMTILES_URL = '/basemaps/mumbai.pmtiles'
+
+const pmtilesProtocol = new Protocol()
+maplibregl.addProtocol('pmtiles', pmtilesProtocol.tile)
+
+const PMTILES_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {
+    mumbai: {
+      type: 'vector',
+      url: `pmtiles://${PMTILES_URL}`,
+    },
+  },
+  layers: [
+    {
+      id: 'background',
+      type: 'background',
+      paint: { 'background-color': '#0f172a' },
+    },
+    {
+      id: 'mumbai-landuse',
+      type: 'fill',
+      source: 'mumbai',
+      'source-layer': 'mumbai',
+      filter: ['has', 'landuse'],
+      paint: {
+        'fill-color': [
+          'match', ['get', 'landuse'],
+          'residential', '#1e293b',
+          'commercial', '#1e293b',
+          'industrial', '#1c1917',
+          'forest', '#14532d',
+          'farmland', '#1a2e1a',
+          'park', '#14532d',
+          'grass', '#1a3a1a',
+          'water', '#0c4a6e',
+          '#1e293b',
+        ],
+        'fill-opacity': 0.6,
+      },
+    },
+    {
+      id: 'mumbai-water',
+      type: 'fill',
+      source: 'mumbai',
+      'source-layer': 'mumbai',
+      filter: ['any',
+        ['has', 'natural'],
+        ['has', 'waterway'],
+      ],
+      paint: { 'fill-color': '#0c4a6e', 'fill-opacity': 0.8 },
+    },
+    {
+      id: 'mumbai-roads',
+      type: 'line',
+      source: 'mumbai',
+      'source-layer': 'mumbai',
+      filter: ['has', 'highway'],
+      paint: {
+        'line-color': '#334155',
+        'line-width': [
+          'interpolate', ['linear'], ['zoom'],
+          8, 0.5,
+          12, 1,
+          16, 2,
+        ],
+      },
+    },
+    {
+      id: 'mumbai-buildings',
+      type: 'fill',
+      source: 'mumbai',
+      'source-layer': 'mumbai',
+      filter: ['has', 'building'],
+      paint: { 'fill-color': '#0f172a', 'fill-opacity': 0.5 },
+    },
+  ],
+}
+
+const FALLBACK_STYLE: StyleSpecification = {
+  version: 8,
   sources: {},
   layers: [{
-    id: 'background', type: 'background' as const,
+    id: 'background',
+    type: 'background',
     paint: { 'background-color': '#0f172a' },
   }],
 }
@@ -56,12 +137,13 @@ export default function MapView() {
     return () => clearInterval(t)
   }, [])
 
-  // Initialize MapLibre map once with local fallback style (no online tiles).
+  // Initialize MapLibre map once with local PMTiles basemap (no online tiles).
+  // Falls back to solid dark background if PMTiles fails to load.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: FALLBACK_STYLE,
+      style: PMTILES_STYLE,
       center: MAP_CENTER,
       zoom: INITIAL_ZOOM,
     })
@@ -69,6 +151,13 @@ export default function MapView() {
     const overlay = new MapboxOverlay({ interleaved: false })
     map.addControl(overlay)
     overlayRef.current = overlay
+
+    map.on('error', (e: { error?: Error; type?: string }) => {
+      const msg = e.error?.message ?? ''
+      if (msg.includes('mumbai') || msg.includes('pmtiles')) {
+        map.setStyle(FALLBACK_STYLE)
+      }
+    })
 
     map.on('moveend', () => {
       const b = map.getBounds()

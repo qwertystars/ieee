@@ -164,6 +164,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
       ENVIRONMENT: ${ENVIRONMENT:-development}
+      PMTILES_PATH: /app/frontend/public/basemaps/mumbai.pmtiles
     ports:
       - "8000:8000"
     command: >
@@ -171,6 +172,7 @@ services:
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
       - ./backend:/app
+      - ./frontend/public/basemaps:/app/frontend/public/basemaps:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/healthz || exit 1"]
       interval: 10s
@@ -203,9 +205,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
       ENVIRONMENT: ${ENVIRONMENT:-development}
+      PMTILES_PATH: /app/frontend/public/basemaps/mumbai.pmtiles
     command: ["python", "-m", "app.worker.main"]
     volumes:
       - ./backend:/app
+      - ./frontend/public/basemaps:/app/frontend/public/basemaps:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8001/metrics || exit 1"]
       interval: 10s
