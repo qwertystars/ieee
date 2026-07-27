@@ -166,3 +166,81 @@ information for each model is available on its HuggingFace model card:
 - `incident-nlp`: https://huggingface.co/resqnet/incident-nlp
 
 Ensure you comply with each model's license before deploying in production.
+
+---
+
+## Required Disclaimers
+
+The following disclaimers apply to the platform as a whole. They are
+mandatory reading before any deployment, demonstration, or evaluation.
+
+### 1. Rescue Ball Is Simulated (Not Physical Hardware)
+
+The rescue-ball device is a **digital simulation** only. No physical rescue
+ball hardware exists, has been procured, or has been tested. The
+`RescueBallDevice` class in `app/simulator/rescue_ball.py` models a notional
+spherical device with synthetic sensor readings (battery, temperature,
+signal, IMU, acoustic). All telemetry produced by the simulator is
+synthetic data generated from a seedable random number generator. The
+simulator must not be used as a substitute for real hardware testing.
+
+### 2. Physical Deployment and Landing Not Validated
+
+The physical deployment, trajectory, landing mechanism, and recovery of the
+rescue ball have **NOT been validated** in any real-world environment. The
+`RIVERTOWN_FLOOD_PATH` waypoints in `app/simulator/scenarios.py` are
+notional coordinates tracing a hypothetical trajectory through the flooded
+Rivulet basin. No aerodynamic modeling, impact testing, or field deployment
+has been performed. The simulator's position advancement (velocity, heading,
+Gaussian perturbation) is a simplified kinematic model, not a physics-based
+simulation of ball dynamics in floodwater.
+
+### 3. Simulated Thermal Imaging Not Certified for Human Detection
+
+The thermal sensor simulation (`inject_thermal_hotspot`,
+`inject_human_heat_signature`) produces synthetic heat signature data. The
+simulated thermal readings are **NOT certified** for human detection or any
+safety-critical purpose. No real thermal sensor has been calibrated or
+tested. The `human_heat_at` health flag is a synthetic data point, not a
+verified human presence indicator. Under no circumstances should the
+simulated thermal data be used to confirm or deny the presence of a person
+in a real disaster zone.
+
+### 4. No Medical or Emergency Authority Reliance
+
+This platform is for **situational awareness only**. It must not be used as
+a primary source for medical decisions, emergency dispatch authority, or
+life-safety determinations. All AI-generated content (alert drafts,
+summaries, recommendations) lands as `review_status=draft` until human
+approval. Even after approval, the platform's outputs are decision-support
+tools, not authoritative directives. Emergency responders must verify all
+information through independent channels before acting. The platform does
+not replace professional emergency response protocols, incident command
+systems, or established chain-of-command procedures.
+
+### 5. ML Depends on Available Weights and Calibration Data
+
+Machine learning features (SAR flood mapping, building damage assessment,
+NLP report parsing) depend on ONNX model weight files and conformal
+calibration data being present. Without the weight files (downloaded via
+`scripts/download_models.py --download`), ML inference endpoints return
+`model_unavailable`. Without calibration data, conformal prediction
+intervals are not valid. The ML models have not been validated on real
+disaster data from the deployment region. Model performance on the
+Rivertown demo data does not guarantee performance on real-world data.
+Calibration drift over time is expected, and periodic recalibration is
+required for production use.
+
+### 6. Local Demo Performance Does Not Equal Real Disaster Performance
+
+Performance characteristics observed in the local demo environment (latency,
+throughput, concurrency, reliability) do **not** represent real-world
+disaster zone performance. The demo runs on a single machine with
+controlled data volumes. Real disaster scenarios involve orders of
+magnitude more data, degraded network conditions, intermittent power, and
+concurrent access from multiple agencies. The graceful degradation
+patterns (Redis fail-open, Kafka noop producer, PMTiles fallback) are
+designed for development resilience, not as a substitute for proper
+disaster-zone infrastructure. Production deployment requires load
+testing, capacity planning, and network hardening appropriate to the
+operational environment.
