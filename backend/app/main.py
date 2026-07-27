@@ -201,6 +201,7 @@ async def metrics() -> Response:
 from app.api.routes.alerts import router as alerts_router  # noqa: E402
 from app.api.routes.audit_routes import router as audit_router  # noqa: E402
 from app.api.routes.auth import router as auth_router  # noqa: E402
+from app.api.routes.capabilities import router as capabilities_router  # noqa: E402
 from app.api.routes.entities import router as entities_router  # noqa: E402
 from app.api.routes.eval import router as eval_router  # noqa: E402
 from app.api.routes.health import router as health_router  # noqa: E402
@@ -242,6 +243,7 @@ api_router.include_router(task_item_router)
 api_router.include_router(entities_router)
 api_router.include_router(audit_router)
 api_router.include_router(ingest_router)
+api_router.include_router(capabilities_router)
 
 app.include_router(api_router)
 app.include_router(health_router)

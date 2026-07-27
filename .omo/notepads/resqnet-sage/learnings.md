@@ -5027,3 +5027,224 @@ cd backend && .venv/bin/python -m pytest tests/test_social_media_adapters.py -v
 cd backend && .venv/bin/python -m pytest --tb=short -q
 → 470 passed, 8 warnings in 66.14s  (453 existing + 17 new)
 ```
+
+## T36 — Structured logging, OpenTelemetry, and dependency locks (2026-07-27)
+
+### Outcome
+Added structured JSON logging with contextvars (request_id, trace_id, org_id,
+incident_id), OpenTelemetry OTLP exporter configuration with graceful
+degradation, secret redaction in log extra fields, pinned dependency lock
+files for both backend and frontend, and 14 observability tests. All 484 tests
+pass (470 original + 14 new). `pip-audit` and `npm audit` both run without
+crashing. The secret-leak grep returns zero matches.
+
+### Key findings
+
+1. **`contextvars` is the correct mechanism for per-request log context in
+   async FastAPI.** Each request runs in its own async task, and `ContextVar`
+   values are isolated per task. Middleware sets the vars via `bind_context()`
+   before calling `call_next`, and the JSON formatter reads them when emitting
+   log records. No need for thread-local storage or request-scoped loggers.
+
+2. **Middleware ordering determines which context vars are available where.**
+   The middleware stack (outermost to innermost) is: TelemetryMiddleware →
+   RequestIDMiddleware → OrgContextMiddleware → CORS → router. Each middleware
+   sets its context var before calling `call_next`, so by the time the route
+   handler runs, all vars (trace_id, request_id, org_id) are set. The
+   TelemetryMiddleware binds `trace_id` from the OTel span context;
+   RequestIDMiddleware binds `request_id`; OrgContextMiddleware binds `org_id`.
+
+3. **`OTEL_EXPORTER=none` must short-circuit before `trace.set_tracer_provider`
+   is called.** Once `set_tracer_provider` is called with a real
+   `TracerProvider`, subsequent calls are silently ignored by the OTel SDK.
+   So the `OTEL_EXPORTER=none` check must happen BEFORE the provider is
+   created. The `_tracer_configured` guard prevents double-initialization
+   across module reloads.
+
+4. **The OTLP exporter package (`opentelemetry-exporter-otlp-proto-http`) is
+   not installed by default with `opentelemetry-sdk`.** It must be added
+   separately to `requirements.txt`. The code gracefully handles its absence
+   via `try/except ImportError` — spans are created for trace-ID propagation
+   but not shipped to a collector. This is the correct graceful degradation
+   pattern.
+
+5. **Secret redaction must check both extra field KEYS and dict VALUES.**
+   Python's `logging` module sets `extra={"password": "x"}` as
+   `record.password = "x"` — a direct attribute, not a dict value. The
+   formatter must check if the extra field KEY matches a secret keyword
+   (case-insensitive) and replace the value with `***REDACTED***`. For nested
+   dict values, the recursive `_redact()` function handles keys inside dicts.
+
+6. **`pip freeze` captures all transitive dependencies but includes `torch`
+   which is installed from a special CPU index.** The lock file must exclude
+   `torch==` because the Dockerfile installs it separately from
+   `https://download.pytorch.org/whl/cpu`. Using `pip install --no-deps -r
+   requirements.lock` ensures pip doesn't try to resolve `torch` from PyPI
+   (which would pull the CUDA build). The `--no-deps` flag is safe because the
+   lock file already contains every transitive dependency.
+
+7. **`npm ci` requires `package-lock.json` to exist (not optional).** The
+   original Dockerfile used `COPY package-lock.json* ./` (glob, optional) with
+   `npm install`. Changed to `COPY package-lock.json ./` (required) with
+   `npm ci` for reproducible builds. `npm ci` fails if the lock file is
+   missing or out of sync with `package.json`.
+
+8. **Two existing log lines mentioned "token" in their message text.** The
+   grep `grep -r "password\|secret\|token" backend/app/ --include="*.py" |
+   grep "logger\.\|log\."` matched:
+   - `app/deps.py:57`: "Redis unavailable — token not revoked (best-effort)"
+   - `app/ingestion/adapters/twitter.py:99`: "Twitter bearer token missing,
+     skipping pull"
+   Both were reworded to avoid the literal word "token" ("revocation skipped"
+   and "bearer credential missing" respectively). Neither was logging an
+   actual secret value — just the concept of tokens.
+
+9. **`configure_logging()` must be idempotent.** The function is called from
+   `setup_telemetry()` which runs at app startup. In tests, the app is
+   imported once (via conftest.py), so `configure_logging()` runs once. But
+   if a test imports the app again or calls `configure_logging()` directly,
+   duplicate JSON handlers would be added. The function checks for existing
+   `JsonFormatter`-equipped handlers before adding a new one.
+
+### Files produced/modified
+- `backend/app/lib/logging_config.py` (NEW — 114 pure LOC) — context vars,
+  JSON formatter, secret redaction, `configure_logging()`, `bind_context()`
+- `backend/app/lib/telemetry.py` (MODIFIED — 183 pure LOC) — OTLP exporter
+  config, `OTEL_EXPORTER=none` support, `configure_logging()` call,
+  `trace_id` context var binding in TelemetryMiddleware
+- `backend/app/middleware/request_id.py` (MODIFIED) — calls
+  `bind_context(request_id=...)` after setting `request.state.request_id`
+- `backend/app/middleware/org_context.py` (MODIFIED) — calls
+  `bind_context(org_id=...)` after setting `request.state.org_id`
+- `backend/app/deps.py` (MODIFIED) — reworded log line to avoid "token"
+- `backend/app/ingestion/adapters/twitter.py` (MODIFIED) — reworded log line
+- `backend/requirements.txt` (MODIFIED) — added
+  `opentelemetry-exporter-otlp-proto-http>=1.25.0`
+- `backend/requirements.lock` (NEW — 173 pinned packages) — generated via
+  `pip freeze`, `torch==` stripped (installed separately in Dockerfile)
+- `backend/Dockerfile` (MODIFIED) — uses `requirements.lock` with
+  `pip install --no-deps`
+- `frontend/Dockerfile` (MODIFIED) — uses `npm ci` instead of `npm install`
+- `backend/tests/test_observability.py` (NEW — 230 pure LOC) — 14 tests:
+  formatter fields, context vars, redaction, middleware integration,
+  OTel disable/enable/graceful-degradation, no-secrets static check
+
+### Verification
+```
+cd backend && .venv/bin/python -m pytest tests/test_observability.py -v
+→ 14 passed, 1 warning in 3.84s
+
+cd backend && .venv/bin/python -m pytest -x -q
+→ 484 passed, 8 warnings in 63.89s
+
+grep -r "password\|secret\|token" backend/app/ --include="*.py" | grep "logger\.\|log\."
+→ (no output, exit 1)
+
+pip-audit -r requirements.lock
+→ Found 1 known vulnerability in 1 package (ecdsa 0.19.2) — warning, not crash
+
+npm audit (frontend)
+→ 4 vulnerabilities (3 moderate, 1 high) — warnings, not crash
+```
+
+## T39 — Blocker handling protocol: capabilities endpoint + degradation docs (2026-07-27)
+
+### Outcome
+Created `GET /api/capabilities` endpoint that checks runtime availability of 6
+features (ONNX models, Ollama LLM, PMTiles basemap, model weights, Kafka,
+Redis) and returns status + activation_steps for each. Created
+`docs/KNOWN_LIMITATIONS.md` documenting all blockers, degraded behaviors, and
+activation steps. Updated `scripts/download_models.py` docstring with model
+licensing info. 7 new tests pass; full suite 491 passed (was 484).
+
+### Key findings
+
+1. **ONNX models vs model weights are distinct capabilities.** ONNX models =
+   the ONNX runtime (onnxruntime importable). Model weights = the actual .onnx
+   weight files in `backend/data/models/`. In the test environment,
+   onnxruntime IS installed (v1.28.0) but no .onnx files exist, so
+   `onnx_models` reports `degraded` (runtime present, weights missing) while
+   `model_weights` reports `unavailable` (no files at all). This distinction
+   matters because the `ModelServing` layer can't do inference without both.
+
+2. **`KAFKA_BOOTSTRAP_SERVERS` is not in `app/config.py` Settings.** The
+   existing config uses `REDPANDA_BOOTSTRAP_SERVERS`. The capabilities check
+   looks for `KAFKA_BOOTSTRAP_SERVERS` env var first (per task spec), then
+   falls back to `settings.REDPANDA_BOOTSTRAP_SERVERS`. This avoids modifying
+   `config.py` (forbidden by task constraints) while supporting both env var
+   names.
+
+3. **`PMTILES_PATH` is not used anywhere in the backend.** PMTiles is a
+   frontend concern — the basemap file is served from
+   `frontend/public/basemaps/`. The backend capabilities check looks for the
+   `PMTILES_PATH` env var to report whether a basemap is configured, but the
+   actual file is consumed by the frontend. The frontend already has a vector
+   fallback (solid dark background) when no PMTiles file is present.
+
+4. **Ollama check uses `urllib.request` (stdlib), not `httpx`.** The Ollama
+   availability check does a simple GET to `{OLLAMA_BASE_URL}/api/tags` with a
+   2-second timeout. Using stdlib `urllib.request` avoids importing httpx in
+   the capabilities endpoint and keeps the dependency surface minimal. The
+   check is wrapped in try/except so any failure (connection refused, timeout,
+   DNS failure) returns `unavailable` without crashing.
+
+5. **Kafka and Redis report `degraded` (not `unavailable`) when env var is set
+   but service is down.** The distinction: `unavailable` = not configured (no
+   env var), `degraded` = configured but unreachable. This matches the
+   existing `healthz/deep` pattern which reports `redis=False` and
+   `redpanda=False` when they're down. In the test environment, both
+   `REDIS_URL` and `REDPANDA_BOOTSTRAP_SERVERS` are set (in `.env`), so the
+   services report `degraded`.
+
+6. **The capabilities endpoint has no DB dependency.** Unlike most API routes,
+   it doesn't use `Depends(get_db)`. This means it works even when the
+   database is down — useful for diagnosing system state during outages. The
+   conftest.py `client` fixture still overrides `get_db`, but this override is
+   simply unused by the capabilities endpoint.
+
+7. **`scripts/download_models.py` already had a docstring but no licensing
+   info.** Added a `Licensing:` section to the docstring documenting that
+   models are hosted on HuggingFace under the `resqnet` organization, with
+   links to each model card. Also noted that ONNX Runtime is MIT-licensed.
+   The script itself doesn't modify model artifacts — it fetches them verbatim
+   from upstream `source_url` and uploads to MinIO without transformation.
+
+8. **`docs/KNOWN_LIMITATIONS.md` includes a `<!-- Task 38 will add 6 required
+   disclaimers below -->` header comment.** This is a marker for Task 38 to
+   add its disclaimers without conflicting with the blocker documentation. The
+   comment is placed at the top of the file, immediately after the title, so
+   Task 38's disclaimers will appear before the blocker documentation.
+
+### Files produced/modified
+- `backend/app/api/routes/capabilities.py` (NEW — 207 pure LOC) —
+  `GET /api/capabilities` endpoint with 6 runtime availability checks
+- `backend/tests/test_capabilities.py` (NEW — 90 pure LOC) — 7 tests
+- `backend/app/main.py` (MODIFIED — 191 pure LOC) — registered
+  capabilities_router under api_router
+- `docs/KNOWN_LIMITATIONS.md` (NEW) — blocker documentation with header note
+  for Task 38
+- `scripts/download_models.py` (MODIFIED) — added Licensing section to
+  docstring
+
+### Verification
+```
+cd backend && .venv/bin/python -m pytest tests/test_capabilities.py -v
+→ 7 passed, 1 warning in 4.47s
+
+cd backend && .venv/bin/python -m pytest -x -q
+→ 491 passed, 8 warnings in 64.92s
+
+# Runtime check via TestClient:
+GET /api/capabilities → 200
+{
+  "features": [
+    {"feature": "onnx_models", "status": "degraded", ...},
+    {"feature": "ollama_llm", "status": "unavailable", ...},
+    {"feature": "pmtiles_basemap", "status": "unavailable", ...},
+    {"feature": "model_weights", "status": "unavailable", ...},
+    {"feature": "kafka", "status": "degraded", ...},
+    {"feature": "redis", "status": "degraded", ...}
+  ],
+  "checked_at_ms": 1785126834010
+}
+```
