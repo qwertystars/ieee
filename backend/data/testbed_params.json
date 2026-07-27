@@ -1,0 +1,17 @@
+{
+  "population": 10000,
+  "building_count": 1000,
+  "road_count": 50,
+  "hospital_count": 2,
+  "shelter_count": 5,
+  "substation_count": 3,
+  "cell_tower_count": 5,
+  "responder_station_count": 4,
+  "citizen_device_count": 200,
+  "dem_resolution": 50,
+  "city_center_lat": 19.076,
+  "city_center_lon": 72.8777,
+  "bbox_extent_deg": 0.15,
+  "road_density": 1.0,
+  "hazard_intensity": 0.7
+}
