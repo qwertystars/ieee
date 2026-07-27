@@ -4787,3 +4787,189 @@ cd backend && .venv/bin/python -m pytest tests/test_tenant_isolation.py \
   tests/test_simulator_determinism.py tests/test_low_connectivity.py -v
 → 80 passed, 4 warnings in 34.22s
 ```
+
+## T32 — Wire SOTA fusion and perception engines to API routes (2026-07-27)
+
+### Outcome
+Replaced 3 stub route files (scenarios.py, sensing.py, eval.py) with real
+implementations that wire existing SOTA engines to API endpoints. Added rescue
+ball as a 12th sensing action in the catalog. All 4 ML features (flood_mapping,
+ensemble, damage, NLP) degrade gracefully when model weights are unavailable.
+18 new tests pass; full suite is 435 passed (417 original + 18 new).
+
+### Endpoints implemented
+- `GET  /api/incidents/{id}/scenarios` — ScenarioGenerator ensemble (best/expected/worst)
+- `GET  /api/incidents/{id}/world-state` — DBN state distribution via WorldStateEstimator
+- `GET  /api/incidents/{id}/calibration` — Brier/ECE/coverage via ConformalCalibrator
+- `GET  /api/incidents/{id}/flood-map` — SAR flood mapping (degrades to model_unavailable)
+- `GET  /api/incidents/{id}/flood-ensemble` — Flood ensemble (degrades to model_unavailable)
+- `GET  /api/incidents/{id}/sensing-actions` — EVI-ranked sensing catalog (12 actions)
+- `POST /api/incidents/{id}/sensing-actions/{action_id}/dispatch` — pending task creation
+- `POST /api/incidents/{id}/damage-assessment` — building damage (degrades to model_unavailable)
+- `POST /api/incidents/{id}/nlp-report` — citizen report NLP (degrades to model_unavailable)
+- `POST /api/eval/run` — DigitalTwinTestbed evaluation with task_id
+- `GET  /api/eval/results/{task_id}` — retrieve stored eval results
+
+### Key findings
+
+1. **Router prefix change from `/scenarios` to `/incidents` is safe.** FastAPI
+   matches routes by full path, not by router prefix. Multiple routers with the
+   same prefix (`/incidents`) coexist without conflict as long as their route
+   paths differ. The existing incidents router (`GET /incidents`, `POST /incidents`,
+   `GET /incidents/{id}`) does not conflict with the new scenario routes
+   (`GET /incidents/{id}/scenarios`) because the path segments after `{id}` differ.
+
+2. **Model weight availability check uses local file existence, not package
+   import.** torch, torchgeo, rasterio, onnxruntime are all installed in the dev
+   environment, but model WEIGHTS are not downloaded. The degradation check
+   `_weights_available(r2_key)` checks if the ONNX model file exists in
+   `backend/data/models/`. If not, the endpoint returns `{"status":
+   "model_unavailable", "feature": "..."}`. This is more honest than checking
+   package availability — the packages are present but the weights are not.
+
+3. **Fixture data in `backend/data/` enables non-ML endpoints to work without
+   model weights.** Four JSON fixtures provide deterministic input:
+   - `world_state.json` — WorldStateSnapshot for ScenarioGenerator
+   - `dbn_evidence.json` — DBN evidence + prior for WorldStateEstimator
+   - `calibration.json` — y_true/y_prob/y_lower/y_upper arrays for ConformalCalibrator
+   - `testbed_params.json` — TestbedParams for DigitalTwinTestbed (used via API body)
+
+4. **Rescue ball addition required changes to 3 sensing files.** Adding
+   `DEPLOY_RESCUE_BALL` to `SensingActionType` in `evi_types.py` required
+   corresponding entries in `_DEFAULT_COSTS` and `_DEFAULT_TIMES` in `evi.py`,
+   plus a new `CatalogAction` entry in `_ACTIONS` in `catalog.py`. The existing
+   `test_sensing_catalog.py` test expected exactly 11 actions — updated to 12.
+
+5. **Eval results stored in-memory dict keyed by ULID task_id.** This is
+   sufficient for single-process demo operation. The `_results` dict on the
+   eval router module persists across requests within the same process. For
+   production, this would be a DB table or queue. Task 33 will extend eval.py
+   with ablation/baselines endpoints — the in-memory store can be extended or
+   replaced at that time.
+
+6. **Pydantic BaseModel for request bodies in sensing routes.** The
+   `DamageRequest` and `NLPRequest` models use Pydantic v2 for request body
+   validation. This follows the "parse, don't validate" principle — untrusted
+   input is parsed into typed values at the API boundary.
+
+7. **pgmpy DBN inference works in the test environment.** The WorldStateEstimator
+   uses pgmpy's DBNInference for exact inference (junction tree). Despite the
+   `FutureWarning` about `pgmpy.estimators.StructureScore` deprecation, the
+   inference works correctly and returns a valid probability distribution
+   summing to 1.0.
+
+8. **Eval run endpoint requires admin or emergency_manager role.** The
+   `POST /api/eval/run` endpoint uses `require_roles("admin", "emergency_manager")`
+   to restrict who can trigger testbed evaluations. The `GET /api/eval/results`
+   endpoint allows any authenticated user (viewer included) to read results.
+
+### Files produced/modified
+- `backend/app/api/routes/scenarios.py` (MODIFY — 218 pure LOC, 5 endpoints)
+- `backend/app/api/routes/sensing.py` (MODIFY — 235 pure LOC, 4 endpoints)
+- `backend/app/api/routes/eval.py` (MODIFY — 89 pure LOC, 2 endpoints)
+- `backend/app/sensing/evi_types.py` (MODIFY — added DEPLOY_RESCUE_BALL enum)
+- `backend/app/sensing/catalog.py` (MODIFY — added rescue ball CatalogAction)
+- `backend/app/sensing/evi.py` (MODIFY — added cost/time for rescue ball)
+- `backend/tests/test_sensing_catalog.py` (MODIFY — updated to expect 12 actions)
+- `backend/tests/test_sota_routes.py` (NEW — 18 fixture-based tests)
+- `backend/data/world_state.json` (NEW — fixture for ScenarioGenerator)
+- `backend/data/dbn_evidence.json` (NEW — fixture for WorldStateEstimator)
+- `backend/data/calibration.json` (NEW — fixture for ConformalCalibrator)
+- `backend/data/testbed_params.json` (NEW — fixture for DigitalTwinTestbed)
+
+### Verification
+```
+cd backend && .venv/bin/python -m pytest tests/test_sota_routes.py -v
+→ 18 passed, 2 warnings in 15.07s
+
+cd backend && .venv/bin/python -m pytest --tb=short -q
+→ 435 passed, 7 warnings in 52.96s
+```
+
+---
+
+## Task 33 — Wire SOTA optimizer, twin, evaluation, privacy/ABAC, and fairness to API
+
+### What was done
+Wired the existing SOTA modules (optimizer, twin, ABAC, privacy, fairness,
+eval ablation/baselines) to API routes. All endpoints return meaningful
+data; the optimize endpoint returns alternatives + trade-offs (not an
+opaque single command); infeasible returns an explanation; fairness-report
+returns equity data; access-check returns ABAC reasoning; viewer sees
+~1km-precision coordinates.
+
+### Key design decisions
+
+1. **File split strategy.** The optimize endpoint + helpers exceeded 250
+   pure LOC when in a single file. Split into:
+   - `app/api/routes/optimize.py` (165 LOC) — re-export + incident endpoint
+   - `app/optimizer/incident_input.py` (129 LOC) — DB-to-OptimizerInput
+     builder + demo fallback scenario
+   This keeps each file under the 250 LOC ceiling.
+
+2. **Incident-scoped routers with shared prefix.** The new endpoints
+   (`GET /api/incidents/{id}/optimize`, `/cascade`, `/silence`,
+   `/access-check`, `/fairness-report`) all use `APIRouter(prefix="/incidents")`.
+   FastAPI merges them with the existing `incidents_router` under the same
+   `/api/incidents` prefix — no conflicts.
+
+3. **Optimize returns alternatives + trade-offs.** The endpoint solves
+   twice: once with fairness constraints (fair plan) and once with
+   constraints relaxed (original/unconstrained plan). It then uses
+   `FairnessEngine.compute_equity_report()` to compare the two plans and
+   returns both + the equity report. This is NOT an opaque single command.
+
+4. **Infeasible explanation.** When the optimizer returns `infeasible`,
+   the endpoint diagnoses the likely cause: not enough responders, skill
+   mismatches, shelter over-capacity, or vulnerable zone c_min
+   requirements. Returns a human-readable explanation string.
+
+5. **Progressive precision.** The `round_coords_by_role()` helper in
+   `privacy.py` maps roles to coordinate decimal places: viewer → 2 dp
+   (~1km), field_responder → 3 dp (~100m), admin → exact. This uses the
+   COORD_DECIMALS concept from `app.lib.privacy` without modifying the
+   SOTA module. The `ProgressivePrecision` class is used for PII redaction
+   via `redact_pii()`.
+
+6. **ABAC access-check reasoning.** The endpoint builds an `Actor` from
+   the authenticated user, a `Subject` from the resource query param, and
+   a `Context` from the incident. It evaluates `ABACEngine.can()` and
+   returns allowed/denied with a list of reasons covering jurisdiction,
+   sensitivity, and emergency override status.
+
+7. **Eval ablation/baselines added without breaking existing endpoints.**
+   The `POST /eval/ablation` and `POST /eval/baselines` endpoints were
+   appended to `eval.py` after the existing `POST /run` and
+   `GET /results/{task_id}` endpoints. The existing endpoints are
+   untouched — verified by `test_existing_eval_run_still_works` and
+   `test_existing_eval_results_still_works`.
+
+8. **Cascade endpoint falls back gracefully.** When an incident has no
+   `GraphEdge` rows, the cascade endpoint returns `status=no_infrastructure_graph`
+   with `blast_radius=0` instead of raising an error.
+
+9. **Silence endpoint builds zones from DB.** Queries `Zone` rows for the
+   incident, builds `SilenceZone` objects from `properties` JSONB, and
+   checks for supporting evidence (tower failure, power outage) from
+   `CellTower` and `PowerSubstation` status fields.
+
+### Files produced/modified
+- `backend/app/api/routes/optimize.py` (MODIFY — 165 pure LOC, re-export + incident endpoint)
+- `backend/app/api/routes/twin.py` (NEW — 193 pure LOC, cascade + silence)
+- `backend/app/api/routes/privacy.py` (NEW — 242 pure LOC, access-check + fairness-report + progressive precision helpers)
+- `backend/app/api/routes/eval.py` (MODIFY — 191 pure LOC, added ablation + baselines)
+- `backend/app/optimizer/incident_input.py` (NEW — 129 pure LOC, DB-to-OptimizerInput builder + demo fallback)
+- `backend/app/main.py` (MODIFY — registered twin, privacy, optimize_incident routers)
+- `backend/tests/test_sota_optimizer_routes.py` (NEW — 18 fixture-based tests)
+
+### Verification
+```
+cd backend && .venv/bin/python -m pytest tests/test_sota_optimizer_routes.py -v
+→ 18 passed, 1 warning in 12.45s
+
+cd backend && .venv/bin/python -m pytest tests/test_sota_routes.py -v
+→ 18 passed, 2 warnings in 15.57s
+
+cd backend && .venv/bin/python -m pytest --tb=short -q
+→ 453 passed, 7 warnings in 56.05s
+```

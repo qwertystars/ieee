@@ -207,8 +207,13 @@ from app.api.routes.health import router as health_router  # noqa: E402
 from app.api.routes.hypotheses import router as hypotheses_router  # noqa: E402
 from app.api.routes.incidents import router as incidents_router  # noqa: E402
 from app.api.routes.observations import router as observations_router  # noqa: E402
-from app.api.routes.optimize import router as optimize_router  # noqa: E402
+from app.api.routes.optimize import (  # noqa: E402
+    incident_router as optimize_incident_router,
+    router as optimize_router,
+)
+from app.api.routes.privacy import router as privacy_router  # noqa: E402
 from app.api.routes.scenarios import router as scenarios_router  # noqa: E402
+from app.api.routes.twin import router as twin_router  # noqa: E402
 from app.api.routes.sensing import router as sensing_router  # noqa: E402
 from app.api.routes.simulator import router as simulator_router  # noqa: E402
 from app.api.routes.tasks import router as tasks_router  # noqa: E402
@@ -224,6 +229,9 @@ api_router.include_router(observations_router)
 api_router.include_router(hypotheses_router)
 api_router.include_router(scenarios_router)
 api_router.include_router(optimize_router)
+api_router.include_router(optimize_incident_router)
+api_router.include_router(twin_router)
+api_router.include_router(privacy_router)
 api_router.include_router(sensing_router)
 api_router.include_router(simulator_router)
 api_router.include_router(eval_router)
