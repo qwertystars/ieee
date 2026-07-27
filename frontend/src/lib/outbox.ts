@@ -162,15 +162,19 @@ export async function addToOutbox(
   body: unknown,
   priority: OutboxPriority,
 ): Promise<OutboxItem> {
+  // Generate ULIDs before any await: Promise.all preserves call order, but
+  // await sha256 resolves in completion order, which would break monotonicity.
+  const id = ulid()
+  const idempotency_key = ulid()
   const bodyStr = body === undefined ? '' : JSON.stringify(body)
   const content_hash = await sha256(bodyStr)
   const item: OutboxItem = {
-    id: ulid(),
+    id,
     url, method, body,
     content_hash,
     timestamp: Date.now(),
     priority,
-    idempotency_key: ulid(),
+    idempotency_key,
     status: 'pending',
     conflict_resolution: null,
     attempts: 0,

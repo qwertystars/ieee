@@ -59,3 +59,30 @@ _Auto-scaffolded by /start-work. Append new entries below - never overwrite._
   pattern but focuses on production-readiness gaps rather than implementation
   completeness.
 
+## 2026-07-27 — Wave 1, Todo 3: Fix flaky ULID monotonicity test
+
+### Root cause (confirmed)
+- `addToOutbox` called `ulid()` AFTER `await sha256(bodyStr)`. When
+  `Promise.all` of 20 concurrent `addToOutbox` calls runs, `crypto.subtle.digest`
+  resolves the 20 promises in **completion order**, not call order. The
+  `ulid()` calls then execute in completion order, but `Promise.all`'s result
+  array preserves **call order** — so the `ids` array was not sorted.
+- This was a call-order vs completion-order mismatch, NOT a data race. The
+  `lastTs`/`lastRand` increment in `ulid()` is already single-threaded (JS
+  single-threaded, `ulid()` is synchronous).
+
+### Fix
+- Moved BOTH `ulid()` calls (for `id` and `idempotency_key`) to BEFORE the
+  first `await` in `addToOutbox` — generated synchronously at function entry.
+- No mutex/lock added. ULID format unchanged (26-char Crockford base32).
+
+### Verification
+- `cd frontend && npm run test`: 45 passed (3 files).
+- 10 consecutive runs (`for i in $(seq 1 10); do npm run test; done`): 10/10
+  passed, zero failures.
+
+### Lesson
+- When a function generates monotonic IDs and is called via `Promise.all`,
+  generate the IDs synchronously at function entry, before ANY `await`. The
+  `await` point is where call-order and completion-order diverge.
+
