@@ -1,0 +1,13 @@
+Command: cd backend && PYTHONPATH=. .venv/bin/alembic current
+Date: 2026-07-27
+Branch: codex/resqnet-gap-closure
+
+Note: PYTHONPATH=. is required because alembic/env.py imports from app.config
+and the venv does not have the app package installed in site-packages.
+
+Output:
+0004 (head)
+
+Cross-verified via direct DB query:
+  PGPASSWORD=resqnet123 psql -h localhost -U resqnet -d resqnet -c "SELECT version_num FROM alembic_version;"
+  Result: 0004
