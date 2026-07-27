@@ -4689,3 +4689,101 @@ symbol name in test files when renaming a public function — even "internal"
 seed scripts get imported by tests. The function `seed_demo` lives in module
 `app.seed.seed_demo`; the call `seed_demo.seed_demo()` looks redundant but is
 correct (module.function).
+
+## T30 — Phase 1 integration tests (2026-07-27)
+
+### Outcome
+Created 15 integration test files (80 tests total) verifying real Phase 1 behavior
+against the real PostgreSQL/PostGIS database. All 80 tests pass; the full suite
+now has 417 passing tests (337 existing + 80 new). No source files modified.
+
+### Files created
+- `backend/tests/test_tenant_isolation.py` (151 LOC, 4 tests)
+- `backend/tests/test_role_denial.py` (148 LOC, 6 tests)
+- `backend/tests/test_geometry_roundtrip.py` (133 LOC, 3 tests)
+- `backend/tests/test_invalid_bbox.py` (102 LOC, 5 tests)
+- `backend/tests/test_concurrent_idempotency.py` (120 LOC, 4 tests)
+- `backend/tests/test_migration_correctness.py` (136 LOC, 6 tests)
+- `backend/tests/test_audit_tampering.py` (106 LOC, 5 tests)
+- `backend/tests/test_stale_data.py` (145 LOC, 6 tests)
+- `backend/tests/test_contradictions.py` (93 LOC, 5 tests)
+- `backend/tests/test_worker_restart.py` (94 LOC, 8 tests)
+- `backend/tests/test_dlq.py` (87 LOC, 7 tests)
+- `backend/tests/test_websocket_fallback.py` (137 LOC, 4 tests)
+- `backend/tests/test_seed_idempotency.py` (115 LOC, 4 tests)
+- `backend/tests/test_simulator_determinism.py` (63 LOC, 5 tests)
+- `backend/tests/test_low_connectivity.py` (96 LOC, 7 tests)
+
+### Key findings
+
+1. **TestClient lifespan must be triggered via `with` statement.** The conftest.py
+   `client` fixture yields `TestClient(app)` without `with`, so the lifespan
+   startup (which seeds demo users and starts Kafka) does NOT run. Tests that
+   need auth must either use `with TestClient(app) as client:` or seed users
+   directly via `seed_demo_users(db)`. The latter is faster for tests that don't
+   need the full app lifecycle.
+
+2. **Error responses use `{error: {code, message, request_id}}` format, not
+   FastAPI's default `{detail: "..."}`.** The global error handler in
+   `middleware/error_handler.py` wraps all HTTPExceptions into this format.
+   Tests asserting on error messages must access `body["error"]["message"]`,
+   not `body["detail"]`.
+
+3. **Cross-tenant access returns 404, not 403.** The `fetch_feature` function
+   filters by `org_id` in the WHERE clause, so a cross-tenant query returns
+   no rows → 404. This is the correct behavior: 404 does not leak the existence
+   of the resource to the unauthorized user.
+
+4. **WebSocket invalid token closes with code 4001 on `__enter__`.** When the
+   server calls `websocket.close(code=4001)` before `websocket.accept()`, the
+   Starlette TestClient's `websocket_connect` context manager raises
+   `WebSocketDisconnect` on `__enter__` (not inside the context). The test must
+   wrap the `with` statement in `pytest.raises(WebSocketDisconnect)` and check
+   `exc_info.value.code == 4001`.
+
+5. **SimulationEngine.start() requires a running event loop.** The engine calls
+   `asyncio.create_task(self._run_loop())` which needs a running event loop.
+   Tests must be `async def` (pytest-asyncio is configured with
+   `asyncio_mode = auto`) or use `asyncio.run()` to create a loop.
+
+6. **ProducerManager.is_started returns True even after a failed start().** The
+   `_producer` attribute is set to an `AIOKafkaProducer` instance BEFORE
+   `start()` is called. If `start()` fails (Kafka unavailable), `_producer`
+   is still non-None, so `is_started` returns True. This is a minor design issue
+   in the ProducerManager but does not affect production because the caller
+   catches the exception and sets the producer to None.
+
+7. **Concurrent idempotency works via PostgreSQL unique constraint.** Two
+   threads calling `check_and_record()` with the same `(source, external_id)`
+   simultaneously: one succeeds (INSERT commits), the other gets
+   `IntegrityError` (unique constraint violation) and returns False. No
+   application-level locking needed — the DB enforces it.
+
+8. **FeedHealthTracker computes status on read, not write.** Staleness is
+   determined by comparing `observed_at` age against per-phenomenon tau values.
+   The tracker uses `current_ms` (injectable for tests) to compute age, so
+   tests can use fixed timestamps for deterministic results.
+
+9. **The seed creates contradictory hypotheses with status=active.** The
+   Bridge BR-04 pair ("passable" vs "impassable") is preserved without
+   auto-resolution. Both have `supporting_evidence` with different sources
+   (satellite vs citizen_report), making the contradiction traceable.
+
+10. **ConsumerManager._should_retry classifies errors correctly.** ValueError,
+    KeyError, TypeError, AttributeError, and IntegrityError are permanent
+    (→ DLQ). ConnectionError, TimeoutError, OSError, and RuntimeError are
+    transient (→ retry with exponential backoff). This classification is
+    tested directly without Kafka.
+
+### Verification
+```
+cd backend && .venv/bin/python -m pytest tests/test_tenant_isolation.py \
+  tests/test_role_denial.py tests/test_geometry_roundtrip.py \
+  tests/test_invalid_bbox.py tests/test_concurrent_idempotency.py \
+  tests/test_migration_correctness.py tests/test_audit_tampering.py \
+  tests/test_stale_data.py tests/test_contradictions.py \
+  tests/test_worker_restart.py tests/test_dlq.py \
+  tests/test_websocket_fallback.py tests/test_seed_idempotency.py \
+  tests/test_simulator_determinism.py tests/test_low_connectivity.py -v
+→ 80 passed, 4 warnings in 34.22s
+```
