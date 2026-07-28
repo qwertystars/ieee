@@ -119,8 +119,11 @@ step_03_build_images() {
 }
 
 # ── Step 4: Pre-pull all Docker images ──────────────────────────────────────
+# Use --profile full so ollama, prometheus, and grafana images are pre-pulled
+# too. Without the profile flag, docker compose pull skips profile-gated
+# services, leaving them to be pulled on-demand at start time (slow).
 step_04_pull_images() {
-    docker compose pull || log_warn "Some Docker images failed to pull"
+    docker compose --profile full pull || log_warn "Some Docker images failed to pull"
 }
 
 # ── Step 5: Vendor pip packages ────────────────────────────────────────────
@@ -172,8 +175,20 @@ step_08_ollama() {
         log_warn "Could not start ollama service"
         return 0
     fi
-    if ! wait_for_service ollama 30; then
-        log_warn "Ollama did not become healthy in time"
+    # Wait for the ollama HTTP server to respond, not just the container.
+    # wait_for_service only checks that `docker compose exec` succeeds (container
+    # running), but the ollama server inside takes a few more seconds to accept
+    # API requests. Without this, `ollama pull` can race the server startup.
+    local i=0
+    while (( i < 30 )); do
+        if docker compose exec ollama ollama list >/dev/null 2>&1; then
+            break
+        fi
+        sleep 2
+        ((i++))
+    done
+    if (( i >= 30 )); then
+        log_warn "Ollama server did not become ready in time"
         return 0
     fi
     if docker compose exec ollama ollama list 2>/dev/null | grep -q "llama3.1:8b"; then

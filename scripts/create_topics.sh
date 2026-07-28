@@ -24,8 +24,16 @@ TOPICS=(
     "observations.dlq"
 )
 
-if ! command -v rpk &>/dev/null; then
-    echo "ERROR: rpk (Redpanda CLI) is not installed or not in PATH." >&2
+# rpk in the redpanda container auto-discovers the broker via the config file.
+# Host-installed rpk needs REDPANDA_BROKERS env var or a profile to find the broker.
+# The --bootstrap flag was removed in newer rpk versions; use env var instead.
+if command -v rpk &>/dev/null; then
+    RPK_CMD=(env REDPANDA_BROKERS="${BOOTSTRAP}" rpk)
+elif docker compose exec -T redpanda rpk version >/dev/null 2>&1; then
+    RPK_CMD=(docker compose exec -T redpanda rpk)
+else
+    echo "ERROR: rpk is not installed on the host and redpanda container is not running." >&2
+    echo "       Install rpk or start redpanda: docker compose up -d redpanda" >&2
     exit 1
 fi
 
@@ -33,17 +41,16 @@ create_topic() {
     local topic="$1"
     # rpk topic create exits non-zero if the topic already exists.
     # We treat that as success (idempotent).
-    if rpk topic create "${topic}" \
+    if "${RPK_CMD[@]}" topic create "${topic}" \
         --partitions "${PARTITIONS}" \
-        --replicas "${REPLICAS}" \
-        --bootstrap "${BOOTSTRAP}" 2>/dev/null; then
+        --replicas "${REPLICAS}" 2>&1; then
         echo "Created topic: ${topic}"
     else
         echo "Topic already exists (skipped): ${topic}"
     fi
 }
 
-echo "Creating topics on ${BOOTSTRAP} (partitions=${PARTITIONS}, replicas=${REPLICAS})..."
+echo "Creating topics (partitions=${PARTITIONS}, replicas=${REPLICAS})..."
 for topic in "${TOPICS[@]}"; do
     create_topic "${topic}"
 done

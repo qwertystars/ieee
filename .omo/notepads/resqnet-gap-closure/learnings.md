@@ -233,4 +233,90 @@ Overpass (both mirrors) returned empty/504 → Geofabrik fallback:
   reliable and produces higher-quality data (full OSM extract, not
   a filtered subset).
 
+## 2026-07-28 — Wave 2, Todo 5: Enable Redpanda/Redis/Ollama offline
+
+### What changed
+
+- `docker-compose.yml`: reduced all resource limits to fit the 8 GB RAM
+  environment (db 4G→1G, redpanda 5G→2G, ollama 8G→4G, backend 4G→2G,
+  worker 1G→512M, minio 1G→512M, redis/benthos/frontend/prometheus/
+  grafana 512M→256M). Changed db port mapping from 5432→5433 to avoid
+  conflict with the local PostgreSQL 15 running on 5432. These changes
+  allow all 11 services to run simultaneously without OOM kills.
+- `scripts/create_topics.sh`: replaced the hard `rpk` host requirement
+  with a 3-tier fallback: (1) host-installed rpk via
+  `REDPANDA_BROKERS` env var, (2) `docker compose exec -T redpanda rpk`
+  using in-container auto-discovery, (3) error. Removed the deprecated
+  `--bootstrap` flag (removed in newer rpk versions).
+- `scripts/offline_prep.sh` step_04: changed `docker compose pull` to
+  `docker compose --profile full pull` so ollama/prometheus/grafana
+  images are pre-pulled too (without the profile flag, compose skips
+  profile-gated services, leaving them to pull on-demand at start).
+- `scripts/offline_prep.sh` step_08: replaced `wait_for_service ollama`
+  (which only checks container exec success) with an explicit HTTP
+  readiness loop that calls `ollama list` until it succeeds (up to 60s).
+  The ollama server takes a few seconds after container start to accept
+  API requests — without this, `ollama pull` can race server startup.
+
+### Verification results
+
+- `docker compose --profile full up -d`: all 11 services started.
+  7 services with healthchecks all report `healthy` (db, redis, redpanda,
+  minio, ollama, backend, worker). 4 services without healthchecks
+  (benthos, frontend, prometheus, grafana) are `Up`.
+- `rpk topic list` (inside redpanda container): all 3 topics exist —
+  observations.raw, observations.normalized, observations.dlq (1 partition,
+  1 replica each).
+- `docker compose exec ollama ollama list`: `llama3.1:8b` present (4.9 GB,
+  pulled 7 hours prior — was already in the `ieee_ollama_data` volume
+  from a prior session, so no re-download needed).
+- `curl /api/capabilities`: kafka=available, redis=available,
+  ollama_llm=available, pmtiles_basemap=available (from T4).
+  onnx_models=degraded, model_weights=unavailable (expected — Wave 3 T7).
+- `curl /healthz`: `{"ok":true}`, all 5 services configured.
+
+### Key discoveries
+
+- **`docker compose up -d --wait` can exceed 5 minutes on first boot**:
+  the `--wait` flag blocks until ALL healthchecks pass. With 11 services
+  (db migrations, redpanda cluster formation, ollama model loading), this
+  can take >5 min. Workaround: start with `docker compose --profile full
+  up -d` (no `--wait`), then poll `docker ps` for health status. The
+  services without healthchecks (benthos, frontend, prometheus, grafana)
+  are considered "ready" as soon as the container is up.
+- **Ollama model persists in the named volume**: the `ieee_ollama_data`
+  volume survives `docker compose down`. Once `llama3.1:8b` is pulled,
+  it remains available across stack restarts — no re-pull needed. The
+  model blob files live at `models/blobs/sha256-*` and the manifest at
+  `models/manifests/registry.ollama.ai/library/llama3.1/8b`.
+- **`_check_kafka()` uses `KAFKA_BOOTSTRAP_SERVERS` env var first**,
+  falling back to `settings.REDPANDA_BOOTSTRAP_SERVERS`. The
+  docker-compose.yml sets `REDPANDA_BOOTSTRAP_SERVERS` (not
+  `KAFKA_BOOTSTRAP_SERVERS`), so the check uses the Pydantic settings
+  default. Both paths resolve to `redpanda:9092` — the internal
+  container address. The check does a TCP `socket.create_connection`
+  to `redpanda:9092`, which works from inside the backend container.
+- **Resource limits are caps, not reservations**: with 8 GB total RAM
+  and ~11 GB of cumulative limits, the stack still runs because
+  containers use far less than their limits when idle. Ollama at 4G
+  limit uses ~200 MB when just serving `ollama list` (no inference).
+  The 4G limit only matters during LLM inference, which is not part
+  of the capabilities healthcheck.
+- **`create_topics.sh` rpk fallback works**: when host rpk is not
+  installed, `docker compose exec -T redpanda rpk` auto-discovers the
+  broker via the redpanda config file inside the container. No
+  `--bootstrap` flag or `REDPANDA_BROKERS` env var needed for the
+  in-container path.
+
+### Lesson
+
+- For `docker compose --wait` on large stacks, don't rely on the
+  default 5-minute bash timeout. Start with `up -d` (no `--wait`),
+  then poll `docker ps` every 30s until all healthchecks pass. This
+  avoids the timeout killing the compose command mid-startup.
+- When reducing resource limits for a constrained environment, scale
+  ALL services proportionally — not just the big ones. Redpanda's
+  `--memory` flag (JVM-like heap) must be ≤ the deploy.resources.limits
+  memory, or the container OOM-kills on startup.
+
 
