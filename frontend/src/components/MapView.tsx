@@ -280,7 +280,7 @@ export default function MapView() {
 
   return (
     <div className="relative h-full w-full bg-gray-900">
-      <div ref={containerRef} className="absolute inset-0" data-testid="map-container" />
+      <div ref={containerRef} className="absolute inset-0 h-full w-full" data-testid="map-container" />
 
       {isLoading && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-gray-950/70" role="status">

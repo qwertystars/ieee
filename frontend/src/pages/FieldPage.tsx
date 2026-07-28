@@ -55,8 +55,9 @@ export default function FieldPage() {
   const statusMut = useMutation({
     mutationFn: (vars: { taskId: string; status: string }) =>
       api.updateTaskStatus(vars.taskId, { status: vars.status }),
-    onMutate: async (vars) => {
-      await queryClient.cancelQueries({ queryKey: ['tasks', incidentId] })
+    networkMode: 'always',
+    onMutate: (vars) => {
+      queryClient.cancelQueries({ queryKey: ['tasks', incidentId] })
       const prev = queryClient.getQueryData<{ tasks: Task[] }>(['tasks', incidentId])
       if (prev) {
         const updated = prev.tasks.map(t =>
@@ -79,9 +80,10 @@ export default function FieldPage() {
   const roadMut = useMutation({
     mutationFn: (vars: { roadId: string; status: string }) =>
       api.updateEntity(incidentId!, 'roads', vars.roadId, { status: vars.status }),
-    onMutate: async (vars) => {
+    networkMode: 'always',
+    onMutate: (vars) => {
       const key = ['entities', incidentId, 'roads']
-      await queryClient.cancelQueries({ queryKey: key })
+      queryClient.cancelQueries({ queryKey: key })
       type RoadFC = { features: Array<{ properties: { id: string; status?: string } }> }
       const prev = queryClient.getQueryData<RoadFC>(key)
       if (prev) {

@@ -25,7 +25,7 @@ export PYTHONPATH := $(BACKEND_DIR)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap migrate seed test lint typecheck build demo verify \
+.PHONY: help bootstrap migrate seed test lint typecheck build demo verify e2e \
         docker-build docker-up docker-up-full docker-down clean
 
 help: ## Show available targets
@@ -118,6 +118,16 @@ demo: ## Run the Phase 1 demo script (requires backend at localhost:8000)
 
 verify: migrate seed test build ## Run migrate, seed, test, build in sequence
 	@echo "=== All verification checks passed ==="
+
+# ── E2E (Playwright) ─────────────────────────────────────────────────────────
+
+e2e: ## Run Playwright e2e tests (starts Docker stack + seeds + preview)
+	@echo "=== Starting e2e stack ==="
+	docker compose --profile full up -d --wait
+	docker compose exec -T backend python -m app.seed.seed_demo
+	@echo "=== Running Playwright e2e tests ==="
+	cd "$(FRONTEND_DIR)" && npx playwright test
+	@echo "=== E2e tests complete ==="
 
 # ── Docker helpers ───────────────────────────────────────────────────────────
 
