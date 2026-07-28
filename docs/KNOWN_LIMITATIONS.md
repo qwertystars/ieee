@@ -294,6 +294,31 @@ features produce meaningful outputs. The HuggingFace `resqnet` model repos
 are private/gated (HTTP 401) — real trained weights require HF authentication
 to download. See the "Model Weights" blocker section above for details.
 
+**Calibration data status (T9, 2026-07-28):** Real-data conformal calibration
+is **active** for the `sar-flood-mapping` model using the Sen1Floods11 dataset
+(CC BY 4.0). 55 hand-labeled Sentinel-1 SAR chips across 11 flood events
+were downloaded from the public GCS bucket and converted to calibration
+features (mean VV, mean VH, VV-VH difference, std VV, std VH → water
+fraction). Conformal coverage on the held-out prediction set is 0.9412,
+within the target [0.85, 0.95] band for alpha=0.1. The calibration data is
+stored under `backend/data/calibration/sen1floods11/` (gitignored, not
+committed). See `docs/MODEL_DATA_LICENSING.md` for dataset licensing details.
+
+**Remaining calibration gaps:**
+- `building-damage`: xBD dataset is registration-gated at xView2.org — not
+  downloaded. Conformal calibration for building damage uses fixture data
+  only (T8 synthetic samples). Marked `degraded` for this model.
+- `incident-nlp`: No public dataset identified for NLP calibration.
+  Conformal intervals are not available for NLP predictions. Marked
+  `degraded` for this model.
+- UNOSAT and Copernicus EMS are documented as supplementary sources but
+  are registration-gated and not downloaded.
+
+The download script (`scripts/download_calibration_datasets.py`) documents
+all dataset licenses, acquisition methods, and registration gates. It
+handles failures gracefully — if a dataset is unavailable, it logs the
+blocker and continues with accessible datasets.
+
 ### 6. Local Demo Performance Does Not Equal Real Disaster Performance
 
 Performance characteristics observed in the local demo environment (latency,
