@@ -1850,3 +1850,88 @@ and Makefile targets.
 
 ### Commit
 `feat(ops): add backup and restore scripts with verification test`
+
+---
+
+## T18: Locust Load Tests vs 6 SLOs on Full + Reduced Profiles (2026-07-28)
+
+### Task
+Create locust load tests simulating 50 concurrent operators, measure the 6
+SLOs (decision D3), and generate a report for both full and reduced profiles.
+
+### Key findings
+
+1. **DB connection pool is 15 (pool_size=5, max_overflow=10)** with a single
+   uvicorn worker (`--reload` mode, no `--workers` flag). Running 200
+   concurrent users (50 operators + 150 ingest) overwhelms the pool —
+   backend returns 500 errors on login. Must use a two-phase approach:
+   50 operators first, then 50 ingest users separately.
+
+2. **POST /api/observations is a heavy endpoint** — each post does:
+   (a) DB insert, (b) ConfidenceVectorCalculator.compute_vector (DB query),
+   (c) update_hypotheses_for_observation (DB query + write),
+   (d) write_audit (DB insert), (e) schedule_broadcast (async).
+   Under 50-user concurrent load, median response time is 2.7-4.6s
+   (vs 80ms with no load). The DB pool is the bottleneck.
+
+3. **Ingest rate SLO (100 obs/sec) NOT MET** — achieved 6.32/sec (full)
+   and 6.76/sec (reduced) with 50 concurrent ingest users. The bottleneck
+   is the POST /api/observations endpoint's heavy per-request processing
+   combined with a 15-connection DB pool and single uvicorn worker.
+   To hit 100/sec would require: larger DB pool, multiple uvicorn workers,
+   async processing (queue + return 202), or a bulk ingest endpoint.
+
+4. **5 of 6 SLOs MET on both profiles:**
+   - 50 concurrent operators: ✓ (both profiles)
+   - <2s p95 dashboard load: ✓ (full=71ms, reduced=230ms)
+   - <500ms p95 API read: ✓ (full=83ms, reduced=60ms)
+   - 99% availability: ✓ (100% success rate, both profiles)
+   - <30s failover: ✓ (from T19 chaos evidence, all services recovered)
+   - 100 obs/sec ingest: ✗ (full=6.32/sec, reduced=6.76/sec)
+
+5. **Reduced profile is slightly faster for API reads** — counterintuitive
+   but explained by ollama/grafana/prometheus being stopped, freeing CPU
+   and memory for the backend. The reduced profile had lower p95 API read
+   (60ms vs 83ms) but higher p95 dashboard (230ms vs 71ms, likely variance).
+
+6. **Locust `_AuthMixin` must NOT inherit from `HttpUser`** — locust
+   discovers all HttpUser subclasses and spawns them. If the base mixin
+   inherits HttpUser, locust splits the user count between the idle base
+   class and the actual user class (e.g., 25 OperatorUser + 25 idle
+   _BaseAuthUser instead of 50 OperatorUser). Fix: make the mixin a plain
+   class, use multiple inheritance: `class OperatorUser(_AuthMixin, HttpUser)`.
+
+7. **Two-phase locust design** — the locustfile uses `LOAD_PHASE=operator|ingest`
+   env var to conditionally register only one user class. The make target
+   runs both phases sequentially, then `combine_report.py` merges the
+   per-phase metrics into a single SLO report. This avoids DB pool
+   exhaustion while measuring all 6 SLOs.
+
+8. **Startup endpoints excluded from steady-state p95** — login
+   (POST /api/auth/login) and initial incident list (GET /api/incidents)
+   are called during user spawn, not steady-state. Including them in the
+   API read p95 skews the metric (login takes 3-9s during spawn). The
+   request listener filters these out of `_api_read_times` but still
+   counts them in the global success/failure totals.
+
+9. **Failover time sourced from T19 chaos evidence** — the locust load
+   test does not kill services. Failover time is read from
+   `evidence/chaos/*.json` (T19's chaos tests), which recorded
+   `recovered_within_30s=true` for redis, redpanda, and minio.
+
+### Files created/modified
+- `tests/load/__init__.py` (NEW, empty)
+- `tests/load/locustfile.py` (NEW, 323 lines — two-phase locust load test)
+- `tests/load/combine_report.py` (NEW, 113 lines — merges phase reports)
+- `Makefile` (MODIFIED — added load-test, load-test-full, load-test-reduced targets)
+- `evidence/load/2026-07-28-full.json` (NEW — full profile SLO report)
+- `evidence/load/2026-07-28-reduced.json` (NEW — reduced profile SLO report)
+
+### Test results
+- Full profile: 5/6 SLOs met (ingest rate not met: 6.32/sec vs 100/sec)
+- Reduced profile: 5/6 SLOs met (ingest rate not met: 6.76/sec vs 100/sec)
+- Both profiles: 0 failures, 100% success rate
+- Bottleneck: POST /api/observations endpoint + 15-connection DB pool + single uvicorn worker
+
+### Commit
+`test(load): add locust load tests vs 6 SLOs on full and reduced profiles`

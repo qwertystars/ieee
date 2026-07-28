@@ -26,7 +26,8 @@ export PYTHONPATH := $(BACKEND_DIR)
 .DEFAULT_GOAL := help
 
 .PHONY: help bootstrap migrate seed test lint typecheck build demo verify e2e \
-        docker-build docker-up docker-up-full docker-down clean backup restore
+        docker-build docker-up docker-up-full docker-down clean backup restore \
+        load-test load-test-full load-test-reduced
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -166,3 +167,37 @@ restore: ## Restore from a backup directory (usage: make restore BACKUP=<path>)
 	@echo "=== Restoring from $(BACKUP) ==="
 	bash "$(ROOT_DIR)/scripts/restore.sh" "$(BACKUP)"
 	@echo "=== Restore complete ==="
+
+# ── Load test (locust) ───────────────────────────────────────────────────────
+# Two-phase design: 50 operators (SLOs 1,3,4,5) then 50 ingest users (SLO 2).
+# The backend DB pool is 15 connections — running both simultaneously
+# overwhelms it. Each phase runs for SOAK_DURATION seconds.
+# SOAK_DURATION defaults to 600s (CI); production SLO is 3600s (1h).
+# PROFILE=full|reduced controls the evidence file name.
+
+SOAK_DURATION ?= 600
+LOCUST := "$(VENV)/bin/locust"
+LOCUST_FILE := "$(ROOT_DIR)/tests/load/locustfile.py"
+LOCUST_HOST := http://localhost:8000
+
+load-test: ## Run locust load test (2-phase: operators + ingest, SOAK_DURATION seconds, PROFILE=full|reduced)
+	@echo "=== Phase 1/2: 50 operators (PROFILE=$(PROFILE), $(SOAK_DURATION)s) ==="
+	cd "$(BACKEND_DIR)" && LOAD_PHASE=operator PROFILE=$(PROFILE) PYTHONPATH=. $(LOCUST) \
+		-f $(LOCUST_FILE) --headless -u 50 -r 10 -t $(SOAK_DURATION)s --host $(LOCUST_HOST)
+	@echo "=== Phase 2/2: 50 ingest users (PROFILE=$(PROFILE), $(SOAK_DURATION)s) ==="
+	cd "$(BACKEND_DIR)" && LOAD_PHASE=ingest PROFILE=$(PROFILE) PYTHONPATH=. $(LOCUST) \
+		-f $(LOCUST_FILE) --headless -u 50 -r 10 -t $(SOAK_DURATION)s --host $(LOCUST_HOST)
+	@echo "=== Combining SLO report (PROFILE=$(PROFILE)) ==="
+	"$(VENV_PY)" "$(ROOT_DIR)/tests/load/combine_report.py" --profile $(PROFILE)
+	@echo "=== Load test complete (see evidence/load/*-$(PROFILE).json) ==="
+
+load-test-full: ## Run load test against the full profile (16CPU/32GB target)
+	@echo "=== Full profile: ensure stack is up with 'make docker-up-full' ==="
+	$(MAKE) load-test PROFILE=full
+
+load-test-reduced: ## Run load test against the reduced profile (8CPU/16GB target)
+	@echo "=== Reduced profile: heavyweight services (ollama/grafana/prometheus) stopped ==="
+	@docker compose stop ollama grafana prometheus 2>/dev/null || true
+	$(MAKE) load-test PROFILE=reduced
+	@echo "=== Restarting heavyweight services ==="
+	@docker compose --profile full start ollama grafana prometheus 2>/dev/null || true
