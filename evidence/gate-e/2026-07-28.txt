@@ -1,0 +1,91 @@
+=== Gate E Checkpoint (NEW) ===
+Date: 2026-07-28T15:57:38Z
+Task: T15 — Rerun Docker demo end-to-end + refresh gate evidence
+
+Gate E — SOTA: All fusion/perception/twin/optimizer/sensing/privacy/ABAC/
+fairness/eval engine tests pass with real PostgreSQL integration.
+
+=== Test Execution ===
+Command: docker compose exec -T backend python -m pytest \
+  tests/test_confidence_vector.py tests/test_reliability.py \
+  tests/test_calibration.py tests/test_world_state.py \
+  tests/test_freshness.py tests/test_llm.py \
+  tests/test_nlp.py tests/test_flood_mapping.py \
+  tests/test_damage.py tests/test_ensemble.py \
+  tests/test_serving.py tests/test_scenarios.py \
+  tests/test_cascading.py tests/test_silence.py \
+  tests/test_optimizer.py tests/test_routing.py \
+  tests/test_replan.py tests/test_fairness.py \
+  tests/test_evi.py tests/test_sensing_catalog.py \
+  tests/test_abac.py tests/test_privacy.py \
+  tests/test_provenance.py tests/test_testbed.py \
+  tests/test_metrics.py tests/test_failures.py \
+  tests/test_baselines.py tests/test_ablation.py -v
+
+Environment: Docker container ieee-backend-1 (healthy), PostgreSQL on Docker
+Test files: 28 (all exist)
+Duration: 18.69s
+
+=== Result Summary ===
+216 passed, 4 warnings in 18.69s
+
+ALL 216 GATE E TESTS PASSED ✅
+
+=== Per-Category Breakdown ===
+
+Fusion engine:
+  - test_confidence_vector.py ✅
+  - test_reliability.py ✅
+  - test_calibration.py ✅
+  - test_world_state.py ✅
+  - test_freshness.py ✅
+
+Perception engine:
+  - test_llm.py ✅
+  - test_nlp.py ✅
+  - test_flood_mapping.py ✅
+  - test_damage.py ✅
+  - test_ensemble.py ✅
+  - test_serving.py ✅
+
+Digital twin / simulator:
+  - test_scenarios.py ✅
+  - test_cascading.py ✅
+  - test_silence.py ✅
+
+Optimizer:
+  - test_optimizer.py ✅
+  - test_routing.py ✅
+  - test_replan.py ✅
+
+Sensing:
+  - test_sensing_catalog.py ✅
+
+Privacy / ABAC / Fairness:
+  - test_privacy.py ✅
+  - test_abac.py ✅
+  - test_fairness.py ✅
+
+Evaluation:
+  - test_evi.py ✅
+  - test_provenance.py ✅
+  - test_testbed.py ✅
+  - test_metrics.py ✅
+  - test_failures.py ✅
+  - test_baselines.py ✅
+  - test_ablation.py ✅
+
+=== Warnings (non-blocking) ===
+1. StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` (deprecated)
+2. pgmpy FutureWarning: StructureScore deprecated, use pgmpy.structure_score
+3. PytestCollectionWarning: cannot collect TestbedObservation (has __init__)
+4. UserWarning: mapie conformal inference API change (confidence_level no effect)
+
+All warnings are library deprecation notices, not test failures.
+
+=== Gate E Summary ===
+Engine test suites: 28/28 files passed ✅
+Total tests: 216/216 passed ✅
+Duration: 18.69s
+PostgreSQL integration: real Docker PostgreSQL ✅
+Gate E: PASS ✅

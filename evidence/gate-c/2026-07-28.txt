@@ -1,0 +1,22 @@
+=== Gate C Checkpoint (Refresh) ===
+Date: 2026-07-28T15:57:38Z
+Task: T15 — Rerun Docker demo end-to-end + refresh gate evidence
+
+=== Check 1: Frontend test suite ===
+$ cd frontend && npm run test
+
+ Test Files  3 passed (3)
+      Tests  45 passed (45)
+   Start at  15:55:33
+   Duration  3.62s (transform 923ms, setup 1.04s, import 1.43s, tests 225ms, environment 5.32s)
+
+Frontend tests: 45 passed (3 test files) ✅
+
+=== Check 2: Playwright e2e ===
+PLACEHOLDER — Playwright e2e screenshots will be captured by T16.
+T16 is responsible for running Playwright against the Docker stack and
+capturing screenshots into evidence/gate-c/playwright/ with dated outputs.
+
+=== Gate C Summary ===
+Frontend tests: 45/45 passed (3 test files, 3.62s) ✅
+Playwright e2e: deferred to T16 (placeholder) ⏳

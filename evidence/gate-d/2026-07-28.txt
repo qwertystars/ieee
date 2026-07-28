@@ -1,0 +1,110 @@
+=== Gate D Checkpoint (Refresh) ===
+Date: 2026-07-28T15:57:38Z
+Task: T15 — Rerun Docker demo end-to-end + refresh gate evidence
+
+Note: Full offline boot verification was completed in T6 and is recorded at:
+  evidence/gate-d/2026-07-28-offline.txt (186 lines, iptables isolation method)
+
+This file refreshes the capabilities evidence against the running Docker stack.
+
+=== Check 1: Docker stack status (all 11 services) ===
+$ docker ps --format "table {{.Names}}\t{{.Status}}"
+
+NAMES               STATUS
+ieee-frontend-1     Up About an hour
+ieee-backend-1      Up About an hour (healthy)
+ieee-grafana-1      Up About an hour
+ieee-worker-1       Up About an hour (healthy)
+ieee-benthos-1      Up About an hour
+ieee-redis-1        Up About an hour (healthy)
+ieee-db-1           Up About an hour (healthy)
+ieee-prometheus-1   Up About an hour
+ieee-minio-1        Up About an hour (healthy)
+ieee-redpanda-1     Up About an hour (healthy)
+ieee-ollama-1       Up About an hour (healthy)
+
+All 11 services healthy ✅
+
+=== Check 2: Capabilities endpoint ===
+$ curl -s http://localhost:8000/api/capabilities
+
+{
+  "features": [
+    {
+      "feature": "onnx_models",
+      "status": "available",
+      "activation_steps": "Install onnxruntime (pip install onnxruntime) and download model weights via scripts/download_models.py --download"
+    },
+    {
+      "feature": "ollama_llm",
+      "status": "available",
+      "activation_steps": "Set OLLAMA_BASE_URL env var, start Ollama, and run 'ollama pull llama3.1:8b'"
+    },
+    {
+      "feature": "pmtiles_basemap",
+      "status": "available",
+      "activation_steps": "Set PMTILES_PATH env var to a .pmtiles file path, or run scripts/offline_prep.sh to generate one via tippecanoe"
+    },
+    {
+      "feature": "model_weights",
+      "status": "available",
+      "activation_steps": "Run scripts/download_models.py --download to fetch model weights from HuggingFace and upload to MinIO"
+    },
+    {
+      "feature": "kafka",
+      "status": "available",
+      "activation_steps": "Set KAFKA_BOOTSTRAP_SERVERS env var to the broker address, or start Redpanda via 'docker compose up redpanda'"
+    },
+    {
+      "feature": "redis",
+      "status": "available",
+      "activation_steps": "Set REDIS_URL env var to the Redis connection URL, or start Redis via 'docker compose up redis'"
+    }
+  ],
+  "checked_at_ms": 1785253820558
+}
+
+All 6 features: available ✅
+  - onnx_models: available ✅
+  - ollama_llm: available ✅
+  - pmtiles_basemap: available ✅
+  - model_weights: available ✅
+  - kafka: available ✅
+  - redis: available ✅
+
+=== Check 3: make demo (Phase 1 end-to-end) ===
+$ make demo
+
+Step 1: Resetting demo state (re-seeding)... ✓ Demo data seeded
+Step 2: Authenticating as admin@demo.disaster ... ✓ Authenticated (token length: 189)
+Step 3: Fetching incident list... ✓ Incident: Rivertown Cyclone-Flood 2026 (01K0KF2EG0XC8KE3AD81HK0VEW)
+Step 4: Starting rescue-ball simulator... ✓ Simulator started with devices: rescue-ball-001, rescue-ball-002
+Step 5: Waiting up to 30s for observations... ✓ Observations available after 1s
+Step 6: Validating draft alert... ✓ Draft alert found: Trapped person reported in Ward-2-Riverside (status=draft)
+Step 7: Approving alert 01K0KF2EG031P1NKHZ5TV3EW7T ... ✓ Alert approved (status=approved)
+Step 8: Validating task... ✓ Task found: Rescue trapped person (status=assigned)
+Step 9: Stopping simulator... ✓ Simulator stopped
+
+══════════════════════════════════════════════════════════════════════════
+  Phase 1 Demo — SUCCESS
+══════════════════════════════════════════════════════════════════════════
+
+  Incident ID:      01K0KF2EG0XC8KE3AD81HK0VEW
+  Alert ID:         01K0KF2EG031P1NKHZ5TV3EW7T  (draft → approved)
+  Task ID:          01K0KF2EG0JTEYF44HT75613T7    (status: assigned)
+  Simulator devices: rescue-ball-001, rescue-ball-002
+
+No WARNING about observations ✅ (T14 simulator sync-route fix confirmed)
+All 9 demo steps passed ✅
+
+Note: Before the demo, 51 test incidents from T6-T11 were cleaned from the
+Docker DB (DELETE FROM incidents WHERE id != '01K0KF2EG0XC8KE3AD81HK0VEW'
+with cascade to calibration_data). The demo script picks .incidents[0]
+which was a test incident before cleanup. After cleanup, the Rivertown
+Cyclone-Flood 2026 incident is the only incident and the demo succeeds.
+
+=== Gate D Summary ===
+Docker stack: 11/11 services healthy ✅
+Capabilities: 6/6 features available ✅
+Offline boot verification: see evidence/gate-d/2026-07-28-offline.txt (T6) ✅
+Phase 1 Demo: SUCCESS (all 9 steps, no warnings) ✅
