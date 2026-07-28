@@ -26,7 +26,7 @@ export PYTHONPATH := $(BACKEND_DIR)
 .DEFAULT_GOAL := help
 
 .PHONY: help bootstrap migrate seed test lint typecheck build demo verify e2e \
-        docker-build docker-up docker-up-full docker-down clean
+        docker-build docker-up docker-up-full docker-down clean backup restore
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -149,3 +149,20 @@ clean: ## Remove build artifacts and caches
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
 	rm -rf "$(FRONTEND_DIR)/dist" 2>/dev/null || true
+
+# ── Backup / Restore ─────────────────────────────────────────────────────────
+
+backup: ## Back up the Docker database + MinIO models bucket to backups/<timestamp>/
+	@echo "=== Creating backup ==="
+	bash "$(ROOT_DIR)/scripts/backup.sh"
+	@echo "=== Backup complete ==="
+
+restore: ## Restore from a backup directory (usage: make restore BACKUP=<path>)
+	@if [ -z "$(BACKUP)" ]; then \
+		echo "Usage: make restore BACKUP=<path>"; \
+		echo "  e.g. make restore BACKUP=backups/20260728T172104Z"; \
+		exit 1; \
+	fi
+	@echo "=== Restoring from $(BACKUP) ==="
+	bash "$(ROOT_DIR)/scripts/restore.sh" "$(BACKUP)"
+	@echo "=== Restore complete ==="

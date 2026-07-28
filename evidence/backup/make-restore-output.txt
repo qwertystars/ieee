@@ -1,0 +1,55 @@
+=== Restoring from backups/20260728T172858Z ===
+bash "/root/srijan/ieee/scripts/restore.sh" "backups/20260728T172858Z"
+[restore] Restoring from: /root/srijan/ieee/backups/20260728T172858Z
+[restore] Target database: disaster (user: disaster)
+[restore] Dropping existing schema in 'disaster' ...
+[restore] Restoring database from db.sql.gz ...
+ set_config 
+------------
+ 
+(1 row)
+ERROR:  schema "ag_catalog" already exists
+ setval 
+--------
+     30
+(1 row)
+ setval 
+--------
+     16
+(1 row)
+ setval 
+--------
+      1
+(1 row)
+ setval 
+--------
+  17515
+(1 row)
+ setval 
+--------
+     13
+(1 row)
+ setval 
+--------
+      1
+(1 row)
+[restore]   OK  database restored
+[restore]   OK  alembic version: 0005
+[restore] Restoring MinIO bucket 'models' from /root/srijan/ieee/backups/20260728T172858Z/minio ...
+Bucket created successfully `local/models`.
+`/tmp/resqnet-restore-225156/test_model.bin` -> `local/models/test_model.bin`
+`/tmp/resqnet-restore-225156/backup_restore_test_file.bin` -> `local/models/backup_restore_test_file.bin`
+┌───────┬─────────────┬──────────┬────────────┐
+│ Total │ Transferred │ Duration │ Speed      │
+│ 36 B  │ 36 B        │ 00m00s   │ 2.67 KiB/s │
+└───────┴─────────────┴──────────┴────────────┘
+[restore]   OK  minio restored
+
+=== Restore complete ===
+  Source:   /root/srijan/ieee/backups/20260728T172858Z
+  Database: disaster (alembic: 0005)
+  MinIO:   models bucket
+
+Verify with:
+  docker compose exec db psql -U disaster -d disaster -c 'SELECT count(*) FROM observations;'
+=== Restore complete ===

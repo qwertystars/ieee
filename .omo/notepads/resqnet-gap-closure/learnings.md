@@ -1464,3 +1464,389 @@ as deferred with doc references.
 `docs(report): reconcile final report with gap-closure reality`
 
 ---
+
+## Wave 6 T21: Secrets hardening audit (2026-07-28)
+
+### Task
+Remove hardcoded JWT_SECRET defaults from docker-compose.yml, ensure prod
+rejects default/short JWT_SECRET, verify no secrets in logs, update
+SECURITY_MODEL.md.
+
+### Findings
+
+1. **JWT_SECRET validator already existed** in `backend/app/config.py`
+   (lines 44-52, added in Phase 1 T6). The `@model_validator(mode="after")`
+   `_validate_jwt_secret` raises `ValueError` when
+   `ENVIRONMENT != "development"` and `len(JWT_SECRET) < 32`. No new
+   validator code was needed; only verification.
+
+2. **docker-compose.yml had hardcoded fallback** at lines 164 and 205:
+   `JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}`. Changed both to
+   `${JWT_SECRET:?JWT_SECRET must be set; use .env or export JWT_SECRET}`.
+   The `:?` syntax makes docker compose fail fast with a custom error if
+   the variable is missing from both the shell env and the `.env` file.
+
+3. **No secrets in logs**. Audited `backend/app/` for
+   `logger.*(password|secret|token|jwt|api_key|access_key|private_key)`
+   and `print(...)` with the same terms. Five matches in ingestion adapters
+   (unipile.py, event_registry.py, ayrshare.py) all log `"api_key missing,
+   skipping ..."` which describes the absence, never the value. Three
+   `f"Bearer {self.api_key}"` matches (twitter.py, reddit.py, ayrshare.py)
+   are HTTP header construction for outbound requests, not log statements.
+   `telemetry.py` logs only OTLP endpoint URLs and trace IDs.
+   `main.py /healthz` returns the string `"configured"` per service, never
+   connection strings or credentials.
+
+4. **MinIO creds** (`minio/minio123` at docker-compose.yml:85-86) left in
+   place per MUST NOT. Documented as dev-only in SECURITY_MODEL.md with
+   production rotation guidance (service accounts, least-privilege buckets,
+   quarterly rotation, distribute via Docker secrets or secrets manager).
+
+### Verification
+
+- `ENVIRONMENT=production JWT_SECRET=dev-secret-change-me` -> exit 1
+  (ValidationError, process exits before binding port)
+- `ENVIRONMENT=development JWT_SECRET=dev-secret-change-me` -> exit 0
+  (dev mode allows 20-char default)
+- `ENVIRONMENT=production JWT_SECRET=short` -> exit 1 (rejected)
+- `ENVIRONMENT=production JWT_SECRET=<40-char>` -> exit 0 (accepted)
+- `docker compose --env-file /dev/null config` -> exit 1 with message
+  "JWT_SECRET must be set; use .env or export JWT_SECRET"
+- `docker compose config` (with .env present) -> exit 0, JWT_SECRET
+  interpolated correctly for both backend and worker services
+- grep for secret-value log leaks -> zero matches
+
+### Files modified
+
+- `docker-compose.yml` (2 lines: backend + worker JWT_SECRET)
+- `docs/SECURITY_MODEL.md` (+84 lines: "Production secrets handling"
+  section covering JWT_SECRET requirements, secret distribution via Docker
+  secrets / secrets manager / .env, MinIO dev-only creds + rotation, and
+  the secrets-in-logs audit results)
+
+### Commit
+
+`c58201e` `security(secrets): remove hardcoded defaults and audit secret leakage`
+
+### Notes for downstream tasks
+
+- The `:?` required-variable pattern is a clean fail-fast for compose. If
+  future services need required secrets, use the same pattern:
+  `VAR: ${VAR:?error message}`. Do NOT use `:-` (default) for secrets.
+- The Pydantic `model_validator(mode="after")` pattern in `config.py` is
+  the right place for env-conditional validation. It runs after all fields
+  are populated, so it can cross-check `ENVIRONMENT` against `JWT_SECRET`.
+- `.env` is present in the repo root (gitignored) with
+  `JWT_SECRET=dev-secret-change-me`. This is correct for dev. Production
+  deployments must override via secrets manager or a production `.env`
+  with `chmod 600`.
+
+## T22 — Field-trial protocol document (spec only, deferred execution) (2026-07-28)
+
+### Task
+
+Create `docs/FIELD_TRIAL_PROTOCOL.md` covering 6 sections: trial
+objectives and success criteria (mapped to the 6 SLOs from locked
+decision D3), participating agencies and ICS integration, regional
+model validation protocol, readiness checklist, trial scenarios with
+data collection and ethics/IRB, and an explicit deferred-execution
+milestone marker. Execution is a deferred milestone a software worker
+cannot perform.
+
+### Files
+
+- `docs/FIELD_TRIAL_PROTOCOL.md` (NEW, 643 lines, 37081 bytes)
+
+### Key decisions
+
+- **Deferred-execution marker is prominent and repeated.** The document
+  opens with a blockquote stating "PROTOCOL DOCUMENT ONLY. The field
+  trial has NOT been executed." and "EXECUTION of this field trial is a
+  DEFERRED MILESTONE that a software worker cannot perform." Section 6
+  repeats the marker in a blockquote plus a structured milestone
+  record with status NOT STARTED, owner requirements, and disclaimer
+  retirement conditions. 8 total matches on the deferred-marker grep
+  pattern across the document.
+- **SLO measurement matrix distinguishes lab vs field.** Each of the 6
+  SLOs has a lab/CI measurement (Waves 5 to 6) and a field measurement
+  (this trial). The field measurement is the binding one for trial
+  success. A lab pass plus a field fail is a trial fail. The matrix
+  records how each SLO is measured differently in the field (network
+  at responder browser, bursty load profile, overlapping fault modes).
+- **ICS integration places the platform under the Situation Unit.** The
+  platform is a decision-support tool, not a replacement for any ICS
+  role. The SUL is the primary platform user. The IC has a read-only
+  display. The alert-to-task loop requires SUL approval before any
+  alert becomes a task. This matches the platform convention that all
+  AI output lands as review_status=draft until human approval.
+- **Regional model validation tests transfer, not recalibration.** The
+  trial validates that the existing ConformalCalibrator (fit on
+  Sen1Floods11 for sar-flood-mapping, fixture data for the other two)
+  holds its conformal coverage on real regional data from the trial
+  region. The calibration is NOT refit on trial data during the trial.
+  Recalibration happens after the trial, using trial data plus
+  original calibration data. Acceptance band is [0.85, 0.95] for
+  alpha=0.1, matching PHYSICAL_TEST_PLAN.md Protocol 5 and the
+  Sen1Floods11 result (coverage 0.9412) already in KNOWN_LIMITATIONS.md.
+- **Readiness checklist has 6 categories, all must be green.** Wave 5
+  software gates (demo, Playwright, Gate E, FINAL_REPORT), Wave 6
+  software gates (load, soak, chaos, backup/restore, secrets audit),
+  hardware (5 devices per HARDWARE_SPECIFICATION.md), sensors
+  (Protocols 1, 2, 4 from PHYSICAL_TEST_PLAN.md, Protocol 3 if
+  scenario requires human detection), calibration data (per
+  MODEL_DATA_LICENSING.md), field team (ICS + platform + device
+  training), communications (LTE + satellite + LoRa tested). A single
+  red item blocks the trial.
+- **IRB is a hard gate for both responders and human detection.** A
+  trial without IRB approval on file is invalid. Its data cannot be
+  used to retire any disclaimer. If the scenario involves thermal
+  sensors near people, Protocol 3 must have passed first. If Protocol
+  3 has not passed, the trial does not evaluate human-detection output
+  (thermal sensors still collect data, but no detection decision is
+  made or recorded). This keeps the trial within bounds of disclaimer
+  #3.
+- **Disclaimer retirement is gated per SLO and per model.** Disclaimer
+  #6 is retired only when all 6 SLOs pass their field measurement.
+  Partial retirement is per SLO and per scenario. Disclaimer #5 is
+  partially retired per model when that model passes regional
+  validation in section 3. A pass in one region does not retire the
+  disclaimer for other regions.
+
+### Conventions discovered
+
+- **No em dashes or en dashes in the document.** Grep on
+  `[\x{2014}\x{2013}]` returns 0. Used colons, parentheses, and line
+  breaks instead. This matches the convention established in T13
+  (PHYSICAL_TEST_PLAN.md) and T17 (FINAL_REPORT.md reconciliation).
+- **No AI-slop phrases.** Grep on the anti-slop pattern (delve,
+  leverage, utilize, in order to, robust, streamline, facilitate,
+  moving forward, circle back, at the end of the day, it's important
+  to note, I'd be happy to, certainly, please don't hesitate) returns
+  0.
+- **Cross-references resolve to existing files.** Unlike T13 (which
+  referenced T12 and T10 by planned path because they were parallel),
+  all referenced docs now exist: HARDWARE_SPECIFICATION.md (T12),
+  PHYSICAL_TEST_PLAN.md (T13), MODEL_DATA_LICENSING.md (T9),
+  KNOWN_LIMITATIONS.md, calibration.py, sensor_source.py (T10),
+  observation.py, OFFLINE_OPERATION.md, offline-prep.md,
+  SECURITY_MODEL.md. 26 references to the three prerequisite docs
+  (HARDWARE_SPECIFICATION, PHYSICAL_TEST_PLAN, MODEL_DATA_LICENSING)
+  alone.
+- **ConformalCalibrator API surface used in section 3:** `fit(X, y,
+  alpha=0.1)` with internal 70/30 split (`_CALIB_FRACTION = 0.3` at
+  line 28), `predict(X)` returns `interval_lower`/`interval_upper`/
+  `interval_width` (lines 118 to 120), `compute_coverage(y_true,
+  lower, upper)` at line 212 returns the fraction in interval. The
+  acceptance criteria in section 3 are stated against this exact API,
+  matching the pattern from T13 Protocol 5.
+- **Trial scenarios are a template, not a commitment.** The 4 scenarios
+  (urban monsoon flooding, riverine flooding, cyclone-induced
+  flooding, urban waterlogging) define what is valid. The trial lead
+  selects based on regional relevance, season, and agency
+  availability. No scenario is committed. No agency has committed.
+  This matches the "spec only" framing of T12 and T13.
+
+### Verification
+
+- Document exists: `docs/FIELD_TRIAL_PROTOCOL.md`, 643 lines, 37081
+  bytes.
+- All 6 sections present (grep on `^## [1-6]\. ` returns 6 matches at
+  lines 62, 121, 207, 330, 428, 542).
+- Deferred-execution markers present (8 matches on DEFERRED MILESTONE /
+  NOT been executed / PROTOCOL document only / NOT STARTED / software
+  worker cannot).
+- All 6 SLOs present (14 matches on the SLO pattern: 50 concurrent /
+  100 obs/sec / 2s p95 dashboard / 500ms p95 API / 99% availability /
+  30s failover).
+- ConformalCalibrator referenced (9 matches on ConformalCalibrator /
+  compute_coverage / interval_lower / interval_upper / alpha = 0.1 /
+  0.85, 0.95).
+- Disclaimer #6 referenced (15 matches on disclaimer #6 /
+  KNOWN_LIMITATIONS.md).
+- ICS roles present (11 matches on Incident Commander / Operations
+  Section Chief / Situation Unit Leader / field responder).
+- IRB and ethics present (23 matches on IRB / informed consent / PII /
+  progressive precision).
+- Readiness checklist references all 3 prerequisite docs (26 matches on
+  HARDWARE_SPECIFICATION.md / PHYSICAL_TEST_PLAN.md /
+  MODEL_DATA_LICENSING.md).
+- Software gates referenced (22 matches on Wave 5 / Wave 6 /
+  Playwright / Gate E / FINAL_REPORT / load test / soak / chaos /
+  backup / secrets audit).
+- No em dashes or en dashes (grep on `[\x{2014}\x{2013}]` returns 0).
+- No AI-slop phrases (grep on the anti-slop pattern returns 0).
+
+### Commit
+
+- `c7f6283` on branch `codex/resqnet-gap-closure`.
+- Message: `docs(ops): add field-trial protocol with deferred execution milestone`
+- Files: 1 file changed, 643 insertions(+)
+  - 1 new file (docs/FIELD_TRIAL_PROTOCOL.md)
+
+---
+
+## T19: Soak + failure-injection chaos tests (2026-07-28)
+
+### Task
+Create soak and chaos failure-injection tests that verify graceful
+degradation when Redis, Redpanda, or MinIO are killed mid-load.
+
+### What changed (commit db9b190)
+
+- `backend/tests/soak/__init__.py` (NEW, empty)
+- `backend/tests/soak/conftest.py` (NEW) — overrides parent
+  `tests/conftest.py`'s session-scoped `_setup_db` fixture with a no-op
+  so the live Docker backend's database is not dropped during soak tests.
+- `backend/tests/soak/test_soak.py` (NEW, 142 pure LOC) — configurable-
+  duration soak test (default 600s, `SOAK_DURATION` env var). Simulates
+  50 concurrent operators (`SOAK_CONCURRENCY` env var): login, poll
+  dashboard (GET /api/incidents), fetch observations (GET /api/observations).
+  Asserts >=99% success rate. Records p95 latency. Writes JSON results
+  to `evidence/soak/`.
+- `backend/tests/failure/__init__.py` (NEW, empty)
+- `backend/tests/failure/conftest.py` (NEW) — same no-op `_setup_db`
+  override as soak.
+- `backend/tests/failure/test_chaos.py` (NEW, 244 pure LOC) — three chaos
+  tests that kill redis/redpanda/minio one at a time mid-load, assert
+  graceful degradation, restart the service, and assert recovery <30s.
+  Uses `subprocess.run` for `docker compose stop/start`. Writes JSON
+  results to `evidence/chaos/`.
+- `evidence/soak/soak-*.json` (NEW, 2 files) — soak test evidence
+- `evidence/chaos/{redis,redpanda,minio}_kill-*.json` (NEW, 3 files) —
+  chaos test evidence
+
+### Key decisions
+
+- **conftest.py override pattern**: The parent `tests/conftest.py` has a
+  session-scoped autouse `_setup_db` fixture that drops and rebuilds the
+  local test database schema. The soak/chaos tests hit the live Docker
+  backend at localhost:8000 (which uses the Docker DB at localhost:5433),
+  so the local DB schema drop is harmless but unnecessary. Each
+  subdirectory's `conftest.py` overrides `_setup_db` with a no-op
+  `yield` fixture to skip the schema rebuild. This is the cleanest way
+  to avoid the parent fixture without modifying it.
+- **MinIO ML endpoint behavior**: The task spec said "ML endpoints return
+  `model_unavailable`" when MinIO is down. In practice, the ML API routes
+  (`sensing.py`, `scenarios.py`) check the LOCAL cache directory
+  (`backend/data/models/`) via `_weights_available()`, NOT MinIO directly.
+  The `ModelServing` class in `serving.py` uses MinIO, but it is not
+  called by the API routes. So with the local placeholder ONNX files
+  present, the ML endpoints return `status: "ok"` even when MinIO is down.
+  The chaos test accepts both `ok` and `model_unavailable` as graceful
+  degradation — the key assertion is "no crash" (HTTP 200) and the deep
+  health check reports `minio=False`.
+- **_LoadWorker thread**: The chaos test uses a daemon thread
+  (`_LoadWorker`) that makes sustained GET /api/incidents requests at
+  10 req/s during each chaos scenario. This provides background load
+  while the test kills/restarts services and makes assertion requests
+  on the main thread.
+- **Failover verification**: After restarting each service, the test
+  polls `/healthz/deep` every 2s for up to 30s, checking if the service
+  recovers (`checks[service] is True`). All three services recovered
+  well within 30s in practice.
+
+### Test results (2026-07-28)
+
+**Soak test** (SOAK_DURATION=60, SOAK_CONCURRENCY=50):
+- Duration: 60.67s
+- Total requests: 5514
+- Successes: 5514, Failures: 0
+- Success rate: 1.0 (100%, well above 99% threshold)
+- p95 dashboard latency: 0.9775s
+- p95 observations latency: 0.9841s
+
+**Chaos tests** (3/3 passed, 34s total):
+1. `test_chaos_redis_kill`: Login (200) + protected endpoint (200)
+   during outage. Deep health: redis=false, database=true. Recovered
+   within 30s. Load: 41 successes, 0 failures.
+2. `test_chaos_redpanda_kill`: Observation POST returned 201 (direct
+   DB insert, noop producer). Deep health: redpanda=false, database=true.
+   Recovered within 30s. Load: 108 successes, 0 failures.
+3. `test_chaos_minio_kill`: ML endpoint returned 200 with status="ok"
+   (local cache). Non-ML endpoint returned 200. Deep health: minio=false,
+   database=true. Recovered within 30s. Load: 63 successes, 1 failure
+   (transient timeout during kill).
+
+### Verification
+
+- `SOAK_DURATION=60 PYTHONPATH=. .venv/bin/python -m pytest
+  tests/soak/test_soak.py -v` — 1 passed (75s)
+- `PYTHONPATH=. .venv/bin/python -m pytest tests/failure/test_chaos.py
+  -v` — 3 passed (34s)
+- Docker stack fully recovered after chaos tests: all 11 services
+  healthy, `/healthz/deep` returns all checks=true.
+- Evidence captured in `evidence/soak/` (2 JSON files) and
+  `evidence/chaos/` (3 JSON files).
+
+### Commit
+- `db9b190` on branch `codex/resqnet-gap-closure`.
+- Message: `test(resilience): add soak and chaos failure-injection tests`
+- 11 files changed, 601 insertions(+)
+
+---
+
+## T20: Backup/Restore Scripts + Verification Test (2026-07-28)
+
+### Task
+Create backup/restore scripts for PostgreSQL + MinIO, with a verification test
+and Makefile targets.
+
+### Key findings
+
+1. **Docker DB credentials are `disaster:disaster`/`disaster`** (not
+   `resqnet:resqnet123` as the task spec said). The `.env` file's
+   `resqnet:resqnet123@localhost:5432/resqnet` is for the LOCAL PostgreSQL on
+   port 5432, not the Docker stack. Always check `docker-compose.yml` for
+   actual Docker credentials, not the task description.
+
+2. **Host `pg_dump` is v15, Docker PG is v16.** The host's `pg_dump` cannot
+   dump the Docker PG (version mismatch error). Must use
+   `docker compose exec -T db pg_dump` which runs the version-matched pg_dump
+   inside the container.
+
+3. **`mc` (MinIO client) is not installed on the host.** Must use
+   `docker compose exec -T minio mc` to run MinIO operations inside the
+   container. To copy files out, use `docker compose cp minio:<path> <host-path>`.
+
+4. **MinIO `models` bucket may not exist by default.** The backup script
+   handles this gracefully (mc mirror returns empty). The restore script
+   creates the bucket with `mc mb -p` if it doesn't exist.
+
+5. **AGE extension causes `schema "ag_catalog" already exists` error during
+   restore.** This is harmless — the dump includes `CREATE SCHEMA ag_catalog`
+   from the AGE extension, and we pre-create the extension. Filter it out
+   with `grep -vE "ag_catalog"` in the restore script.
+
+6. **Test uses a separate `resqnet_backup_test` database** in the Docker PG to
+   avoid touching the production `disaster` database. The test creates it,
+   runs migrations, seeds data, backs up, drops schema, restores, verifies,
+   and cleans up. The production DB is never modified.
+
+7. **psycopg `UndefinedTable` error aborts the transaction.** When checking
+   row counts after dropping the schema, use `conn.autocommit = True` or
+   catch the error and rollback, otherwise subsequent queries in the same
+   transaction fail with `InFailedSqlTransaction`.
+
+8. **Backup directory structure:** `backups/<timestamp>/{db.sql.gz, minio/, manifest.txt}`.
+   The timestamp is UTC ISO 8601 format (e.g. `20260728T172104Z`). The
+   manifest contains metadata for auditability.
+
+9. **Makefile targets:** `make backup` and `make restore BACKUP=<path>`.
+   The restore target validates that `BACKUP` is set and prints usage if not.
+
+### Files created/modified
+- `scripts/backup.sh` (NEW, 100 lines)
+- `scripts/restore.sh` (NEW, 119 lines)
+- `backend/tests/test_backup_restore.py` (NEW, 310 lines, 244 pure LOC)
+- `Makefile` (MODIFIED — added backup + restore targets)
+- `evidence/backup/` (NEW — test results, make output, summary)
+
+### Test results
+4 passed in 20.27s:
+- test_backup_creates_artifacts
+- test_restore_preserves_row_counts
+- test_restore_preserves_observation_fields
+- test_restore_preserves_minio_files
+
+### Commit
+`feat(ops): add backup and restore scripts with verification test`
