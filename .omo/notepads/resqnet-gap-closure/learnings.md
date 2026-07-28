@@ -319,4 +319,92 @@ Overpass (both mirrors) returned empty/504 → Geofabrik fallback:
   `--memory` flag (JVM-like heap) must be ≤ the deploy.resources.limits
   memory, or the container OOM-kills on startup.
 
+## 2026-07-28 — Gate D: Offline boot verification (NO internet + capabilities green + demo)
+
+### What was verified
+
+- Docker stack (11 services) operates with NO external internet access.
+- `curl /healthz` returns `{"ok":true,...}` while offline.
+- `GET /api/capabilities` reports 4/6 features available:
+  kafka, redis, ollama_llm, pmtiles_basemap (all `available`).
+  onnx_models=`degraded`, model_weights=`unavailable` (expected — Wave 3 T7).
+- `make demo` completes successfully offline, prints "Phase 1 Demo — SUCCESS",
+  exit code 0. Full alert-to-task loop works: seed → auth → incident →
+  simulator → observations → draft alert → approve → task → stop.
+- Frontend has zero external tile host references (grep for
+  tile.openstreetmap, hot.tile, basemaps.cartocdn, etc. in both
+  frontend/src/ and frontend/dist/ — no matches).
+
+### Network isolation method (Option B — iptables)
+
+Two iptables rules applied to simulate offline operation without
+restarting the Docker stack:
+
+1. `iptables -I FORWARD 1 -i br-578c06d518dc -o eth0 -j DROP`
+   — blocks all container traffic from the Docker bridge (ieee_default,
+   172.18.0.0/16) to the external interface (eth0).
+2. `iptables -I OUTPUT 1 -o eth0 -m conntrack --ctstate NEW,INVALID -j DROP`
+   — blocks NEW host outbound connections to eth0, preserving established
+   SSH sessions via conntrack ESTABLISHED state matching.
+
+Why Option B: the stack was already running with all 11 services healthy.
+iptables allows surgical isolation of external traffic while preserving
+loopback (host ↔ Docker port mappings) and Docker bridge (container ↔
+container) traffic. No stack restart needed.
+
+Restoration: `iptables -D FORWARD -i br-578c06d518dc -o eth0 -j DROP`
+and `iptables -D OUTPUT -o eth0 -m conntrack --ctstate NEW,INVALID -j DROP`.
+Verified internet restored (curl 1.1.1.1 from both host and container
+returns 301 after rule deletion).
+
+### Key discoveries
+
+- **iptables conntrack preserves SSH**: when blocking host OUTPUT to eth0,
+  use `-m conntrack --ctstate NEW,INVALID` (not a blanket DROP) to preserve
+  established SSH sessions. The SSH connection is via eth0 (109.202.246.11:22),
+  so a blanket `iptables -I OUTPUT -o eth0 -j DROP` would kill the session.
+  conntrack ESTABLISHED matching allows SSH response packets through.
+- **Docker port mapping uses loopback, not eth0**: `curl localhost:8000`
+  from the host goes through the loopback (lo) interface, not eth0. Docker's
+  DNAT rewrites the destination to the container IP (172.18.0.x) in the
+  nat OUTPUT chain, after the filter OUTPUT chain. So blocking eth0 OUTPUT
+  does not affect host → container traffic via published ports.
+- **Container-to-container traffic uses the Docker bridge**: traffic between
+  containers (e.g., backend → redis, backend → redpanda) goes through
+  FORWARD with -i br-578c06d518dc -o br-578c06d518dc, which is NOT blocked
+  by the rule `-i br-578c06d518dc -o eth0 -j DROP`. So all internal
+  service communication continues to work while offline.
+- **make demo uses two databases**: the demo script runs `python -m
+  app.seed.seed_demo` via the LOCAL venv (DATABASE_URL from .env →
+  localhost:5432, local PostgreSQL), then queries the Docker backend
+  (port 8000 → Docker PostgreSQL on port 5433). Both databases must be
+  seeded for the demo to work. The Docker DB was seeded via
+  `docker compose exec backend python -m app.seed.seed_demo` before
+  running the demo.
+- **Docker DB needs re-seeding between demo runs**: the demo approves a
+  draft alert (changes status to `approved`). Re-running the demo without
+  re-seeding the Docker DB fails at step 6 ("No draft alerts found").
+  The demo script only re-seeds the LOCAL DB, not the Docker DB.
+
+### Evidence
+
+- `evidence/gate-d/2026-07-28-offline.txt` — full verification results
+  including healthz response, capabilities JSON, make demo output,
+  pass/fail verdict for each criterion, and network isolation method.
+
+### Lesson
+
+- For offline verification of a running Docker stack, iptables with
+  conntrack is the least disruptive method. It blocks external traffic
+  for both containers (FORWARD rule) and host (OUTPUT rule with
+  conntrack NEW,INVALID), while preserving loopback, Docker bridge,
+  and established SSH sessions. No stack restart or compose override
+  needed.
+- When testing `make demo` against a Docker backend, remember that the
+  demo script seeds the LOCAL database (via the local venv), not the
+  Docker database. The Docker DB must be seeded separately via
+  `docker compose exec backend python -m app.seed.seed_demo` before
+  each demo run, because the demo approves an alert (changing its
+  status from draft to approved).
+
 
