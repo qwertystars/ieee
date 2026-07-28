@@ -161,7 +161,7 @@ services:
       MINIO_ACCESS_KEY: minio
       MINIO_SECRET_KEY: minio123
       OLLAMA_BASE_URL: http://ollama:11434
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set; use .env or export JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       PMTILES_PATH: /app/frontend/public/basemaps/mumbai.pmtiles
@@ -202,7 +202,7 @@ services:
       MINIO_ACCESS_KEY: minio
       MINIO_SECRET_KEY: minio123
       OLLAMA_BASE_URL: http://ollama:11434
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set; use .env or export JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       PMTILES_PATH: /app/frontend/public/basemaps/mumbai.pmtiles
