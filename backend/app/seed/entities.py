@@ -62,6 +62,14 @@ def _geom_to_wkt(geom: dict) -> WKTElement:
 def _ts() -> int:
     return now_ms()
 
+def _ts_aging() -> int:
+    """20 minutes ago — for 'aging' freshness tier (5-60 min)."""
+    return now_ms() - 20 * 60 * 1000
+
+def _ts_stale() -> int:
+    """2 hours ago — for 'stale' freshness tier (>1 hour)."""
+    return now_ms() - 2 * 60 * 60 * 1000
+
 
 def seed_zones(db: Session) -> int:
     """Create 5 zones (wards) from zones.geojson."""
@@ -150,7 +158,7 @@ def seed_hospitals(db: Session) -> int:
             geometry=_geom_to_wkt(feat["geometry"]),
             properties=props,
             created_at=_ts(),
-            updated_at=_ts(),
+            updated_at=_ts_aging(),
         ))
     db.commit()
     return len(features)
@@ -196,7 +204,7 @@ def seed_infrastructure(db: Session) -> tuple[int, int]:
             org_id=ORG_ID, incident_id=INCIDENT_ID,
             name=props["name"], status=props["status"],
             geometry=_geom_to_wkt(feat["geometry"]),
-            properties=props, created_at=_ts(), updated_at=_ts(),
+            properties=props, created_at=_ts(), updated_at=_ts_stale(),
         ))
     db.commit()
     return len(subs), len(towers)

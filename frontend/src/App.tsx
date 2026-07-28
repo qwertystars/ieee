@@ -1,17 +1,18 @@
-import { type ReactNode } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import { AppLayout } from './components/AppLayout'
 import { LoadingState } from './components/state/LoadingState'
-import AuditPage from './pages/AuditPage'
-import DashboardPage from './pages/DashboardPage'
-import DeviceDetailPage from './pages/DeviceDetailPage'
-import FieldPage from './pages/FieldPage'
-import HypothesesPage from './pages/HypothesesPage'
 import LoginPage from './pages/LoginPage'
-import NotFoundPage from './pages/NotFoundPage'
-import PlanningPage from './pages/PlanningPage'
-import SimulationPage from './pages/SimulationPage'
+
+const AuditPage = lazy(() => import('./pages/AuditPage'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const DeviceDetailPage = lazy(() => import('./pages/DeviceDetailPage'))
+const FieldPage = lazy(() => import('./pages/FieldPage'))
+const HypothesesPage = lazy(() => import('./pages/HypothesesPage'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+const PlanningPage = lazy(() => import('./pages/PlanningPage'))
+const SimulationPage = lazy(() => import('./pages/SimulationPage'))
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, loading } = useAuth()
@@ -40,17 +41,73 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/hypotheses" element={<HypothesesPage />} />
-        <Route path="/planning" element={<PlanningPage />} />
-        <Route path="/simulation" element={<SimulationPage />} />
-        <Route path="/field" element={<FieldPage />} />
-        <Route path="/devices/:id" element={<DeviceDetailPage />} />
-        <Route path="/audit" element={<AuditPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <Suspense fallback={<LoadingState />}>
+              <DashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/hypotheses"
+          element={
+            <Suspense fallback={<LoadingState />}>
+              <HypothesesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/planning"
+          element={
+            <Suspense fallback={<LoadingState />}>
+              <PlanningPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/simulation"
+          element={
+            <Suspense fallback={<LoadingState />}>
+              <SimulationPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/field"
+          element={
+            <Suspense fallback={<LoadingState />}>
+              <FieldPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/devices/:id"
+          element={
+            <Suspense fallback={<LoadingState />}>
+              <DeviceDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/audit"
+          element={
+            <Suspense fallback={<LoadingState />}>
+              <AuditPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<NotFoundPage />} />
+      <Route
+        path="*"
+        element={
+          <Suspense fallback={<LoadingState />}>
+            <NotFoundPage />
+          </Suspense>
+        }
+      />
     </Routes>
   )
 }

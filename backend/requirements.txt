@@ -39,3 +39,6 @@ prometheus-client>=0.20.0
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.9
+# Real-device sensor ingestion (optional — guarded imports)
+paho-mqtt>=1.6.0
+pyserial>=3.5

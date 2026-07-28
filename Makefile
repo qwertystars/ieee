@@ -25,8 +25,9 @@ export PYTHONPATH := $(BACKEND_DIR)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap migrate seed test lint typecheck build demo verify \
-        docker-build docker-up docker-up-full docker-down clean
+.PHONY: help bootstrap migrate seed test lint typecheck build demo verify e2e \
+        docker-build docker-up docker-up-full docker-down clean backup restore \
+        load-test load-test-full load-test-reduced
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -119,6 +120,16 @@ demo: ## Run the Phase 1 demo script (requires backend at localhost:8000)
 verify: migrate seed test build ## Run migrate, seed, test, build in sequence
 	@echo "=== All verification checks passed ==="
 
+# ── E2E (Playwright) ─────────────────────────────────────────────────────────
+
+e2e: ## Run Playwright e2e tests (starts Docker stack + seeds + preview)
+	@echo "=== Starting e2e stack ==="
+	docker compose --profile full up -d --wait
+	docker compose exec -T backend python -m app.seed.seed_demo
+	@echo "=== Running Playwright e2e tests ==="
+	cd "$(FRONTEND_DIR)" && npx playwright test
+	@echo "=== E2e tests complete ==="
+
 # ── Docker helpers ───────────────────────────────────────────────────────────
 
 docker-build: ## Build backend and frontend Docker images
@@ -139,3 +150,54 @@ clean: ## Remove build artifacts and caches
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
 	rm -rf "$(FRONTEND_DIR)/dist" 2>/dev/null || true
+
+# ── Backup / Restore ─────────────────────────────────────────────────────────
+
+backup: ## Back up the Docker database + MinIO models bucket to backups/<timestamp>/
+	@echo "=== Creating backup ==="
+	bash "$(ROOT_DIR)/scripts/backup.sh"
+	@echo "=== Backup complete ==="
+
+restore: ## Restore from a backup directory (usage: make restore BACKUP=<path>)
+	@if [ -z "$(BACKUP)" ]; then \
+		echo "Usage: make restore BACKUP=<path>"; \
+		echo "  e.g. make restore BACKUP=backups/20260728T172104Z"; \
+		exit 1; \
+	fi
+	@echo "=== Restoring from $(BACKUP) ==="
+	bash "$(ROOT_DIR)/scripts/restore.sh" "$(BACKUP)"
+	@echo "=== Restore complete ==="
+
+# ── Load test (locust) ───────────────────────────────────────────────────────
+# Two-phase design: 50 operators (SLOs 1,3,4,5) then 50 ingest users (SLO 2).
+# The backend DB pool is 15 connections — running both simultaneously
+# overwhelms it. Each phase runs for SOAK_DURATION seconds.
+# SOAK_DURATION defaults to 600s (CI); production SLO is 3600s (1h).
+# PROFILE=full|reduced controls the evidence file name.
+
+SOAK_DURATION ?= 600
+LOCUST := "$(VENV)/bin/locust"
+LOCUST_FILE := "$(ROOT_DIR)/tests/load/locustfile.py"
+LOCUST_HOST := http://localhost:8000
+
+load-test: ## Run locust load test (2-phase: operators + ingest, SOAK_DURATION seconds, PROFILE=full|reduced)
+	@echo "=== Phase 1/2: 50 operators (PROFILE=$(PROFILE), $(SOAK_DURATION)s) ==="
+	cd "$(BACKEND_DIR)" && LOAD_PHASE=operator PROFILE=$(PROFILE) PYTHONPATH=. $(LOCUST) \
+		-f $(LOCUST_FILE) --headless -u 50 -r 10 -t $(SOAK_DURATION)s --host $(LOCUST_HOST)
+	@echo "=== Phase 2/2: 50 ingest users (PROFILE=$(PROFILE), $(SOAK_DURATION)s) ==="
+	cd "$(BACKEND_DIR)" && LOAD_PHASE=ingest PROFILE=$(PROFILE) PYTHONPATH=. $(LOCUST) \
+		-f $(LOCUST_FILE) --headless -u 50 -r 10 -t $(SOAK_DURATION)s --host $(LOCUST_HOST)
+	@echo "=== Combining SLO report (PROFILE=$(PROFILE)) ==="
+	"$(VENV_PY)" "$(ROOT_DIR)/tests/load/combine_report.py" --profile $(PROFILE)
+	@echo "=== Load test complete (see evidence/load/*-$(PROFILE).json) ==="
+
+load-test-full: ## Run load test against the full profile (16CPU/32GB target)
+	@echo "=== Full profile: ensure stack is up with 'make docker-up-full' ==="
+	$(MAKE) load-test PROFILE=full
+
+load-test-reduced: ## Run load test against the reduced profile (8CPU/16GB target)
+	@echo "=== Reduced profile: heavyweight services (ollama/grafana/prometheus) stopped ==="
+	@docker compose stop ollama grafana prometheus 2>/dev/null || true
+	$(MAKE) load-test PROFILE=reduced
+	@echo "=== Restarting heavyweight services ==="
+	@docker compose --profile full start ollama grafana prometheus 2>/dev/null || true

@@ -1,0 +1,114 @@
+================================================================
+F2 — Code Quality Reviewer — Final Verification (POST-FIX)
+Branch: codex/resqnet-gap-closure
+Date: 2026-07-28
+================================================================
+
+GATE SUMMARY
+------------
+  1. Ruff (backend)      ........ PASS  (0 errors)
+  2. Mypy (backend)      ........ PASS  (0 errors in 168 source files)
+  3. ESLint (frontend)   ........ PASS  (0 errors, 4 pre-existing warnings)
+  4. TSC (frontend)      ........ PASS  (0 errors)
+
+VERDICT: APPROVE — All 4 quality gates pass.
+
+================================================================
+GATE 1: Ruff (backend)
+================================================================
+Command:  cd backend && PYTHONPATH=. .venv/bin/ruff check tests/ app/
+Result:   PASS — All checks passed!
+
+Initial run found 9 errors in 5 new test files added by gap-closure.
+All 9 have been fixed:
+
+  Auto-fixed by `ruff check --fix tests/` (7 fixes):
+    - tests/soak/test_soak.py:19      F401 unused import AsyncIterator (removed)
+    - tests/test_backup_restore.py:25 F401 unused import time (removed)
+    - tests/test_calibration_harness.py:316 F541 f-string without placeholders
+    - tests/test_calibration_harness.py:319 F541 f-string without placeholders
+    - tests/test_sensor_source.py:18  I001  unsorted imports (re-ordered)
+    - tests/test_sensor_source.py:20  F401 unused import asyncio (removed)
+    - tests/test_sensor_source.py:24  F401 unused import pytest (removed)
+
+  Manually fixed (2 fixes):
+    - tests/failure/test_chaos.py:35  PLW1510 added check=False to subprocess.run
+    - tests/test_calibration_harness.py:315 RUF059 renamed y_list -> _y_list
+
+================================================================
+GATE 2: Mypy (backend)
+================================================================
+Command:  cd backend && PYTHONPATH=. .venv/bin/mypy app/
+Result:   PASS — Success: no issues found in 168 source files
+
+No changes were required — mypy was already passing.
+
+================================================================
+GATE 3: ESLint (frontend)
+================================================================
+Command:  cd frontend && npm run lint
+Result:   PASS — 0 errors, 4 warnings (exit code 0)
+
+Initial run found 1 error in ActionCard.tsx (unused MOCK_ACTION).
+Fixed by removing the unused MOCK_ACTION constant (lines 249-269).
+
+Pre-existing warnings (NOT introduced by gap-closure, present on main):
+  - frontend/src/auth/AuthContext.tsx:31:7
+    react-hooks/set-state-in-effect (exists on main)
+  - frontend/src/components/MapView.tsx:127:34
+    react-hooks/purity: Date.now() in render (exists on main)
+  - frontend/src/components/state/StaleState.tsx:13:39
+    react-hooks/purity: Date.now() in render (exists on main)
+  - frontend/src/hooks/useOutbox.ts:91:5
+    react-hooks/set-state-in-effect (exists on main)
+
+================================================================
+GATE 4: TSC (frontend)
+================================================================
+Command:  cd frontend && npm run typecheck
+Result:   PASS — 0 errors (clean exit)
+
+Initial run found 1 error in ActionCard.tsx (TS6133: 'MOCK_ACTION'
+is declared but its value is never read). Fixed by removing the
+unused MOCK_ACTION constant — same fix resolved both eslint and tsc.
+
+================================================================
+CHANGES MADE
+================================================================
+
+6 files modified, 8 insertions(+), 33 deletions(-):
+
+  backend/tests/failure/test_chaos.py       |  1 +   (check=False)
+  backend/tests/soak/test_soak.py           |  1 -   (remove unused import)
+  backend/tests/test_backup_restore.py      |  1 -   (remove unused import)
+  backend/tests/test_calibration_harness.py |  6 +-   (y_list->_y_list, f-strings)
+  backend/tests/test_sensor_source.py       | 10 +-   (remove unused, sort imports)
+  frontend/src/components/ActionCard.tsx    | 22 -    (remove MOCK_ACTION)
+
+Commit: fix(quality): resolve ruff and eslint errors from gap-closure work
+
+================================================================
+VERIFICATION COMMANDS (re-runnable)
+================================================================
+
+  cd backend && PYTHONPATH=. .venv/bin/ruff check tests/ app/
+  # -> All checks passed!
+
+  cd backend && PYTHONPATH=. .venv/bin/mypy app/
+  # -> Success: no issues found in 168 source files
+
+  cd frontend && npm run lint
+  # -> 0 errors, 4 warnings (pre-existing)
+
+  cd frontend && npm run typecheck
+  # -> 0 errors
+
+================================================================
+VERDICT: APPROVE
+================================================================
+
+All 4 quality gates pass with zero new errors introduced by
+gap-closure work. The 4 remaining eslint warnings are pre-existing
+(verified present on the main branch) and outside the scope of
+gap-closure quality review.
+================================================================

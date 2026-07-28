@@ -15,7 +15,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-disaster}
     command: ["postgres", "-c", "shared_preload_libraries=timescaledb,age"]
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -26,8 +26,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2"
-          memory: 4G
+          cpus: "1"
+          memory: 1G
 
   # ── Redis: cache + pub/sub ──────────────────────────────────────────────────
   redis:
@@ -43,7 +43,7 @@ services:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
+          memory: 256M
 
   # ── Redpanda: self-hosted Kafka (single-node dev mode) ──────────────────────
   # Internal address for container-to-container, external for host access.
@@ -57,7 +57,7 @@ services:
       - --smp
       - "1"
       - --memory
-      - 4G
+      - 1G
       - --kafka-addr
       - internal://0.0.0.0:9092,external://0.0.0.0:19092
       - --advertise-kafka-addr
@@ -74,8 +74,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2"
-          memory: 5G
+          cpus: "1"
+          memory: 2G
 
   # ── MinIO: S3-compatible object storage ─────────────────────────────────────
   minio:
@@ -97,8 +97,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1"
-          memory: 1G
+          cpus: "0.5"
+          memory: 512M
 
   # ── Ollama: local LLM inference (offline, for T36/T48) ──────────────────────
   # Heavyweight (8G RAM). Start only with --profile full to keep the default
@@ -118,8 +118,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "4"
-          memory: 8G
+          cpus: "2"
+          memory: 4G
 
   # ── Benthos: stream processor (observations.raw -> observations.normalized) ─
   # T10 will replace the placeholder config with the full fusion pipeline.
@@ -137,7 +137,7 @@ services:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
+          memory: 256M
 
   # ── Backend: FastAPI + uvicorn ──────────────────────────────────────────────
   # Uses psycopg3 (postgresql+psycopg://) NOT psycopg2.
@@ -161,9 +161,10 @@ services:
       MINIO_ACCESS_KEY: minio
       MINIO_SECRET_KEY: minio123
       OLLAMA_BASE_URL: http://ollama:11434
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set; use .env or export JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
       ENVIRONMENT: ${ENVIRONMENT:-development}
+      PMTILES_PATH: /app/frontend/public/basemaps/mumbai.pmtiles
     ports:
       - "8000:8000"
     command: >
@@ -171,6 +172,7 @@ services:
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
       - ./backend:/app
+      - ./frontend/public/basemaps:/app/frontend/public/basemaps:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/healthz || exit 1"]
       interval: 10s
@@ -179,8 +181,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2"
-          memory: 4G
+          cpus: "1"
+          memory: 2G
 
   # ── Worker: dedicated Kafka consumer (observations.normalized → PostgreSQL) ──
   # Runs ConsumerManager in its own container with retry + DLQ + graceful shutdown.
@@ -200,12 +202,14 @@ services:
       MINIO_ACCESS_KEY: minio
       MINIO_SECRET_KEY: minio123
       OLLAMA_BASE_URL: http://ollama:11434
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set; use .env or export JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
       ENVIRONMENT: ${ENVIRONMENT:-development}
+      PMTILES_PATH: /app/frontend/public/basemaps/mumbai.pmtiles
     command: ["python", "-m", "app.worker.main"]
     volumes:
       - ./backend:/app
+      - ./frontend/public/basemaps:/app/frontend/public/basemaps:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8001/metrics || exit 1"]
       interval: 10s
@@ -215,8 +219,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1"
-          memory: 1G
+          cpus: "0.5"
+          memory: 512M
 
   # ── Frontend: React + Vite dev server ───────────────────────────────────────
   frontend:
@@ -235,7 +239,7 @@ services:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
+          memory: 256M
 
   # ── Prometheus: metrics scraping ───────────────────────────────────────────
   # Observability stack — start with --profile full.
@@ -250,7 +254,7 @@ services:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
+          memory: 256M
 
   # ── Grafana: dashboards ─────────────────────────────────────────────────────
   # Observability stack — start with --profile full.
@@ -272,7 +276,7 @@ services:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
+          memory: 256M
 
 volumes:
   pgdata:

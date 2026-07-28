@@ -220,3 +220,87 @@ password `demo1234` and belong to `org_id=org_demo`:
 | `viewer@demo.disaster` | viewer |
 
 Demo user seeding is skipped entirely when `ENVIRONMENT != "development"`.
+
+## Production secrets handling
+
+The `docker-compose.yml` stack is a development convenience. Production
+deployments must not rely on plaintext environment variables in compose files
+for secrets. The compose file uses the required-variable form for the JWT
+signing key:
+
+```yaml
+JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set; use .env or export JWT_SECRET}
+```
+
+This makes `docker compose up` fail fast if `JWT_SECRET` is missing, instead
+of silently falling back to a hardcoded default. The same pattern is applied
+to both the `backend` and `worker` services.
+
+### JWT_SECRET
+
+- **Development**: `JWT_SECRET=dev-secret-change-me` (20 chars) is accepted
+  only when `ENVIRONMENT=development`. The default is set in
+  `backend/app/config.py` and `.env.example`.
+- **Production**: `ENVIRONMENT=production` with a `JWT_SECRET` shorter than
+  32 characters raises a `ValidationError` at startup
+  (`app.config.Settings._validate_jwt_secret`). The process exits before
+  binding a port or accepting requests.
+- Generate a production secret with: `python -c "import secrets; print(secrets.token_urlsafe(48))"`
+  (64+ chars of URL-safe entropy).
+
+### Secret distribution
+
+For production, prefer one of the following, in order of preference:
+
+1. **Docker secrets** (Swarm mode or Compose `secrets:` with `secrets` mount)
+   - Mount the secret as a file at `/run/secrets/jwt_secret` and read it in
+     the application via a small loader that sets `JWT_SECRET` from the file
+     contents. This keeps the secret out of `docker inspect` and `env`.
+2. **External secrets manager** (HashiCorp Vault, AWS Secrets Manager, GCP
+   Secret Manager, Cloudflare Workers Secrets Store)
+   - Fetch the secret at startup and inject it into the process environment.
+     Rotate without redeploying where the manager supports it.
+3. **`.env` file with strict permissions** (smallest deployments only)
+   - `chmod 600 .env`, owner `root`, never committed to git (`.env` is in
+     `.gitignore`). Use this only for single-host deployments where a
+     secrets manager is not available.
+
+Never check a production `.env` into version control. The `.env.example`
+file documents the variable names with development defaults only.
+
+### MinIO credentials
+
+The compose file ships with `MINIO_ROOT_USER=minio` and
+`MINIO_ROOT_PASSWORD=minio123` (lines 85-86), and the backend/worker
+`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` match. These are **development-only**
+defaults that let the stack come up without configuration.
+
+For production:
+
+- Replace both the MinIO root credentials and the application
+  `MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` with high-entropy values.
+- Use MinIO service accounts (not root credentials) for the application,
+  with least-privilege buckets scoped to the org.
+- Rotate the application access key on a schedule (e.g., quarterly) and on
+  personnel turnover. MinIO supports key rotation without downtime via the
+  `mc admin user` and `mc admin policy` commands.
+- Treat the MinIO secret key as a production secret: distribute it via
+  Docker secrets or a secrets manager, not via plaintext compose env.
+
+### Secrets in logs
+
+The application logger never emits secret values. Verified by audit:
+
+- `backend/app/lib/telemetry.py` logs only the OTLP endpoint URL, trace IDs,
+  and generic warning text. No `settings.JWT_SECRET`,
+  `settings.MINIO_SECRET_KEY`, or `settings.DATABASE_URL` is ever logged.
+- `backend/app/main.py` `/healthz` returns the string `"configured"` for
+  each service, never the connection string or credentials.
+- Ingestion adapters log `"api_key missing, skipping ..."` when a key is
+  absent; they never log the key value itself.
+- HTTP `Authorization: Bearer ...` headers are constructed in adapter code
+  for outbound requests and are not logged.
+
+A grep for `password|secret|token|jwt|api_key|access_key` across
+`logger.*(` and `print(` calls in `backend/app/` returns zero matches that
+emit a secret value.

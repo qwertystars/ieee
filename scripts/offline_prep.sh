@@ -41,8 +41,12 @@ step_01_models() {
 }
 
 # ── Step 2: Generate PMTiles basemap ───────────────────────────────────────
+# Mumbai bounding box (lon_min,lat_min,lon_max,lat_max) — matches the simulator
+# waypoints in backend/app/simulator/scenarios.py (lon≈72.85, lat≈19.07) and
+# the locked decision D6 (demo region = Mumbai).
+MUMBAI_BBOX="72.7,18.9,73.0,19.3"
 step_02_pmtiles() {
-    local out="$BASEMAPS_DIR/rivertown.pmtiles"
+    local out="$BASEMAPS_DIR/mumbai.pmtiles"
     if [[ -f "$out" && -s "$out" ]]; then
         log_info "PMTiles already generated: $out"
         return 0
@@ -53,19 +57,58 @@ step_02_pmtiles() {
         return 0
     fi
     ensure_dir "$BASEMAPS_DIR"
-    local tmp_geojson="$BASEMAPS_DIR/rivertown.geojson"
-    # Small OSM extract via Overpass API (demo region placeholder).
-    local overpass='[out:json][timeout:25];area[name="Rivertown"]->.a;(node(area.a);way(area.a);relation(area.a););out;'
-    if curl -fL --retry 2 --connect-timeout 30 -o "$tmp_geojson" \
-            "https://overpass-api.de/api/interpreter?data=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$overpass")" 2>/dev/null; then
-        if tippecanoe -o "$out" -zg "$tmp_geojson" 2>/dev/null; then
+    local tmp_geojson="$BASEMAPS_DIR/mumbai.geojson"
+    # OSM extract for the Mumbai bounding box via Overpass API. The bbox
+    # query is preferred over `area[name="Mumbai"]` because area lookups
+    # are flaky for the Mumbai administrative boundary and frequently
+    # return empty results or rate-limit. The bbox covers Greater Mumbai.
+    # Query is limited to basemap-relevant features (highways, buildings,
+    # water, landuse) — querying all elements for a city of 20M people
+    # always times out.
+    local overpass="[out:json][timeout:120][bbox:${MUMBAI_BBOX}];(way[\"highway\"];way[\"building\"];way[\"natural\"=\"water\"];way[\"waterway\"];way[\"landuse\"];way[\"leisure\"];);out geom;"
+    local overpass_url="https://overpass-api.de/api/interpreter?data=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$overpass")"
+    if curl -fL --retry 3 --connect-timeout 30 --max-time 300 -o "$tmp_geojson" "$overpass_url" 2>/dev/null; then
+        if tippecanoe -o "$out" -zg \
+                --layer=mumbai \
+                --drop-densest-as-needed \
+                --extend-zooms-if-still-dropping \
+                --force "$tmp_geojson" 2>/dev/null; then
             log_success "Generated PMTiles: $out"
         else
             log_warn "tippecanoe failed — PMTiles not generated"
         fi
         rm -f "$tmp_geojson"
     else
-        log_warn "Overpass API unavailable — skipping PMTiles (no Rivertown OSM data)"
+        log_warn "Overpass API unavailable — falling back to Geofabrik Mumbai extract"
+        # Geofabrik fallback: download the India western-zone extract (~200 MB)
+        # and filter to the Mumbai bbox using osmium + tippecanoe. Requires
+        # osmium-tool (apt-get install osmium-tool on Debian/Ubuntu).
+        local geofabrik_url="https://download.geofabrik.de/asia/india/western-zone-latest.osm.pbf"
+        local tmp_pbf="$BASEMAPS_DIR/western-zone-latest.osm.pbf"
+        local tmp_mumbai_pbf="$BASEMAPS_DIR/mumbai.osm.pbf"
+        if curl -fL --retry 2 --connect-timeout 30 --max-time 600 -o "$tmp_pbf" "$geofabrik_url" 2>/dev/null; then
+            if check_command osmium; then
+                if osmium extract --bbox="${MUMBAI_BBOX}" -o "$tmp_mumbai_pbf" "$tmp_pbf" 2>/dev/null \
+                        && osmium export -o "$tmp_geojson" "$tmp_mumbai_pbf" 2>/dev/null; then
+                    if tippecanoe -o "$out" -zg \
+                            --layer=mumbai \
+                            --drop-densest-as-needed \
+                            --extend-zooms-if-still-dropping \
+                            --force "$tmp_geojson" 2>/dev/null; then
+                        log_success "Generated PMTiles from Geofabrik extract: $out"
+                    else
+                        log_warn "tippecanoe failed on Geofabrik extract — PMTiles not generated"
+                    fi
+                else
+                    log_warn "osmium extract/export failed — PMTiles not generated"
+                fi
+            else
+                log_warn "osmium not installed — install with 'apt-get install osmium-tool' to use Geofabrik fallback"
+            fi
+            rm -f "$tmp_pbf" "$tmp_mumbai_pbf" "$tmp_geojson"
+        else
+            log_warn "Geofabrik extract also unavailable — PMTiles not generated (no Mumbai OSM data)"
+        fi
     fi
 }
 
@@ -76,8 +119,11 @@ step_03_build_images() {
 }
 
 # ── Step 4: Pre-pull all Docker images ──────────────────────────────────────
+# Use --profile full so ollama, prometheus, and grafana images are pre-pulled
+# too. Without the profile flag, docker compose pull skips profile-gated
+# services, leaving them to be pulled on-demand at start time (slow).
 step_04_pull_images() {
-    docker compose pull || log_warn "Some Docker images failed to pull"
+    docker compose --profile full pull || log_warn "Some Docker images failed to pull"
 }
 
 # ── Step 5: Vendor pip packages ────────────────────────────────────────────
@@ -129,8 +175,20 @@ step_08_ollama() {
         log_warn "Could not start ollama service"
         return 0
     fi
-    if ! wait_for_service ollama 30; then
-        log_warn "Ollama did not become healthy in time"
+    # Wait for the ollama HTTP server to respond, not just the container.
+    # wait_for_service only checks that `docker compose exec` succeeds (container
+    # running), but the ollama server inside takes a few more seconds to accept
+    # API requests. Without this, `ollama pull` can race the server startup.
+    local i=0
+    while (( i < 30 )); do
+        if docker compose exec ollama ollama list >/dev/null 2>&1; then
+            break
+        fi
+        sleep 2
+        ((i++))
+    done
+    if (( i >= 30 )); then
+        log_warn "Ollama server did not become ready in time"
         return 0
     fi
     if docker compose exec ollama ollama list 2>/dev/null | grep -q "llama3.1:8b"; then

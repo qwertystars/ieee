@@ -38,11 +38,18 @@ class InjectFaultRequest(BaseModel):
 
 
 @router.post("/start", status_code=status.HTTP_202_ACCEPTED)
-def start_simulation(
+async def start_simulation(
     req: StartRequest,
     user: User = Depends(require_roles("admin", "emergency_manager")),
 ) -> dict:
-    """Start the simulation. Returns 202 with device IDs."""
+    """Start the simulation. Returns 202 with device IDs.
+
+    Async so the engine's ``asyncio.create_task(self._run_loop())`` runs
+    inside the FastAPI event loop — a sync ``def`` route executes in a
+    threadpool thread with no running loop, which raises
+    ``RuntimeError: no running event loop`` and prevents observations from
+    being published.
+    """
     _engine._seed = req.seed
     try:
         device_ids = _engine.start(req.org_id, req.incident_id, req.device_count)

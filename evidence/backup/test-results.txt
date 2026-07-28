@@ -1,0 +1,21 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-9.1.1, pluggy-1.6.0 -- /root/srijan/ieee/backend/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /root/srijan/ieee/backend
+configfile: pytest.ini
+plugins: anyio-4.14.2, hydra-core-1.3.4, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+tests/test_backup_restore.py::test_backup_creates_artifacts PASSED       [ 25%]
+tests/test_backup_restore.py::test_restore_preserves_row_counts PASSED   [ 50%]
+tests/test_backup_restore.py::test_restore_preserves_observation_fields PASSED [ 75%]
+tests/test_backup_restore.py::test_restore_preserves_minio_files PASSED  [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/fastapi/testclient.py:1
+  /root/srijan/ieee/backend/.venv/lib/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 4 passed, 1 warning in 20.27s =========================

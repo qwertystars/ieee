@@ -12,6 +12,9 @@ node_modules/
 dist/
 .vite/
 *.local
+test-results/
+playwright-report/
+frontend/tests/.auth/
 
 # OS / editor
 .DS_Store
@@ -25,3 +28,8 @@ dist/
 
 # External references (p4 source cloned for porting)
 tmp/
+
+# Calibration datasets (downloaded by scripts/download_calibration_datasets.py)
+# Not committed to git — large GeoTIFF files. Manifest with checksums is
+# generated at download time under backend/data/calibration/manifest.json
+backend/data/calibration/

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Alert } from '../api/types'
 
 export interface ObservationRef {
@@ -82,10 +82,24 @@ function Section({ label, testId, children }: { label: string; testId: string; c
 }
 
 export function ActionCard({ action, status, onApprove, onDismiss, onModify, onEvidenceClick }: ActionCardProps) {
-  const current = status ?? 'pending'
+  const [internalStatus, setInternalStatus] = useState(status ?? 'pending')
+  const current = status ?? internalStatus
   const isResolved = current === 'approved' || current === 'dismissed'
 
   const confidencePct = Math.round(action.confidence * 100)
+
+  const handleApprove = () => {
+    setInternalStatus('approved')
+    onApprove?.(action.id)
+  }
+  const handleDismiss = () => {
+    setInternalStatus('dismissed')
+    onDismiss?.(action.id)
+  }
+  const handleModify = () => {
+    setInternalStatus('modified')
+    onModify?.(action.id)
+  }
 
   return (
     <div
@@ -200,7 +214,7 @@ export function ActionCard({ action, status, onApprove, onDismiss, onModify, onE
       <div className="mt-3 flex gap-2 border-t border-gray-700 pt-3">
         <button
           data-testid="approve-button"
-          onClick={() => onApprove?.(action.id)}
+          onClick={handleApprove}
           disabled={isResolved}
           className="flex-1 rounded bg-green-700 px-2 py-1 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-40"
           aria-label={`Approve action: ${action.proposedAction}`}
@@ -209,7 +223,7 @@ export function ActionCard({ action, status, onApprove, onDismiss, onModify, onE
         </button>
         <button
           data-testid="dismiss-button"
-          onClick={() => onDismiss?.(action.id)}
+          onClick={handleDismiss}
           disabled={isResolved}
           className="flex-1 rounded bg-red-700 px-2 py-1 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-40"
           aria-label={`Dismiss action: ${action.proposedAction}`}
@@ -218,7 +232,7 @@ export function ActionCard({ action, status, onApprove, onDismiss, onModify, onE
         </button>
         <button
           data-testid="modify-button"
-          onClick={() => onModify?.(action.id)}
+          onClick={handleModify}
           disabled={isResolved}
           className="flex-1 rounded bg-gray-700 px-2 py-1 text-xs font-medium text-gray-200 hover:bg-gray-600 disabled:opacity-40"
           aria-label={`Modify action: ${action.proposedAction}`}

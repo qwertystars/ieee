@@ -1,0 +1,23 @@
+=== Creating backup ===
+bash "/root/srijan/ieee/scripts/backup.sh"
+[backup] Backing up database 'disaster' (user: disaster) ...
+[backup]   OK  db.sql.gz (456K)
+[backup] Backing up MinIO bucket 'models' ...
+`local/models/test_model.bin` -> `/tmp/resqnet-backup-224815/test_model.bin`
+`local/models/backup_restore_test_file.bin` -> `/tmp/resqnet-backup-224815/backup_restore_test_file.bin`
+┌───────┬─────────────┬──────────┬────────────┐
+│ Total │ Transferred │ Duration │ Speed      │
+│ 36 B  │ 36 B        │ 00m00s   │ 6.50 KiB/s │
+└───────┴─────────────┴──────────┴────────────┘
+[backup]   OK  minio/ (2 files)
+
+=== Backup complete ===
+  Path:     backups/20260728T172858Z
+  DB dump:  backups/20260728T172858Z/db.sql.gz (456K)
+  MinIO:    backups/20260728T172858Z/minio (2 files)
+  Manifest: backups/20260728T172858Z/manifest.txt
+
+Restore with:
+  bash scripts/restore.sh backups/20260728T172858Z
+  make restore BACKUP=backups/20260728T172858Z
+=== Backup complete ===

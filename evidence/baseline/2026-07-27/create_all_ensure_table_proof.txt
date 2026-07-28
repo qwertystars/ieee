@@ -1,0 +1,19 @@
+Command: grep -rn "create_all\|ensure_table" backend/app/
+Date: 2026-07-27
+Branch: codex/resqnet-gap-closure
+
+Result: No matches found (exit code 1).
+
+This confirms that the Phase 1 cleanup successfully removed all runtime
+create_all() and ensure_table() calls from backend/app/. All schema is now
+managed solely by Alembic migrations (head: 0004).
+
+The prior IMPLEMENTATION_AUDIT.md (2026-07-26) documented multiple
+ensure_table() calls in:
+  - backend/app/lib/idempotency.py:49-58
+  - backend/app/streaming/consumer.py:18,59
+  - backend/app/seed/db_setup.py:68-79 (ensure_columns)
+  - backend/app/main.py:25 (create_all for users table)
+
+All of these have been resolved by migrations 0002-0004 during Phase 1
+completion. This grep returning zero results is the proof.

@@ -1,0 +1,14 @@
+Command: cd frontend && npm run test
+Date: 2026-07-27
+Branch: codex/resqnet-gap-closure
+
+ RUN  v4.1.10 /root/srijan/ieee/frontend
+
+ Test Files  3 passed (3)
+      Tests  45 passed (45)
+   Start at  18:00:10
+   Duration  3.57s (transform 414ms, setup 993ms, import 470ms, tests 309ms, environment 6.10s)
+
+Note: Console errors were emitted during test run (useAuth must be used within an
+AuthProvider) but all 45 tests passed. The errors are from test setup logging, not
+test failures.

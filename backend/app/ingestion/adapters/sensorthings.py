@@ -5,6 +5,10 @@ SensorThings API v1.0 spec: https://docs.ogc.org/is/15-078r6/15-078r6.html
 Each Observation is expanded with its Datastream (for phenomenon name and unit)
 and FeatureOfInterest (for geometry) via $expand. Observations land as
 corroboration_state=uncorroborated (draft) until human/fusion confirmation.
+
+``SensorThingsClient`` implements the ``SensorSource`` protocol (see
+``app.sensing.sensor_source``) so it can be fed to
+``SensorIngestionService`` alongside MQTT and serial adapters.
 """
 
 import hashlib
@@ -21,6 +25,7 @@ from app.lib.time import from_iso, now_ms, to_iso
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
 from app.models.observation import Observation
+from app.sensing.sensor_source import build_sensor_provenance
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +34,49 @@ _MAX_PAGES = 100  # Safety guard against infinite pagination loops.
 
 
 class SensorThingsClient:
-    """Async client for OGC SensorThings API v1.0."""
+    """Async client for OGC SensorThings API v1.0.
 
-    def __init__(self, base_url: str, timeout: float = DEFAULT_TIMEOUT) -> None:
+    Implements the ``SensorSource`` protocol: ``device_id``, ``org_id``,
+    ``incident_id`` properties and ``read_telemetry()`` method. The
+    ``read_telemetry()`` method is async-aware — it pulls the latest
+    observation from the configured datastream and returns a normalized
+    payload dict. For synchronous callers, use ``pull_observations()``
+    + ``map_to_observation()`` directly.
+    """
+
+    def __init__(
+        self,
+        base_url: str,
+        timeout: float = DEFAULT_TIMEOUT,
+        *,
+        device_id: str = "",
+        org_id: str = "",
+        incident_id: str = "",
+        datastream_id: str = "",
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self._device_id = device_id
+        self._org_id = org_id
+        self._incident_id = incident_id
+        self._datastream_id = datastream_id
         self._client: httpx.AsyncClient | None = None
+
+    @property
+    def device_id(self) -> str:
+        return self._device_id
+
+    @property
+    def org_id(self) -> str:
+        return self._org_id
+
+    @property
+    def incident_id(self) -> str:
+        return self._incident_id
+
+    @property
+    def datastream_id(self) -> str:
+        return self._datastream_id
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None:
@@ -109,6 +151,92 @@ class SensorThingsClient:
             next_url = data.get("@iot.nextLink")
             pages += 1
         return observations
+
+    async def read_telemetry(self) -> dict[str, Any]:
+        """Pull the latest observation from the configured datastream.
+
+        Implements the ``SensorSource`` protocol. Returns a normalized
+        payload dict matching ``ConsumerManager._build_observation``.
+        The ``provenance_chain`` marks this as real sensor data (NOT
+        simulated).
+
+        Raises ``RuntimeError`` if no ``datastream_id`` was configured.
+        Raises ``ValueError`` if the datastream has no observations.
+        """
+        if not self._datastream_id:
+            raise RuntimeError(
+                "SensorThingsClient.read_telemetry requires a datastream_id "
+                "— pass datastream_id= to the constructor."
+            )
+        observations = await self.pull_observations(self._datastream_id)
+        if not observations:
+            raise ValueError(
+                f"No observations available for datastream {self._datastream_id}"
+            )
+        latest = observations[-1]
+        return self._to_payload(latest)
+
+    def _to_payload(self, st_obs: dict[str, Any]) -> dict[str, Any]:
+        """Map a SensorThings observation dict to the consumer payload format."""
+        datastream = st_obs.get("Datastream") or {}
+        foi = st_obs.get("FeatureOfInterest") or {}
+        feature = foi.get("feature") or {}
+
+        phenomenon = datastream.get("name", "unknown")
+        unit_obj = datastream.get("unitOfMeasurement") or {}
+        unit = unit_obj.get("symbol") or unit_obj.get("name")
+
+        coords = feature.get("coordinates") if feature.get("type") == "Point" else None
+        geometry = (
+            {"type": "Point", "coordinates": [coords[0], coords[1]]}
+            if coords and len(coords) >= 2
+            else {"type": "Point", "coordinates": [0.0, 0.0]}
+        )
+
+        phen_time = st_obs.get("phenomenonTime")
+        observed_at = from_iso(phen_time) if phen_time else now_ms()
+
+        result = st_obs.get("result")
+        value = float(result) if result is not None and _is_numeric(result) else None
+
+        source_id = f"sensorthings:{st_obs.get('@iot.id', generate_ulid())}"
+        raw = json.dumps(st_obs, sort_keys=True, default=str, separators=(",", ":"))
+        raw_hash = "sha256:" + hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+        return {
+            "observation_id": generate_ulid(),
+            "event_type": "sensor_reading",
+            "phenomenon": phenomenon,
+            "value": value,
+            "unit": unit,
+            "geometry": geometry,
+            "geometry_uncertainty": 0.0,
+            "observed_at": observed_at,
+            "valid_from": observed_at,
+            "valid_until": None,
+            "received_at": now_ms(),
+            "source_id": source_id,
+            "source_type": SourceType.sensor.value,
+            "collection_method": "sensorthings_api",
+            "source_reliability": 0.8,
+            "freshness": 1.0,
+            "corroboration_state": CorroborationState.uncorroborated.value,
+            "model_uncertainty": None,
+            "quality_flags": {"sensorthings": True},
+            "access_policy": AccessPolicy.internal.value,
+            "provenance_chain": build_sensor_provenance(
+                "sensorthings",
+                self._device_id or source_id,
+                datastream_id=str(datastream.get("@iot.id", "")),
+                self_link=st_obs.get("@iot.selfLink", ""),
+            ),
+            "raw_data_hash": raw_hash,
+            "model_version": None,
+            "supersedes": None,
+            "duplicate_group": None,
+            "org_id": self._org_id,
+            "incident_id": self._incident_id,
+        }
 
 
 def _is_numeric(val: object) -> bool:
