@@ -1,0 +1,15 @@
+{
+  "scenario": "minio_kill",
+  "load_successes": 63,
+  "load_failures": 1,
+  "ml_endpoint_during_outage": 200,
+  "ml_status_during_outage": "ok",
+  "non_ml_endpoint_during_outage": 200,
+  "deep_health_during_outage": {
+    "database": true,
+    "redis": true,
+    "redpanda": true,
+    "minio": false
+  },
+  "recovered_within_30s": true
+}
