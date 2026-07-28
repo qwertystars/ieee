@@ -203,6 +203,7 @@ from fastapi import APIRouter
 from app.api.routes.alerts import router as alerts_router
 from app.api.routes.audit_routes import router as audit_router
 from app.api.routes.auth import router as auth_router
+from app.api.routes.calibration import router as calibration_router
 from app.api.routes.capabilities import router as capabilities_router
 from app.api.routes.entities import router as entities_router
 from app.api.routes.eval import router as eval_router
@@ -247,6 +248,7 @@ api_router.include_router(entities_router)
 api_router.include_router(audit_router)
 api_router.include_router(ingest_router)
 api_router.include_router(capabilities_router)
+api_router.include_router(calibration_router)
 
 app.include_router(api_router)
 app.include_router(health_router)
