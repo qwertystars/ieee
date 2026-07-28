@@ -38,6 +38,7 @@ def _docker_compose(action: str, service: str) -> subprocess.CompletedProcess:
         capture_output=True,
         text=True,
         timeout=60,
+        check=False,
     )
 
 

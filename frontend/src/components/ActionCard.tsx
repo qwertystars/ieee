@@ -245,25 +245,3 @@ export function ActionCard({ action, status, onApprove, onDismiss, onModify, onE
 }
 
 export default ActionCard
-
-const MOCK_ACTION: ActionCardData = {
-  id: 'action-001',
-  proposedAction: 'Dispatch Boat B3',
-  operationalObjective: 'Reach stranded residents',
-  benefitRange: { low: 31, high: 47, unit: 'lives saved' },
-  timeSensitivity: '22 minutes',
-  resourcesRequired: ['Boat B3', '2 crew members'],
-  primaryEvidence: [
-    { id: 'obs-001', label: 'Sensor observation' },
-    { id: 'obs-002', label: 'Drone footage' },
-  ],
-  contradictingEvidence: 'traffic observation shows bridge clear',
-  assumptions: ['180m radius of flooding', 'boat available at dock'],
-  confidence: 0.72,
-  calibration: 'Confidence 72%',
-  alternatives: [
-    { action: 'Team R2 via helicopter', failureProbability: 0.3 },
-  ],
-  failureContingency: 'bridge camera monitoring',
-  equityImpact: 'elderly residents in riverside buildings',
-}

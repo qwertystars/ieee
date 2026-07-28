@@ -17,21 +17,19 @@ PostgreSQL. No mocking of the SUT beyond the producer.
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
 
-import pytest
 from sqlalchemy import select
 
 from app.db import SessionLocal
-from app.models.observation import Observation
-from app.sensing.sensor_source import SensorSource, build_sensor_provenance
-from app.sensing.ingestion_service import SensorIngestionService
-from app.streaming.consumer import ConsumerManager
 from app.lib.time import now_ms
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
+from app.models.observation import Observation
+from app.sensing.ingestion_service import SensorIngestionService
+from app.sensing.sensor_source import SensorSource, build_sensor_provenance
+from app.streaming.consumer import ConsumerManager
 
 ORG_ID = "org_test_sensor"
 INCIDENT_ID = "inc_test_sensor"

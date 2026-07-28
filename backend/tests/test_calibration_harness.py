@@ -312,11 +312,11 @@ def test_real_data_fallback_status() -> None:
     fabricate results.
     """
     if _REAL_DATA_AVAILABLE:
-        X_list, y_list = _load_sen1floods11()
-        print(f"\nCalibration status: available (real-data)")
+        X_list, _y_list = _load_sen1floods11()
+        print("\nCalibration status: available (real-data)")
         print(f"  Source: Sen1Floods11 (CC BY 4.0), "
               f"{len(X_list)} chips, {len(X_list[0])} features")
-        print(f"  Fixture calibration (T8) still passes as regression baseline")
+        print("  Fixture calibration (T8) still passes as regression baseline")
     else:
         print("\nCalibration status: degraded (fixture-only)")
         print("  Sen1Floods11 data not found at "
