@@ -73,6 +73,47 @@ def _weights_available(r2_key: str) -> bool:
     return os.path.exists(local_path)
 
 
+_MANIFEST_PATH = os.path.join(_DATA_DIR, "models", "manifests.json")
+
+
+def _check_placeholder_models() -> bool:
+    """Return True if any model manifest is a placeholder or unsigned.
+
+    Reads ``data/models/manifests.json`` and returns True if any entry has
+    ``validation_status == "placeholder"`` or ``signed`` is not true.
+    Returns False if the manifest is missing, empty, or malformed.
+    """
+    if not os.path.isfile(_MANIFEST_PATH):
+        return False
+    try:
+        with open(_MANIFEST_PATH, "r", encoding="utf-8") as fh:
+            manifests = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning("manifest load failed (%s): %s", _MANIFEST_PATH, exc)
+        return False
+    if not isinstance(manifests, list) or not manifests:
+        return False
+    for entry in manifests:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("validation_status") == "placeholder" or entry.get("signed") is not True:
+            return True
+    return False
+
+
+def _placeholder_model_response(feature: str) -> dict[str, Any]:
+    """Degraded response when model manifests are unvalidated placeholders."""
+    return {
+        "status": "model_unavailable",
+        "reason": "placeholder_model_not_validated",
+        "feature": feature,
+        "message": (
+            f"Model weights for '{feature}' are placeholders and not validated. "
+            "Download real weights via scripts/download_models.py."
+        ),
+    }
+
+
 # ── Scenarios ──────────────────────────────────────────────────────────────
 
 
@@ -216,6 +257,9 @@ def get_flood_map(
     org_id = request.state.org_id or ""
     _get_incident(db, org_id, incident_id)
 
+    if _check_placeholder_models():
+        return _placeholder_model_response("flood_mapping")
+
     if not _weights_available("models/sar-flood-mapping-v1.0.0.onnx"):
         return _model_unavailable("flood_mapping")
 
@@ -254,6 +298,9 @@ def get_flood_ensemble(
     """Return flood ensemble result. Degrades when model weights missing."""
     org_id = request.state.org_id or ""
     _get_incident(db, org_id, incident_id)
+
+    if _check_placeholder_models():
+        return _placeholder_model_response("ensemble")
 
     if not _weights_available("models/sar-flood-mapping-v1.0.0.onnx"):
         return _model_unavailable("ensemble")

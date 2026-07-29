@@ -12,6 +12,7 @@ The system continues with unblocked work when a blocker is hit.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import socket
@@ -29,6 +30,7 @@ router = APIRouter(tags=["capabilities"])
 # Local data directory — same path calculation as sensing.py.
 _DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "data")
 _MODELS_DIR = os.path.join(_DATA_DIR, "models")
+_MANIFEST_PATH = os.path.join(_MODELS_DIR, "manifests.json")
 
 # Activation step templates.
 _ONNX_STEPS = (
@@ -57,6 +59,35 @@ _REDIS_STEPS = (
 )
 
 
+def _manifests_validation_state() -> str | None:
+    """Inspect model manifests and report validation state.
+
+    Reads ``data/models/manifests.json`` at request time and returns:
+      - ``"validated"``  if every model has ``validation_status == "validated"``
+        AND ``signed`` is true.
+      - ``"placeholder"`` if ANY model has ``validation_status != "validated"``
+        OR ``signed`` is not true.
+      - ``None`` if the manifest file is missing, empty, or malformed —
+        callers should fall back to file-existence checks in that case.
+    """
+    if not os.path.isfile(_MANIFEST_PATH):
+        return None
+    try:
+        with open(_MANIFEST_PATH, "r", encoding="utf-8") as fh:
+            manifests = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning("manifest load failed (%s): %s", _MANIFEST_PATH, exc)
+        return None
+    if not isinstance(manifests, list) or not manifests:
+        return None
+    for entry in manifests:
+        if not isinstance(entry, dict):
+            return None
+        if entry.get("validation_status") != "validated" or entry.get("signed") is not True:
+            return "placeholder"
+    return "validated"
+
+
 def _check_onnx_models() -> dict[str, str]:
     """Check if ONNX runtime is importable and model files exist."""
     try:
@@ -73,6 +104,13 @@ def _check_onnx_models() -> dict[str, str]:
         and any(f.endswith(".onnx") for f in os.listdir(_MODELS_DIR))
     )
     if has_weights:
+        manifest_state = _manifests_validation_state()
+        if manifest_state == "placeholder":
+            return {
+                "feature": "onnx_models",
+                "status": "degraded",
+                "activation_steps": _ONNX_STEPS,
+            }
         return {
             "feature": "onnx_models",
             "status": "available",
@@ -136,6 +174,13 @@ def _check_model_weights() -> dict[str, str]:
     if os.path.isdir(_MODELS_DIR):
         onnx_files = [f for f in os.listdir(_MODELS_DIR) if f.endswith(".onnx")]
         if onnx_files:
+            manifest_state = _manifests_validation_state()
+            if manifest_state == "placeholder":
+                return {
+                    "feature": "model_weights",
+                    "status": "degraded",
+                    "activation_steps": _WEIGHTS_STEPS,
+                }
             return {
                 "feature": "model_weights",
                 "status": "available",
