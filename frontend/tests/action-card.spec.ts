@@ -40,6 +40,26 @@ const HTML = `<!DOCTYPE html>
     const { useState } = React;
     ${browserCode}
 
+    const MOCK_ACTION = {
+      id: 'action-001',
+      proposedAction: 'Dispatch Boat B3',
+      operationalObjective: 'Reach stranded residents',
+      benefitRange: { low: 31, high: 47, unit: 'lives' },
+      timeSensitivity: '22 minutes',
+      resourcesRequired: ['Boat B3'],
+      primaryEvidence: [
+        { id: 'obs-001', label: 'Flood observation' },
+        { id: 'obs-002', label: 'Stranded residents' },
+      ],
+      contradictingEvidence: 'traffic observation',
+      assumptions: ['180m radius'],
+      confidence: 0.72,
+      calibration: 'Confidence 72%',
+      alternatives: [{ action: 'Team R2', failureProbability: 0.3 }],
+      failureContingency: 'bridge camera',
+      equityImpact: 'elderly residents',
+    };
+
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(React.createElement(ActionCard, {
       action: MOCK_ACTION,
