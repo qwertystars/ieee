@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, request } from '../api/client'
 import {
   type OutboxPriority,
@@ -26,18 +27,19 @@ export interface UseOutboxResult {
 const MUTATION_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE'])
 
 export function useOutbox(): UseOutboxResult {
-  const [pendingCount, setPendingCount] = useState(0)
+  const queryClient = useQueryClient()
+  const countQuery = useQuery<number>({
+    queryKey: ['outbox-pending-count'],
+    queryFn: () => getPendingCount(),
+  })
+  const pendingCount = countQuery.data ?? 0
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   )
 
   const refreshCount = useCallback(async () => {
-    try {
-      setPendingCount(await getPendingCount())
-    } catch {
-      // IndexedDB may be unavailable; keep last known count.
-    }
-  }, [])
+    await queryClient.invalidateQueries({ queryKey: ['outbox-pending-count'] })
+  }, [queryClient])
 
   const add = useCallback(async (
     url: string,
@@ -88,7 +90,6 @@ export function useOutbox(): UseOutboxResult {
   }, [refreshCount])
 
   useEffect(() => {
-    refreshCount()
     if (typeof navigator !== 'undefined' && navigator.onLine) {
       syncOutbox()
     }

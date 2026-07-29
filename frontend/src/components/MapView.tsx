@@ -7,6 +7,7 @@ import type { Layer } from '@deck.gl/core'
 import { Protocol } from 'pmtiles'
 import type { Bbox, LayerConfig, Position } from '../types/map'
 import { useMapLayers, MAP_CENTER } from '../hooks/useMapLayers'
+import { useClock } from '../hooks/useClock'
 import { buildLayers } from './mapLayers'
 import { LayerToggle } from './LayerToggle'
 import { MapLegend } from './MapLegend'
@@ -124,18 +125,13 @@ export default function MapView() {
   const [drawnZones, setDrawnZones] = useState<DrawnZone[]>([])
   const [drawingPoints, setDrawingPoints] = useState<Position[]>([])
   const [isDrawing, setIsDrawing] = useState(false)
-  const [now, setNow] = useState(Date.now())
+  const now = useClock(30000)
   const [hover, setHover] = useState<HoverInfo | null>(null)
 
   const {
     data, visibleLayers, layerStates, allConfigs, toggleLayer, fetchByBbox,
     incidentBoundary, rescueBalls, isLoading, isError, refetch,
   } = useMapLayers()
-
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30_000)
-    return () => clearInterval(t)
-  }, [])
 
   // Initialize MapLibre map once with local PMTiles basemap (no online tiles).
   // Falls back to solid dark background if PMTiles fails to load.

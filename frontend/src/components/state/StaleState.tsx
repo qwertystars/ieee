@@ -1,3 +1,5 @@
+import { useClock } from '../../hooks/useClock'
+
 interface StaleStateProps {
   message?: string
   lastUpdated?: number
@@ -10,7 +12,8 @@ function formatAge(ms: number): string {
 }
 
 export function StaleState({ message, lastUpdated }: StaleStateProps) {
-  const age = lastUpdated ? formatAge(Date.now() - lastUpdated) : null
+  const now = useClock()
+  const age = lastUpdated ? formatAge(now - lastUpdated) : null
   const label = message ?? (age ? `Data may be stale (last updated ${age})` : 'Data may be stale')
   return (
     <div

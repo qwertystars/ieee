@@ -2,11 +2,10 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, clearToken, getToken } from '../api/client'
 import type { User } from '../api/types'
 
@@ -20,43 +19,40 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+const AUTH_QUERY_KEY = ['auth-me'] as const
 
-  useEffect(() => {
-    let cancelled = false
-    const token = getToken()
-    if (!token) {
-      setLoading(false)
-      return
-    }
-    api
-      .getMe()
-      .then((u) => {
-        if (!cancelled) setUser(u)
-      })
-      .catch(() => {
-        if (!cancelled) clearToken()
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
+  const hasToken = !!getToken()
+
+  const meQuery = useQuery<User>({
+    queryKey: AUTH_QUERY_KEY,
+    queryFn: async () => {
+      try {
+        return await api.getMe()
+      } catch (err) {
+        clearToken()
+        throw err
+      }
+    },
+    enabled: hasToken,
+    retry: false,
+    staleTime: Infinity,
+  })
+
+  const user = meQuery.data ?? null
+  const loading = meQuery.isLoading
 
   const login = useCallback(async (email: string, password: string) => {
     await api.login(email, password)
     const u = await api.getMe()
-    setUser(u)
-  }, [])
+    queryClient.setQueryData(AUTH_QUERY_KEY, u)
+  }, [queryClient])
 
   const logout = useCallback(async () => {
     await api.logout()
-    setUser(null)
-  }, [])
+    queryClient.setQueryData(AUTH_QUERY_KEY, null)
+  }, [queryClient])
 
   const value = useMemo<AuthContextValue>(
     () => ({

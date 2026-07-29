@@ -3,6 +3,7 @@
 // login→getMe→setUser chain, logout→clearUser, and the useAuth guard.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor, act } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { AuthProvider, useAuth } from './AuthContext'
 import type { User } from '../api/types'
@@ -60,7 +61,14 @@ function Consumer() {
 }
 
 function renderWithProvider(node: ReactNode) {
-  return render(<AuthProvider>{node}</AuthProvider>)
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>{node}</AuthProvider>
+    </QueryClientProvider>,
+  )
 }
 
 beforeEach(() => {
