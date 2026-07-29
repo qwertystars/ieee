@@ -32,9 +32,13 @@ EVIDENCE_DIR = Path(__file__).resolve().parents[3] / "evidence" / "chaos"
 
 
 def _docker_compose(action: str, service: str) -> subprocess.CompletedProcess:
-    """Run `docker compose <action> <service>` in COMPOSE_DIR."""
+    """Run `docker compose <action> <service...>` in COMPOSE_DIR.
+
+    ``service`` may contain multiple space-separated names (e.g. ``"redis redpanda"``);
+    they are split into separate CLI args. Single-service callers are unaffected.
+    """
     return subprocess.run(
-        ["docker", "compose", action, service],
+        ["docker", "compose", action, *service.split()],
         cwd=COMPOSE_DIR,
         capture_output=True,
         text=True,
@@ -154,6 +158,23 @@ def _wait_for_service(
         try:
             checks = _deep_health(client)
             if checks.get(service) is True:
+                return round(time.perf_counter() - kill_time, 3)
+        except Exception:
+            pass
+        time.sleep(2.0)
+    return None
+
+
+def _wait_for_services(
+    client: httpx.Client, services: list[str], kill_time: float,
+    timeout_s: float = FAILOVER_TIMEOUT_S,
+) -> float | None:
+    """Wait for ALL services to recover. Returns recovery time (s), or None."""
+    deadline = kill_time + timeout_s
+    while time.perf_counter() < deadline:
+        try:
+            checks = _deep_health(client)
+            if all(checks.get(s) is True for s in services):
                 return round(time.perf_counter() - kill_time, 3)
         except Exception:
             pass
@@ -331,3 +352,73 @@ def test_chaos_minio_kill(client: httpx.Client, auth: tuple[str, str]) -> None:
 
     assert recovery_time_s is not None, "minio must recover within 30s of restart"
     assert recovery_time_s < 30.0, f"minio recovery took {recovery_time_s:.3f}s, must be < 30s"
+
+
+def _run_overlapping_test(
+    client: httpx.Client, auth: tuple[str, str],
+    services: list[str], evidence_name: str,
+) -> None:
+    """Kill multiple services simultaneously, restart, measure recovery.
+
+    Asserts fail-open (login + observation POST during outage), no crash,
+    and recovery < 30s. Writes evidence to ``evidence/chaos/<evidence_name>-<ts>.json``.
+    """
+    token, incident_id = auth
+    worker = _LoadWorker(client, token, incident_id)
+    worker.start()
+    time.sleep(2.0)
+
+    kill_time = time.perf_counter()
+    svc_arg = " ".join(services)
+    stop_result = _docker_compose("stop", svc_arg)
+    assert stop_result.returncode == 0, f"docker compose stop {svc_arg} failed: {stop_result.stderr}"
+    time.sleep(3.0)
+
+    # Fail-open: login must succeed (Redis fail-open) even with multiple deps down.
+    login_resp = client.post(
+        "/api/auth/login", data={"username": USERNAME, "password": PASSWORD}, timeout=10.0
+    )
+    assert login_resp.status_code == 200, "login must succeed during overlapping outage"
+
+    # No data loss: observation POST must succeed (PostgreSQL write path unaffected).
+    obs_status = _post_observation(client, token, incident_id)
+    assert obs_status == 201, (
+        f"observation POST must succeed (201) during overlapping outage, got {obs_status}"
+    )
+
+    checks = _deep_health(client)
+    for svc in services:
+        assert checks[svc] is False, f"deep health must report {svc}=False when down"
+    assert checks["database"] is True, "database must remain up"
+
+    start_result = _docker_compose("start", svc_arg)
+    assert start_result.returncode == 0, f"docker compose start {svc_arg} failed: {start_result.stderr}"
+    recovery_time_s = _wait_for_services(client, services, kill_time)
+    worker.stop()
+
+    result = {
+        "scenario": evidence_name,
+        "services_killed": services,
+        "load_successes": worker.successes,
+        "load_failures": worker.failures,
+        "login_during_outage": login_resp.status_code,
+        "observation_post_during_outage": obs_status,
+        "deep_health_during_outage": checks,
+        "recovery_time_s": recovery_time_s,
+    }
+    path = _write_evidence(evidence_name, result)
+    label = "+".join(services)
+    print(f"\n--- Chaos: {evidence_name} (evidence: {path}) ---\n{json.dumps(result, indent=2)}")
+
+    assert recovery_time_s is not None, f"{label} must recover within 30s of restart"
+    assert recovery_time_s < 30.0, f"{label} recovery took {recovery_time_s:.3f}s, must be < 30s"
+
+
+def test_chaos_overlapping_failures(client: httpx.Client, auth: tuple[str, str]) -> None:
+    """Kill redis + redpanda simultaneously: fail-open, no crash, recover <30s."""
+    _run_overlapping_test(client, auth, ["redis", "redpanda"], "overlapping_redis_redpanda")
+
+
+def test_chaos_overlapping_redis_minio(client: httpx.Client, auth: tuple[str, str]) -> None:
+    """Kill redis + minio simultaneously: fail-open, no crash, recover <30s."""
+    _run_overlapping_test(client, auth, ["redis", "minio"], "overlapping_redis_minio")
