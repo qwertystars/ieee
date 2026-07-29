@@ -607,3 +607,83 @@ def test_chaos_worker_restart(client: httpx.Client, auth: tuple[str, str]) -> No
     )
     assert produced, "failed to produce test message to Kafka"
     assert consumer_resumed, "consumer must resume processing after worker restart"
+
+
+def test_chaos_disk_pressure(client: httpx.Client, auth: tuple[str, str]) -> None:
+    """Fill ~80% of db /tmp: PostgreSQL degrades but doesn't crash, recovers after cleanup."""
+    token, incident_id = auth
+
+    def _exec_db(*cmd: str, timeout: int = 120) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["docker", "compose", "exec", "-T", "db", *cmd],
+            cwd=COMPOSE_DIR, capture_output=True, text=True,
+            timeout=timeout, check=False,
+        )
+
+    def _df_tmp() -> tuple[int, str]:
+        """Return (available_mb, df_human_readable) for /tmp in the db container."""
+        human = _exec_db("df", "-h", "/tmp")
+        mb = _exec_db("df", "-m", "/tmp")
+        available = 0
+        if mb.returncode == 0:
+            lines = mb.stdout.strip().split("\n")
+            if len(lines) >= 2 and len(lines[1].split()) > 3:
+                available = int(lines[1].split()[3])
+        return available, human.stdout.strip()
+
+    # 1. Check disk usage before filling.
+    available_before, df_before = _df_tmp()
+    assert available_before > 0, f"cannot determine available space for db /tmp (df: {df_before!r})"
+
+    # 2. Fill ~80% of available space (800MB default, capped to leave >=20% free).
+    fill_mb = min(800, int(available_before * 0.8))
+    assert fill_mb > 0, "insufficient disk space for disk pressure test"
+
+    try:
+        dd_result = _exec_db(
+            "dd", "if=/dev/zero", "of=/tmp/fill", "bs=1M", f"count={fill_mb}",
+            timeout=300,
+        )
+        assert dd_result.returncode == 0, f"dd failed: {dd_result.stderr}"
+
+        available_after, df_after = _df_tmp()
+
+        # 3. Verify PostgreSQL continues operating (health + observation POST).
+        health_resp = client.get("/healthz", timeout=15.0)
+        obs_status = _post_observation(client, token, incident_id)
+
+        # 4. Verify graceful degradation: database remains up.
+        checks = _deep_health(client)
+    finally:
+        # 5. Always clean up — even if the test fails.
+        _exec_db("rm", "-f", "/tmp/fill")
+
+    # 6. Verify recovery after cleanup.
+    recovery_health = client.get("/healthz", timeout=15.0)
+    recovery_obs = _post_observation(client, token, incident_id)
+    available_recovered, df_recovered = _df_tmp()
+
+    result = {
+        "scenario": "disk_pressure",
+        "fill_mb": fill_mb,
+        "available_mb_before": available_before,
+        "available_mb_after": available_after,
+        "available_mb_recovered": available_recovered,
+        "df_before": df_before,
+        "df_after": df_after,
+        "df_recovered": df_recovered,
+        "health_during_pressure": health_resp.status_code,
+        "observation_post_during_pressure": obs_status,
+        "deep_health_during_pressure": checks,
+        "health_after_cleanup": recovery_health.status_code,
+        "observation_post_after_cleanup": recovery_obs,
+    }
+    path = _write_evidence("disk_pressure", result)
+    print(f"\n--- Chaos: disk_pressure (evidence: {path}) ---\n{json.dumps(result, indent=2)}")
+
+    assert health_resp.status_code == 200, "health check must succeed during disk pressure"
+    assert checks.get("database") is True, "database must remain up during disk pressure"
+    assert obs_status == 201, f"observation POST must succeed during disk pressure, got {obs_status}"
+    assert recovery_health.status_code == 200, "health check must succeed after cleanup"
+    assert recovery_obs == 201, f"observation POST must succeed after cleanup, got {recovery_obs}"
+    assert available_recovered > available_after, "disk space must be freed after cleanup"
