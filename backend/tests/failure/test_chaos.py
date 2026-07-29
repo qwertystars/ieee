@@ -2,7 +2,8 @@
 
 Each test starts a sustained load workload, kills one Docker service,
 asserts graceful degradation (no crash, fallback path active), restarts
-the service, and asserts recovery within 30s. Evidence is written to
+the service, and measures actual recovery time from kill to first
+successful post-failover health check. Evidence is written to
 ``evidence/chaos/``.
 
 Run:
@@ -144,19 +145,20 @@ def _write_evidence(name: str, result: dict[str, Any]) -> Path:
 
 
 def _wait_for_service(
-    client: httpx.Client, service: str, timeout_s: int = FAILOVER_TIMEOUT_S
-) -> bool:
-    """Wait for a service to recover in deep health check. Returns True if recovered."""
-    deadline = time.monotonic() + timeout_s
-    while time.monotonic() < deadline:
+    client: httpx.Client, service: str, kill_time: float,
+    timeout_s: float = FAILOVER_TIMEOUT_S,
+) -> float | None:
+    """Wait for service recovery. Returns recovery time (s) from kill_time, or None."""
+    deadline = kill_time + timeout_s
+    while time.perf_counter() < deadline:
         try:
             checks = _deep_health(client)
             if checks.get(service) is True:
-                return True
+                return round(time.perf_counter() - kill_time, 3)
         except Exception:
             pass
         time.sleep(2.0)
-    return False
+    return None
 
 
 @pytest.fixture
@@ -182,6 +184,7 @@ def test_chaos_redis_kill(client: httpx.Client, auth: tuple[str, str]) -> None:
     time.sleep(2.0)  # let load ramp up
 
     # Kill redis.
+    kill_time = time.perf_counter()
     stop_result = _docker_compose("stop", "redis")
     assert stop_result.returncode == 0, f"docker compose stop redis failed: {stop_result.stderr}"
     time.sleep(3.0)  # let the backend detect the outage
@@ -205,7 +208,7 @@ def test_chaos_redis_kill(client: httpx.Client, auth: tuple[str, str]) -> None:
     # Restart redis and assert recovery <30s.
     start_result = _docker_compose("start", "redis")
     assert start_result.returncode == 0, f"docker compose start redis failed: {start_result.stderr}"
-    recovered = _wait_for_service(client, "redis")
+    recovery_time_s = _wait_for_service(client, "redis", kill_time)
     worker.stop()
 
     result = {
@@ -215,12 +218,13 @@ def test_chaos_redis_kill(client: httpx.Client, auth: tuple[str, str]) -> None:
         "login_during_outage": login_resp.status_code,
         "protected_endpoint_during_outage": me_resp.status_code,
         "deep_health_during_outage": checks,
-        "recovered_within_30s": recovered,
+        "recovery_time_s": recovery_time_s,
     }
     path = _write_evidence("redis_kill", result)
     print(f"\n--- Chaos: redis_kill (evidence: {path}) ---\n{json.dumps(result, indent=2)}")
 
-    assert recovered, "redis must recover within 30s of restart"
+    assert recovery_time_s is not None, "redis must recover within 30s of restart"
+    assert recovery_time_s < 30.0, f"redis recovery took {recovery_time_s:.3f}s, must be < 30s"
 
 
 def test_chaos_redpanda_kill(client: httpx.Client, auth: tuple[str, str]) -> None:
@@ -230,6 +234,7 @@ def test_chaos_redpanda_kill(client: httpx.Client, auth: tuple[str, str]) -> Non
     worker.start()
     time.sleep(2.0)
 
+    kill_time = time.perf_counter()
     stop_result = _docker_compose("stop", "redpanda")
     assert stop_result.returncode == 0, f"docker compose stop redpanda failed: {stop_result.stderr}"
     time.sleep(3.0)
@@ -246,7 +251,7 @@ def test_chaos_redpanda_kill(client: httpx.Client, auth: tuple[str, str]) -> Non
 
     start_result = _docker_compose("start", "redpanda")
     assert start_result.returncode == 0, f"docker compose start redpanda failed: {start_result.stderr}"
-    recovered = _wait_for_service(client, "redpanda")
+    recovery_time_s = _wait_for_service(client, "redpanda", kill_time)
     worker.stop()
 
     result = {
@@ -255,12 +260,13 @@ def test_chaos_redpanda_kill(client: httpx.Client, auth: tuple[str, str]) -> Non
         "load_failures": worker.failures,
         "observation_post_during_outage": obs_status,
         "deep_health_during_outage": checks,
-        "recovered_within_30s": recovered,
+        "recovery_time_s": recovery_time_s,
     }
     path = _write_evidence("redpanda_kill", result)
     print(f"\n--- Chaos: redpanda_kill (evidence: {path}) ---\n{json.dumps(result, indent=2)}")
 
-    assert recovered, "redpanda must recover within 30s of restart"
+    assert recovery_time_s is not None, "redpanda must recover within 30s of restart"
+    assert recovery_time_s < 30.0, f"redpanda recovery took {recovery_time_s:.3f}s, must be < 30s"
 
 
 def test_chaos_minio_kill(client: httpx.Client, auth: tuple[str, str]) -> None:
@@ -270,6 +276,7 @@ def test_chaos_minio_kill(client: httpx.Client, auth: tuple[str, str]) -> None:
     worker.start()
     time.sleep(2.0)
 
+    kill_time = time.perf_counter()
     stop_result = _docker_compose("stop", "minio")
     assert stop_result.returncode == 0, f"docker compose stop minio failed: {stop_result.stderr}"
     time.sleep(3.0)
@@ -306,7 +313,7 @@ def test_chaos_minio_kill(client: httpx.Client, auth: tuple[str, str]) -> None:
 
     start_result = _docker_compose("start", "minio")
     assert start_result.returncode == 0, f"docker compose start minio failed: {start_result.stderr}"
-    recovered = _wait_for_service(client, "minio")
+    recovery_time_s = _wait_for_service(client, "minio", kill_time)
     worker.stop()
 
     result = {
@@ -317,9 +324,10 @@ def test_chaos_minio_kill(client: httpx.Client, auth: tuple[str, str]) -> None:
         "ml_status_during_outage": body.get("status"),
         "non_ml_endpoint_during_outage": obs_resp.status_code,
         "deep_health_during_outage": checks,
-        "recovered_within_30s": recovered,
+        "recovery_time_s": recovery_time_s,
     }
     path = _write_evidence("minio_kill", result)
     print(f"\n--- Chaos: minio_kill (evidence: {path}) ---\n{json.dumps(result, indent=2)}")
 
-    assert recovered, "minio must recover within 30s of restart"
+    assert recovery_time_s is not None, "minio must recover within 30s of restart"
+    assert recovery_time_s < 30.0, f"minio recovery took {recovery_time_s:.3f}s, must be < 30s"
