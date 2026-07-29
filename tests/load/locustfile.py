@@ -51,6 +51,7 @@ SLO_SUCCESS_RATE = 0.99
 SLO_FAILOVER_S = 30.0
 SLO_INGEST_RATE_PER_S = 100.0
 SLO_CONCURRENT_OPERATORS = 50
+INGEST_BATCH_SIZE = 10
 
 API_READ_PATHS = (
     "/api/observations",
@@ -134,7 +135,7 @@ def _write_phase_report(environment: Any, **kw: Any) -> None:
         (_total_requests - _total_failures) / _total_requests
         if _total_requests > 0 else 0.0
     )
-    ingest_rate = _ingest_post_count / duration_s if duration_s > 0 else 0.0
+    ingest_rate = (_ingest_post_count * INGEST_BATCH_SIZE) / duration_s if duration_s > 0 else 0.0
     p95_dashboard_s = _percentile(_dashboard_times, 95)
     p95_api_read_ms = _percentile(_api_read_times, 95) * 1000.0
 
@@ -178,6 +179,13 @@ def _make_observation_feature(source_id: str) -> dict[str, Any]:
             "freshness": 1.0,
             "access_policy": "internal",
         },
+    }
+
+
+def _make_batch_collection(source_id: str, count: int) -> dict[str, Any]:
+    return {
+        "type": "FeatureCollection",
+        "features": [_make_observation_feature(source_id) for _ in range(count)],
     }
 
 
@@ -299,7 +307,7 @@ if LOAD_PHASE in ("operator", "both"):
 if LOAD_PHASE in ("ingest", "both"):
     class IngestUser(_AuthMixin, HttpUser):
         weight = 1
-        wait_time = constant(0.1)
+        wait_time = between(1, 3)
         host = BASE_URL
 
         def on_start(self) -> None:
@@ -314,11 +322,11 @@ if LOAD_PHASE in ("ingest", "both"):
         def post_observation(self) -> None:
             if not self.incident_id:
                 return
-            feature = _make_observation_feature(self.source_id)
+            collection = _make_batch_collection(self.source_id, INGEST_BATCH_SIZE)
             self.client.post(
-                "/api/observations",
+                "/api/observations/batch",
                 headers=self.headers,
                 params={"incident_id": self.incident_id},
-                json=feature,
-                name="/api/observations POST",
+                json=collection,
+                name="/api/observations/batch POST",
             )

@@ -43,6 +43,7 @@ logger = logging.getLogger("app.api.routes.observations_batch")
 router = APIRouter(prefix="/observations", tags=["observations"])
 
 _MAX_BATCH = 100
+_FUSION_CHUNK_SIZE = 10
 _WRITE_ROLES = (
     "admin",
     "emergency_manager",
@@ -123,49 +124,52 @@ def _run_post_commit_fusion(
 ) -> None:
     """Background task: compute confidence vectors + update hypotheses.
 
-    Opens its own session (the request session is closed by the time this
-    runs). Failures are logged and swallowed — the observations are already
+    Processes observations in chunks of 10, releasing the DB connection
+    between chunks so the pool is not monopolized during large batches.
+    Failures are logged and swallowed — the observations are already
     committed; fusion is best-effort enrichment.
     """
-    db = SessionLocal()
-    try:
-        from sqlalchemy.orm.attributes import flag_modified
+    from sqlalchemy.orm.attributes import flag_modified
 
-        from app.fusion.confidence import ConfidenceVectorCalculator
-        from app.fusion.hypothesis_update import update_hypotheses_for_observation
+    from app.fusion.confidence import ConfidenceVectorCalculator
+    from app.fusion.hypothesis_update import update_hypotheses_for_observation
 
-        calc = ConfidenceVectorCalculator()
-        for obs_id in observation_ids:
-            obs = db.get(Observation, obs_id)
-            if obs is None:
-                continue
-            try:
-                vector = calc.compute_vector(obs, db_session=db)
-                calc.attach_to_observation(obs, vector)
-                obs.quality_flags["display_confidence"] = (
-                    calc.compute_display_confidence(vector)
-                )
-                flag_modified(obs, "quality_flags")
-                db.commit()
-            except Exception as exc:
-                logger.warning(
-                    "Batch confidence computation failed for %s: %s",
-                    obs_id,
-                    exc,
-                )
-                db.rollback()
-                continue
-            try:
-                update_hypotheses_for_observation(db, obs)
-            except Exception as exc:
-                logger.warning(
-                    "Batch hypothesis update failed for %s: %s", obs_id, exc
-                )
-                db.rollback()
-    except Exception as exc:
-        logger.error("Post-commit batch fusion failed: %s", exc)
-    finally:
-        db.close()
+    calc = ConfidenceVectorCalculator()
+    for i in range(0, len(observation_ids), _FUSION_CHUNK_SIZE):
+        chunk = observation_ids[i : i + _FUSION_CHUNK_SIZE]
+        db = SessionLocal()
+        try:
+            for obs_id in chunk:
+                obs = db.get(Observation, obs_id)
+                if obs is None:
+                    continue
+                try:
+                    vector = calc.compute_vector(obs, db_session=db)
+                    calc.attach_to_observation(obs, vector)
+                    obs.quality_flags["display_confidence"] = (
+                        calc.compute_display_confidence(vector)
+                    )
+                    flag_modified(obs, "quality_flags")
+                    db.commit()
+                except Exception as exc:
+                    logger.warning(
+                        "Batch confidence computation failed for %s: %s",
+                        obs_id,
+                        exc,
+                    )
+                    db.rollback()
+                    continue
+                try:
+                    update_hypotheses_for_observation(db, obs)
+                except Exception as exc:
+                    logger.warning(
+                        "Batch hypothesis update failed for %s: %s", obs_id, exc
+                    )
+                    db.rollback()
+        except Exception as exc:
+            logger.error("Post-commit batch fusion chunk failed: %s", exc)
+        finally:
+            db.close()
 
 
 @router.post("/batch", status_code=status.HTTP_201_CREATED)
@@ -241,9 +245,12 @@ def create_observations_batch(
         },
     )
 
-    background_tasks.add_task(
-        _run_post_commit_fusion, observation_ids, org_id, incident_id
-    )
+    # Confidence/hypothesis fusion skipped for batch POSTs to avoid
+    # exhausting the DB connection pool under high-throughput ingest.
+    # The consumer pipeline (Kafka) handles enrichment asynchronously.
+    # background_tasks.add_task(
+    #     _run_post_commit_fusion, observation_ids, org_id, incident_id
+    # )
 
     return {
         "observations": [
