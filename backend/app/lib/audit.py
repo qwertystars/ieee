@@ -117,4 +117,34 @@ def verify_chain(db: Session, org_id: str) -> bool | int:
     return True
 
 
-__all__ = ["verify_chain", "write_audit"]
+def write_break_glass_audit_if_outage(
+    db: Session,
+    org_id: str,
+    incident_id: str,
+    actor: str,
+    entity: str,
+    op: str,
+) -> None:
+    """Write a break-glass audit entry if Redis is unavailable (fail-open path).
+
+    Called after a fail-open sensitive operation proceeds during a Redis
+    outage. Records the break-glass decision in the hash-chained audit log.
+    No-op if Redis is available (normal path, no break-glass needed).
+    """
+    from app.deps import get_redis
+
+    if get_redis() is not None:
+        return
+    write_audit(
+        db,
+        org_id=org_id,
+        incident_id=incident_id,
+        actor=actor,
+        action=f"break_glass_{op}",
+        entity=entity,
+        before=None,
+        after={"reason": "redis_outage_fail_open"},
+    )
+
+
+__all__ = ["verify_chain", "write_audit", "write_break_glass_audit_if_outage"]

@@ -4,6 +4,7 @@ import hashlib
 import logging
 import threading
 from collections.abc import Generator
+from enum import Enum
 from typing import Any
 
 from fastapi import Depends, HTTPException, status
@@ -24,6 +25,20 @@ REFRESH_TOKEN_PREFIX = "refresh_token:"
 _redis_client: Any = None
 _local_revoked_tokens: set[str] = set()
 _local_revoked_lock = threading.Lock()
+
+
+class SensitiveOperation(str, Enum):
+    """Sensitive operations with hybrid fail-closed/fail-open policies.
+
+    ADMIN_CHANGE is fail-closed: rejected when Redis is down and the token
+    is not in the local revocation cache (cannot verify token is not revoked).
+    The fail-open ops proceed during Redis outages, with a break-glass audit.
+    """
+
+    ADMIN_CHANGE = "admin_change"
+    ALERT_APPROVAL = "alert_approval"
+    EMERGENCY_OVERRIDE = "emergency_override"
+    OPERATIONAL_DISPATCH = "operational_dispatch"
 
 
 def get_redis() -> Any | None:
@@ -67,6 +82,29 @@ def is_token_revoked(token: str) -> bool:
     except Exception as exc:
         logger.warning("Redis denylist check failed: %s", exc)
         return False
+
+
+def check_sensitive_operation(token: str, op: SensitiveOperation) -> bool:
+    """Return True if the operation should proceed, False if rejected.
+
+    For ADMIN_CHANGE (fail-closed): if Redis is down and the token hash is
+    not in the local revocation cache, reject (cannot verify token is not
+    revoked). Otherwise, use is_token_revoked() (proceed if not revoked).
+
+    For fail-open ops: use is_token_revoked() (proceed if not revoked,
+    fail-open when Redis is down and token is not in local cache).
+    """
+    if op is SensitiveOperation.ADMIN_CHANGE:
+        token_hash = _hash_token(token)
+        with _local_revoked_lock:
+            in_local = token_hash in _local_revoked_tokens
+        if get_redis() is None and not in_local:
+            logger.warning(
+                "Admin change rejected (fail-closed): Redis down, token not in local cache"
+            )
+            return False
+        return not is_token_revoked(token)
+    return not is_token_revoked(token)
 
 
 def revoke_token(token: str, ttl_seconds: int) -> None:
@@ -179,6 +217,8 @@ def get_current_user(
 from app.auth.roles import require_roles
 
 __all__ = [
+    "SensitiveOperation",
+    "check_sensitive_operation",
     "get_current_user",
     "get_db",
     "get_redis",

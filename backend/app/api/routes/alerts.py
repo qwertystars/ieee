@@ -16,8 +16,8 @@ from sqlalchemy.orm import Session
 
 from app.audit.provenance import ProvenanceChain
 from app.audit.provenance_types import ProvenanceInput
-from app.deps import get_current_user, get_db, require_roles
-from app.lib.audit import write_audit
+from app.deps import check_sensitive_operation, get_current_user, get_db, oauth2_scheme, require_roles, SensitiveOperation
+from app.lib.audit import write_audit, write_break_glass_audit_if_outage
 from app.lib.time import now_ms
 from app.models.alert import Alert
 from app.models.user import User
@@ -137,6 +137,7 @@ def approve_alert(
     payload: dict[str, Any] | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(require_roles(*_REVIEW_ROLES)),
+    token: str = Depends(oauth2_scheme),
 ) -> dict[str, Any]:
     """Approve an alert — sets status='approved', records audit + provenance.
 
@@ -144,6 +145,8 @@ def approve_alert(
     for task creation (wired in Task 15).
     """
     org_id = request.state.org_id or ""
+    if not check_sensitive_operation(token, SensitiveOperation.ALERT_APPROVAL):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "operation not permitted")
     alert = _get_alert(db, org_id, incident_id, alert_id)
     rationale = (payload or {}).get("review_rationale", "")
     ts = now_ms()
@@ -165,6 +168,7 @@ def approve_alert(
         before=before,
         after=_to_dict(alert),
     )
+    write_break_glass_audit_if_outage(db, org_id, incident_id, user.email, alert.id, SensitiveOperation.ALERT_APPROVAL.value)
     try:
         _record_provenance(db, org_id, alert, user, "approve", rationale)
     except Exception as exc:

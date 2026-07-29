@@ -15,7 +15,7 @@ Demo users are seeded directly via seed_demo_users(). No source files mocked.
 from __future__ import annotations
 
 from datetime import timedelta
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,8 +24,13 @@ import app.deps as deps_module
 from app.auth.jwt import create_access_token, create_refresh_token, decode_token
 from app.auth.seed import seed_demo_users
 from app.db import SessionLocal
-from app.deps import is_token_revoked, revoke_token
+from app.deps import SensitiveOperation, check_sensitive_operation, is_token_revoked, revoke_token
+from app.lib.time import now_ms
+from app.lib.ulid import generate_ulid
 from app.main import app
+from app.models.alert import Alert
+from app.models.events import Event
+from app.models.incident import Incident
 
 PASSWORD = "demo1234"
 ADMIN_EMAIL = "admin@demo.disaster"
@@ -176,3 +181,129 @@ def test_local_cache_is_thread_safe() -> None:
 
     for token in tokens:
         assert is_token_revoked(token) is True
+
+
+# ---------------------------------------------------------------------------
+# T39: Hybrid fail-closed/fail-open policy + break-glass audit
+# ---------------------------------------------------------------------------
+
+
+def _create_incident_and_alert(db) -> tuple[str, str]:
+    """Create a test incident and draft alert, return (incident_id, alert_id)."""
+    ts = now_ms()
+    incident_id, alert_id = generate_ulid(), generate_ulid()
+    db.add(Incident(id=incident_id, org_id="org_demo", title="T39 Test",
+        disaster_type="flood", severity="critical", status="active",
+        start_time=ts, created_at=ts, updated_at=ts))
+    db.commit()
+    db.add(Alert(id=alert_id, org_id="org_demo", incident_id=incident_id,
+        alert_type="trapped_person", title="T39 Test Alert",
+        message="Test alert for hybrid auth policy", severity="critical",
+        recommended_action="Dispatch rescue team",
+        confidence_vector={"s": 0.7, "c": 0.5}, status="draft",
+        created_by="test", created_at=ts, updated_at=ts))
+    db.commit()
+    return incident_id, alert_id
+
+
+def test_admin_change_rejected_when_redis_down_and_not_in_local_cache() -> None:
+    """Given Redis is down and token is not in local revocation cache,
+    When check_sensitive_operation is called with ADMIN_CHANGE,
+    Then it returns False (fail-closed)."""
+    token = "admin-token-T39-fail-closed"
+    with patch.object(deps_module, "get_redis", return_value=None):
+        result = check_sensitive_operation(token, SensitiveOperation.ADMIN_CHANGE)
+    assert result is False
+
+
+def test_admin_change_allowed_when_redis_up_and_token_not_revoked() -> None:
+    """Given Redis is up and token is not revoked, When check_sensitive_operation
+    is called with ADMIN_CHANGE, Then it returns True (allowed)."""
+    token = "admin-token-T39-allowed"
+    mock_client = MagicMock()
+    mock_client.sismember.return_value = 0
+    with patch.object(deps_module, "get_redis", return_value=mock_client):
+        result = check_sensitive_operation(token, SensitiveOperation.ADMIN_CHANGE)
+    assert result is True
+
+
+def test_alert_approval_succeeds_when_redis_down_with_break_glass_audit() -> None:
+    """Given Redis is down, When alert approval is requested, Then it succeeds
+    (fail-open) and a break_glass_alert_approval audit entry is written."""
+    db = SessionLocal()
+    try:
+        incident_id, alert_id = _create_incident_and_alert(db)
+    finally:
+        db.close()
+
+    with TestClient(app) as client:
+        tokens = _login(client)
+        with patch.object(deps_module, "get_redis", return_value=None):
+            resp = client.post(
+                f"/api/incidents/{incident_id}/alerts/{alert_id}/approve",
+                headers={"Authorization": f"Bearer {tokens['access_token']}"},
+                json={"review_rationale": "T39 break-glass test"},
+            )
+    assert resp.status_code == 200, f"approval failed: {resp.text}"
+
+    db = SessionLocal()
+    try:
+        events = db.query(Event).filter(
+            Event.action == "break_glass_alert_approval",
+            Event.entity == alert_id,
+        ).all()
+        assert len(events) == 1, f"expected 1 break-glass audit, got {len(events)}"
+    finally:
+        db.close()
+
+
+def test_alert_approval_succeeds_when_redis_up() -> None:
+    """Given Redis is up and token is not revoked, When alert approval is
+    requested, Then it succeeds (normal path, no break-glass audit)."""
+    db = SessionLocal()
+    try:
+        incident_id, alert_id = _create_incident_and_alert(db)
+    finally:
+        db.close()
+
+    mock_client = MagicMock()
+    mock_client.sismember.return_value = 0
+    with TestClient(app) as client:
+        tokens = _login(client)
+        with patch.object(deps_module, "get_redis", return_value=mock_client):
+            resp = client.post(
+                f"/api/incidents/{incident_id}/alerts/{alert_id}/approve",
+                headers={"Authorization": f"Bearer {tokens['access_token']}"},
+                json={"review_rationale": "T39 normal path test"},
+            )
+    assert resp.status_code == 200, f"approval failed: {resp.text}"
+
+    db = SessionLocal()
+    try:
+        events = db.query(Event).filter(
+            Event.action == "break_glass_alert_approval",
+            Event.entity == alert_id,
+        ).all()
+        assert len(events) == 0, f"expected 0 break-glass audits, got {len(events)}"
+    finally:
+        db.close()
+
+
+def test_alert_approval_rejected_when_token_revoked() -> None:
+    """Given a revoked token, When alert approval is requested, Then it
+    returns 401 (rejected regardless of Redis state)."""
+    db = SessionLocal()
+    try:
+        incident_id, alert_id = _create_incident_and_alert(db)
+    finally:
+        db.close()
+
+    with TestClient(app) as client:
+        tokens = _login(client)
+        revoke_token(tokens["access_token"], 3600)
+        resp = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/approve",
+            headers={"Authorization": f"Bearer {tokens['access_token']}"},
+            json={"review_rationale": "T39 revoked token test"},
+        )
+    assert resp.status_code == 401
