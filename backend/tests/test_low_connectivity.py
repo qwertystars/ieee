@@ -138,8 +138,13 @@ def test_producer_manager_fails_gracefully() -> None:
     """ProducerManager.start() raises when Kafka is down.
 
     The caller (lifespan, simulator) is expected to catch this and continue.
+    Skipped when Redpanda is reachable — the test is for unavailable-Kafka
+    behavior only.
     """
     import asyncio
+
+    if _redpanda_is_reachable():
+        pytest.skip("Redpanda is running — cannot test unavailability")
 
     producer = ProducerManager(bootstrap_servers="localhost:9092")
     assert producer.is_started is False

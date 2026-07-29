@@ -91,7 +91,7 @@ def test_multiple_consumers_get_different_partitions() -> None:
     from app.streaming.consumer import ConsumerManager
 
     consumers = [
-        ConsumerManager(bootstrap_servers=_KAFKA_EXTERNAL) for _ in range(3)
+        ConsumerManager(bootstrap_servers=_KAFKA_EXTERNAL, group_id="test-worker-concurrency") for _ in range(3)
     ]
 
     async def _run() -> None:

@@ -21,6 +21,7 @@ _DEMO_TABLES = [
     "recommendations",
     "alerts",
     "operational_tasks",
+    "calibration_data",
     "sensors",
     "vehicles",
     "responders",

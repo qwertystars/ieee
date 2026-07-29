@@ -151,12 +151,12 @@ def store_refresh_token(jti: str, ttl_seconds: int) -> None:
     """Store a refresh token JTI in Redis with TTL. Best-effort if Redis is down."""
     client = get_redis()
     if client is None:
-        logger.warning("Redis unavailable — refresh token storage skipped")
+        logger.warning("Redis unavailable — refresh credential storage skipped")
         return
     try:
         client.set(REFRESH_TOKEN_PREFIX + jti, "1", ex=ttl_seconds)
     except Exception as exc:
-        logger.warning("Redis refresh token store failed: %s", exc)
+        logger.warning("Redis refresh credential store failed: %s", exc)
 
 
 def is_refresh_token_valid(jti: str) -> bool:
@@ -171,7 +171,7 @@ def is_refresh_token_valid(jti: str) -> bool:
     try:
         return bool(client.exists(REFRESH_TOKEN_PREFIX + jti))
     except Exception as exc:
-        logger.warning("Redis refresh token check failed: %s", exc)
+        logger.warning("Redis refresh credential check failed: %s", exc)
         return True
 
 

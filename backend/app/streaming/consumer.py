@@ -36,8 +36,9 @@ class ConsumerManager:
     messages are forwarded to the `observations.dlq` topic.
     """
 
-    def __init__(self, bootstrap_servers: str | None = None) -> None:
+    def __init__(self, bootstrap_servers: str | None = None, group_id: str = "observations-consumer") -> None:
         self._bootstrap = bootstrap_servers or settings.REDPANDA_BOOTSTRAP_SERVERS
+        self._group_id = group_id
         self._consumer: AIOKafkaConsumer | None = None
         self._dlq_producer: AIOKafkaProducer | None = None
         self._batch_size = int(os.environ.get("CONSUMER_BATCH_SIZE", "10"))
@@ -53,7 +54,7 @@ class ConsumerManager:
         self._consumer = AIOKafkaConsumer(
             *topics,
             bootstrap_servers=self._bootstrap,
-            group_id="observations-consumer",
+            group_id=self._group_id,
             value_deserializer=lambda v: json.loads(v.decode("utf-8")),
             auto_offset_reset="earliest",
             enable_auto_commit=False,

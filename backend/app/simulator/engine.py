@@ -241,7 +241,7 @@ class SimulationEngine:
             self._producer = ProducerManager()
         if not self._producer.is_started:
             try:
-                await self._producer.start()
+                await asyncio.wait_for(self._producer.start(), timeout=1.0)
             except Exception as exc:
                 logger.warning("Kafka producer unavailable (non-fatal): %s", exc)
                 self._producer = None

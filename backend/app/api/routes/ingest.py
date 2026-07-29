@@ -66,10 +66,12 @@ class _NoopProducer:
 async def _start_producer() -> Any:
     """Start ProducerManager; fall back to _NoopProducer on failure."""
     try:
+        import asyncio
+
         from app.streaming.producer import ProducerManager
 
         producer = ProducerManager()
-        await producer.start()
+        await asyncio.wait_for(producer.start(), timeout=5.0)
         return producer
     except Exception as exc:
         logger.warning("Kafka unavailable, using noop producer: %s", exc)

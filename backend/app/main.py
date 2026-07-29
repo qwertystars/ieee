@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         producer = AIOKafkaProducer(
             bootstrap_servers=settings.REDPANDA_BOOTSTRAP_SERVERS
         )
-        await producer.start()
+        await asyncio.wait_for(producer.start(), timeout=5.0)
         app.state.kafka_producer = producer
         logger.info("Kafka producer started")
     except Exception as exc:
