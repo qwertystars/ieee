@@ -8,14 +8,19 @@ Verifies that GET /api/capabilities:
 5. activation_steps is a non-empty string
 6. Endpoint does not crash when dependencies are down
 
-Tests run against the real environment (Redis down, Kafka down, Ollama down)
-to verify the endpoint handles unavailable dependencies gracefully.
+Tests run against the real environment. Service reachability is detected at
+test time so the assertions hold whether dependencies are up or down.
 """
 
 from __future__ import annotations
 
+import os
+import socket
+from urllib.parse import urlparse
+
 from fastapi.testclient import TestClient
 
+from app.config import settings
 from app.main import app
 
 EXPECTED_FEATURES = {
@@ -28,6 +33,25 @@ EXPECTED_FEATURES = {
 }
 
 VALID_STATUSES = {"available", "degraded", "unavailable"}
+
+
+def _check_service_reachable(host: str, port: int) -> bool:
+    """TCP-connect to (host, port) with a 2s timeout. True if reachable."""
+    try:
+        sock = socket.create_connection((host, port), timeout=2)
+        sock.close()
+        return True
+    except OSError:
+        return False
+
+
+def _parse_host_port(addr: str, default_port: int) -> tuple[str, int]:
+    """Extract (host, port) from a URL or bare ``host:port`` string."""
+    parsed = urlparse(addr)
+    if parsed.hostname:
+        return parsed.hostname, parsed.port or default_port
+    host, _, port = addr.partition(":")
+    return host, int(port) if port else default_port
 
 
 def test_capabilities_returns_200() -> None:
@@ -90,21 +114,58 @@ def test_capabilities_includes_timestamp() -> None:
 
 
 def test_capabilities_does_not_crash_when_deps_down() -> None:
-    """Endpoint returns 200 even when Redis, Kafka, and Ollama are down.
+    """Endpoint returns 200 regardless of whether Redis, Kafka, or Ollama are up.
 
-    In the test environment, these dependencies are unavailable. The
-    endpoint must report them as unavailable/degraded, not crash.
+    Detects actual service reachability at test time via a TCP socket check
+    and asserts the capabilities endpoint reports the matching status —
+    ``available`` when reachable, ``unavailable``/``degraded`` otherwise.
     """
     with TestClient(app) as client:
         resp = client.get("/api/capabilities")
     assert resp.status_code == 200
     features = {f["feature"]: f["status"] for f in resp.json()["features"]}
 
-    # Redis and Kafka are down in the test environment — must be
-    # unavailable or degraded, never cause a 500.
-    assert features["redis"] in ("unavailable", "degraded")
-    assert features["kafka"] in ("unavailable", "degraded")
-    assert features["ollama_llm"] in ("unavailable", "degraded")
+    redis_url = os.environ.get("REDIS_URL") or settings.REDIS_URL
+    redis_host, redis_port = _parse_host_port(redis_url, default_port=6379)
+    if _check_service_reachable(redis_host, redis_port):
+        assert features["redis"] == "available", (
+            f"redis reachable at {redis_host}:{redis_port} but status="
+            f"{features['redis']!r}"
+        )
+    else:
+        assert features["redis"] in ("unavailable", "degraded"), (
+            f"redis unreachable at {redis_host}:{redis_port} but status="
+            f"{features['redis']!r}"
+        )
+
+    kafka_bootstrap = (
+        os.environ.get("KAFKA_BOOTSTRAP_SERVERS")
+        or settings.REDPANDA_BOOTSTRAP_SERVERS
+    )
+    kafka_host, kafka_port = _parse_host_port(kafka_bootstrap, default_port=9092)
+    if _check_service_reachable(kafka_host, kafka_port):
+        assert features["kafka"] == "available", (
+            f"kafka reachable at {kafka_host}:{kafka_port} but status="
+            f"{features['kafka']!r}"
+        )
+    else:
+        assert features["kafka"] in ("unavailable", "degraded"), (
+            f"kafka unreachable at {kafka_host}:{kafka_port} but status="
+            f"{features['kafka']!r}"
+        )
+
+    ollama_url = os.environ.get("OLLAMA_BASE_URL") or settings.OLLAMA_BASE_URL
+    ollama_host, ollama_port = _parse_host_port(ollama_url, default_port=11434)
+    if _check_service_reachable(ollama_host, ollama_port):
+        assert features["ollama_llm"] == "available", (
+            f"ollama reachable at {ollama_host}:{ollama_port} but status="
+            f"{features['ollama_llm']!r}"
+        )
+    else:
+        assert features["ollama_llm"] in ("unavailable", "degraded"), (
+            f"ollama unreachable at {ollama_host}:{ollama_port} but status="
+            f"{features['ollama_llm']!r}"
+        )
 
 
 def test_capabilities_feature_count() -> None:
