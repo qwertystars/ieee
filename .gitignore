@@ -37,3 +37,9 @@ backend/data/calibration/
 # HuggingFace cache + model download cache (not source)
 backend/vendor/
 backend/models/
+
+# ONNX model weights (downloaded by scripts/download_real_models.py)
+# Not committed to git — large binary files. Manifest with checksums is
+# committed at backend/data/models/manifests.json
+*.onnx
+*.onnx.placeholder.bak
