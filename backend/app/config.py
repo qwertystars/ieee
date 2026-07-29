@@ -36,7 +36,8 @@ class Settings(BaseSettings):
     # Auth / JWT
     JWT_SECRET: str = "dev-secret-change-me"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 720
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # CORS (comma-separated origins, or * for all)
     CORS_ORIGINS: str = "*"

@@ -18,6 +18,7 @@ logger = logging.getLogger("app.deps")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=True)
 
 REVOKED_TOKENS_KEY = "revoked_tokens"
+REFRESH_TOKEN_PREFIX = "refresh_token:"
 _redis_client: Any = None
 
 
@@ -62,6 +63,34 @@ def revoke_token(token: str, ttl_seconds: int) -> None:
             client.expire(REVOKED_TOKENS_KEY, ttl_seconds)
     except Exception as exc:
         logger.warning("Redis revoke failed: %s", exc)
+
+
+def store_refresh_token(jti: str, ttl_seconds: int) -> None:
+    """Store a refresh token JTI in Redis with TTL. Best-effort if Redis is down."""
+    client = get_redis()
+    if client is None:
+        logger.warning("Redis unavailable — refresh token storage skipped")
+        return
+    try:
+        client.set(REFRESH_TOKEN_PREFIX + jti, "1", ex=ttl_seconds)
+    except Exception as exc:
+        logger.warning("Redis refresh token store failed: %s", exc)
+
+
+def is_refresh_token_valid(jti: str) -> bool:
+    """Check whether a refresh token JTI exists in Redis.
+
+    Returns True (fail-open) when Redis is unavailable so that refresh
+    still works during Redis outages.
+    """
+    client = get_redis()
+    if client is None:
+        return True
+    try:
+        return bool(client.exists(REFRESH_TOKEN_PREFIX + jti))
+    except Exception as exc:
+        logger.warning("Redis refresh token check failed: %s", exc)
+        return True
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -109,8 +138,10 @@ __all__ = [
     "get_current_user",
     "get_db",
     "get_redis",
+    "is_refresh_token_valid",
     "is_token_revoked",
     "oauth2_scheme",
     "require_roles",
     "revoke_token",
+    "store_refresh_token",
 ]
