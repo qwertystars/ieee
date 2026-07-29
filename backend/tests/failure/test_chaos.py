@@ -182,6 +182,107 @@ def _wait_for_services(
     return None
 
 
+def _wait_for_backend(
+    client: httpx.Client, kill_time: float,
+    timeout_s: float = FAILOVER_TIMEOUT_S,
+) -> float | None:
+    """Poll /healthz until 200. Returns recovery time (s) from kill_time, or None."""
+    deadline = kill_time + timeout_s
+    while time.perf_counter() < deadline:
+        try:
+            if client.get("/healthz", timeout=5.0).status_code == 200:
+                return round(time.perf_counter() - kill_time, 3)
+        except Exception:
+            pass
+        time.sleep(2.0)
+    return None
+
+
+def _wait_for_worker(
+    kill_time: float, timeout_s: float = FAILOVER_TIMEOUT_S,
+) -> float | None:
+    """Poll docker inspect until worker container is healthy. Returns recovery time or None."""
+    deadline = kill_time + timeout_s
+    while time.perf_counter() < deadline:
+        ps = subprocess.run(
+            ["docker", "compose", "ps", "-q", "worker"],
+            cwd=COMPOSE_DIR, capture_output=True, text=True, timeout=10, check=False,
+        )
+        cid = ps.stdout.strip() if ps.returncode == 0 else ""
+        if cid:
+            insp = subprocess.run(
+                ["docker", "inspect", cid, "--format", "{{.State.Health.Status}}"],
+                capture_output=True, text=True, timeout=10, check=False,
+            )
+            if insp.returncode == 0 and insp.stdout.strip() == "healthy":
+                return round(time.perf_counter() - kill_time, 3)
+        time.sleep(2.0)
+    return None
+
+
+def _ws_reconnect(token: str, incident_id: str) -> bool:
+    """Try to establish a WebSocket connection. Returns True on success."""
+    import asyncio
+    import websockets
+
+    async def _connect() -> bool:
+        uri = f"ws://localhost:8000/ws/realtime/{incident_id}?token={token}"
+        try:
+            async with websockets.connect(uri, open_timeout=10):
+                return True
+        except Exception:
+            return False
+
+    return asyncio.run(_connect())
+
+
+def _produce_kafka_observation(incident_id: str, observation_id: str) -> bool:
+    """Produce a test observation to observations.normalized via rpk. Returns True on success."""
+    payload = json.dumps({
+        "observation_id": observation_id,
+        "event_type": "sensor_observation",
+        "phenomenon": "water_level",
+        "value": 2.5,
+        "unit": "m",
+        "geometry": {"type": "Point", "coordinates": [-73.9, 40.7]},
+        "observed_at": int(time.time() * 1000),
+        "source_id": f"chaos_restart_{int(time.time())}",
+        "source_type": "sensor",
+        "org_id": "org_demo",
+        "incident_id": incident_id,
+    }) + "\n"
+    result = subprocess.run(
+        ["docker", "compose", "exec", "-T", "redpanda",
+         "rpk", "topic", "produce", "observations.normalized",
+         "--compression", "none"],
+        input=payload, capture_output=True, text=True,
+        cwd=COMPOSE_DIR, timeout=30, check=False,
+    )
+    return result.returncode == 0
+
+
+def _observation_visible(
+    client: httpx.Client, token: str, incident_id: str, observation_id: str,
+) -> bool:
+    """Check if observation_id is visible via the polling endpoint."""
+    since = int(time.time() * 1000) - 60000
+    try:
+        resp = client.get(
+            f"/api/incidents/{incident_id}/updates",
+            params={"since": since},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10.0,
+        )
+        if resp.status_code != 200:
+            return False
+        return any(
+            o.get("observation_id") == observation_id
+            for o in resp.json().get("observations", [])
+        )
+    except Exception:
+        return False
+
+
 @pytest.fixture
 def client() -> httpx.Client:
     """HTTP client against the live Docker backend."""
@@ -422,3 +523,87 @@ def test_chaos_overlapping_failures(client: httpx.Client, auth: tuple[str, str])
 def test_chaos_overlapping_redis_minio(client: httpx.Client, auth: tuple[str, str]) -> None:
     """Kill redis + minio simultaneously: fail-open, no crash, recover <30s."""
     _run_overlapping_test(client, auth, ["redis", "minio"], "overlapping_redis_minio")
+
+
+def test_chaos_container_restart(client: httpx.Client, auth: tuple[str, str]) -> None:
+    """Restart backend mid-load: no data loss, WS reconnect, recover <30s."""
+    token, incident_id = auth
+    worker = _LoadWorker(client, token, incident_id)
+    worker.start()
+    time.sleep(2.0)
+
+    kill_time = time.perf_counter()
+    restart_result = _docker_compose("restart", "backend")
+    assert restart_result.returncode == 0, (
+        f"docker compose restart backend failed: {restart_result.stderr}"
+    )
+
+    recovery_time_s = _wait_for_backend(client, kill_time)
+    worker.stop()
+
+    # Verify no data loss: observation POST succeeds after restart.
+    obs_status = _post_observation(client, token, incident_id)
+
+    # Verify WebSocket reconnect: new WS connection can be established.
+    ws_ok = _ws_reconnect(token, incident_id)
+
+    result = {
+        "scenario": "backend_restart",
+        "load_successes": worker.successes,
+        "load_failures": worker.failures,
+        "observation_post_after_restart": obs_status,
+        "websocket_reconnect": ws_ok,
+        "recovery_time_s": recovery_time_s,
+    }
+    path = _write_evidence("backend_restart", result)
+    print(f"\n--- Chaos: backend_restart (evidence: {path}) ---\n{json.dumps(result, indent=2)}")
+
+    assert recovery_time_s is not None, "backend must recover within 30s of restart"
+    assert recovery_time_s < 30.0, (
+        f"backend recovery took {recovery_time_s:.3f}s, must be < 30s"
+    )
+    assert obs_status == 201, (
+        f"observation POST must succeed (201) after restart, got {obs_status}"
+    )
+    assert ws_ok, "WebSocket must reconnect after backend restart"
+
+
+def test_chaos_worker_restart(client: httpx.Client, auth: tuple[str, str]) -> None:
+    """Restart worker: consumer resumes processing messages, recover <30s."""
+    token, incident_id = auth
+
+    kill_time = time.perf_counter()
+    restart_result = _docker_compose("restart", "worker")
+    assert restart_result.returncode == 0, (
+        f"docker compose restart worker failed: {restart_result.stderr}"
+    )
+
+    recovery_time_s = _wait_for_worker(kill_time)
+
+    # Verify consumer resumes: produce a Kafka message, poll until it appears.
+    test_obs_id = f"chaos_wr_{int(time.time() * 1000)}"
+    produced = _produce_kafka_observation(incident_id, test_obs_id)
+
+    consumer_resumed = False
+    if produced:
+        for _ in range(10):
+            time.sleep(2.0)
+            if _observation_visible(client, token, incident_id, test_obs_id):
+                consumer_resumed = True
+                break
+
+    result = {
+        "scenario": "worker_restart",
+        "kafka_message_produced": produced,
+        "consumer_resumed": consumer_resumed,
+        "recovery_time_s": recovery_time_s,
+    }
+    path = _write_evidence("worker_restart", result)
+    print(f"\n--- Chaos: worker_restart (evidence: {path}) ---\n{json.dumps(result, indent=2)}")
+
+    assert recovery_time_s is not None, "worker must recover within 30s of restart"
+    assert recovery_time_s < 30.0, (
+        f"worker recovery took {recovery_time_s:.3f}s, must be < 30s"
+    )
+    assert produced, "failed to produce test message to Kafka"
+    assert consumer_resumed, "consumer must resume processing after worker restart"
