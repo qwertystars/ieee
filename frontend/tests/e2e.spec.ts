@@ -125,8 +125,6 @@ test.describe('Full responder flow', () => {
     // handles slow/aging data gracefully (doesn't crash, shows panels).
     await page.waitForURL('**/dashboard')
     // Wait for the situation report panel to render.
-    await expect(page.getByRole('heading', { name: 'Situation Report' }).or(
-      page.getByRole('heading', { name: 'Alerts' })
-    )).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole('heading', { name: /Situation Report|Alerts/ }).first()).toBeVisible({ timeout: 15_000 })
   })
 })
