@@ -159,7 +159,7 @@ def test_get_calibration_returns_metrics() -> None:
 # ── Flood map (degrades gracefully) ─────────────────────────────────────────
 
 
-def test_get_flood_map_degrades_gracefully() -> None:
+def test_get_flood_map_degrades_gracefully(degrade_env: None) -> None:
     """GET /flood-map returns model_unavailable when weights are missing."""
     with TestClient(app) as client:
         token = _login(client, ADMIN_EMAIL)
@@ -291,7 +291,7 @@ def test_dispatch_rescue_ball() -> None:
 # ── Damage assessment (degrades gracefully) ──────────────────────────────────
 
 
-def test_damage_assessment_degrades_gracefully() -> None:
+def test_damage_assessment_degrades_gracefully(degrade_env: None) -> None:
     """POST /damage-assessment returns model_unavailable when weights are missing."""
     with TestClient(app) as client:
         token = _login(client, ADMIN_EMAIL)
@@ -311,7 +311,7 @@ def test_damage_assessment_degrades_gracefully() -> None:
 # ── NLP report (degrades gracefully) ────────────────────────────────────────
 
 
-def test_nlp_report_degrades_gracefully() -> None:
+def test_nlp_report_degrades_gracefully(degrade_env: None) -> None:
     """POST /nlp-report returns model_unavailable when weights are missing."""
     with TestClient(app) as client:
         token = _login(client, ADMIN_EMAIL)
