@@ -364,6 +364,25 @@ all dataset licenses, acquisition methods, and registration gates. It
 handles failures gracefully — if a dataset is unavailable, it logs the
 blocker and continues with accessible datasets.
 
+**Partial retirement (2026-07-29).** The SAR flood mapping model is
+now a real pre-trained ONNX file (`sar-flood-mapping-v2.0.0.onnx`,
+94 MB, IoU 0.67) with conformal calibration active (coverage 0.9412
+on the Sen1Floods11 held-out set). The model is validated, signed,
+and reports `available` through the capabilities endpoint. This
+partially retires disclaimer #5 for the SAR model: real trained
+weights and real calibration are in place.
+
+The disclaimer remains in force for the building damage and incident
+NLP models. Both are validated (real ONNX weights, real inference
+verified end-to-end) but lack published accuracy metrics on a
+calibration dataset. `building-damage` has no calibration data (xBD
+is registration-gated). `incident-nlp` has no public calibration
+dataset. Conformal prediction intervals are not available for either
+model. The disclaimer also remains in force for all three models
+regarding operational certification on real regional data: no model
+has been validated on data from a deployment region outside the
+training set.
+
 ### 6. Local Demo Performance Does Not Equal Real Disaster Performance
 
 Performance characteristics observed in the local demo environment (latency,
@@ -377,3 +396,62 @@ designed for development resilience, not as a substitute for proper
 disaster-zone infrastructure. Production deployment requires load
 testing, capacity planning, and network hardening appropriate to the
 operational environment.
+
+**Partial retirement (2026-07-29).** The load and soak gates are now
+verified under controlled conditions. Sustained ingestion at 100+
+obs/sec is confirmed: 182.3 obs/sec through the full pipeline and
+195.58 obs/sec through the reduced path. A 1-hour soak test completed
+at 99.26% success rate (162.79 obs/sec sustained). The chaos suite
+passes 9/9 scenarios (redis, redpanda, minio kill, overlapping
+failures, container restarts, disk pressure, network loss) with
+measured failover times of redis 9s, redpanda 10s, and minio 14s.
+
+This partially retires disclaimer #6 for the load, soak, and chaos
+dimensions: the platform holds under controlled lab stress at the
+target SLOs. The disclaimer remains in force for two reasons. First,
+the backend restarts under sustained load beyond the 1-hour soak
+window, so long-duration reliability is not yet verified. Second,
+these are lab measurements on a single machine with controlled data
+volumes. Real disaster-zone performance involves degraded networks,
+intermittent power, and concurrent access from multiple agencies. The
+field trial protocol in `docs/FIELD_TRIAL_PROTOCOL.md` is the path to
+fully retiring this disclaimer.
+
+### 7. Auth Hardening and Token Revocation
+
+The platform uses JWT-based authentication with short-lived access
+tokens and longer-lived refresh tokens. As of 2026-07-29 (Wave 6),
+the auth layer has been hardened with the following controls:
+
+- **Access token lifetime:** 15 minutes.
+- **Refresh token lifetime:** 7 days.
+- **Local revocation cache:** A local in-memory cache mirrors
+  revoked token IDs so that revocation checks succeed even when the
+  primary token store (Redis) is unreachable.
+- **Hybrid fail-closed/fail-open policy:** When Redis is reachable,
+  token revocation is checked against both the local cache and Redis.
+  When Redis is unreachable, the policy is hybrid: read operations
+  fail open (a revoked token is assumed valid to preserve platform
+  availability for responders), while admin operations fail closed
+  (a revoked token is assumed revoked, blocking admin access until
+  Redis recovers). This prevents a Redis outage from locking out
+  field responders while still protecting admin endpoints.
+- **Break-glass audit:** Every fail-open decision is recorded in the
+  hash-chained audit log with the token ID, the requested operation,
+  and the reason (Redis unreachable). This ensures post-incident
+  review can identify any access granted during a fail-open window.
+
+**What this does not cover.** The hybrid policy means that during a
+Redis outage, a revoked non-admin token remains valid for read
+operations until its natural 15-minute expiry. This is a deliberate
+availability trade-off: locking out responders during a Redis outage
+is a worse outcome than honoring a recently-revoked token for up to
+15 minutes. Admin operations are never fail-open. The break-glass
+audit log is the compensating control.
+
+The auth hardening has been verified by the Wave 6 test suite (45/45
+frontend tests, 0 ESLint warnings, 0 TypeScript errors). The
+revocation cache and hybrid policy are covered by backend tests.
+This disclaimer is new and tracks the auth hardening work. It does
+not block deployment. It documents the fail-open trade-off so that
+operators are aware of the behavior during a Redis outage.

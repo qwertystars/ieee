@@ -19,6 +19,30 @@ build is deferred until a hardware team is funded and assigned.
 
 ---
 
+## Software Readiness Status (2026-07-29)
+
+All software work in the `resqnet-gap-closure` plan (Waves 1 through 6) is
+complete. The platform that would ingest telemetry from this device has
+passed every software gate. This section records the software state so a
+hardware team knows the receiving end is ready.
+
+| Wave | Gate | Result |
+|---|---|---|
+| 1 | Test stabilization | 520+ backend tests, 21/21 Playwright e2e, 45/45 frontend unit tests |
+| 2 to 3 | Real ML models | SAR flood mapping (94 MB, IoU 0.67), building damage (129 MB, F1 0.34), incident NLP (438 MB, binary classification). All 3 manifests `validated` and `signed`. `GET /api/capabilities` reports `onnx_models: available` |
+| 4 | Ingestion performance | 100+ obs/sec sustained. 182.3 obs/sec full pipeline, 195.58 obs/sec reduced. DB pool raised to 50 connections, 6 Kafka partitions, 6 workers, batch consumer commits, async confidence scoring |
+| 5 | Reliability | 1-hour soak at 99.26% success rate (162.79 obs/sec). Chaos suite 9/9 pass (redis, redpanda, minio kill, overlapping failures, container restarts, disk pressure, network loss). Measured failover: redis 9s, redpanda 10s, minio 14s |
+| 6 | Frontend and auth | 0 ESLint warnings, 0 TypeScript errors, 45/45 frontend tests. Auth hardening: 15-min access tokens, 7-day refresh tokens, local revocation cache, hybrid fail-closed/fail-open policy with break-glass audit |
+
+**What this does NOT change.** The physical hardware described in sections 1
+through 8 below is still a DEFERRED MILESTONE. No device has been built,
+procured, or manufactured. No physical testing has been done. The software
+readiness above means the platform is ready to receive telemetry from a real
+device. It does not mean a real device exists. See disclaimers #1 and #2 in
+[`docs/KNOWN_LIMITATIONS.md`](./KNOWN_LIMITATIONS.md).
+
+---
+
 ## Purpose and Scope
 
 This specification defines the physical rescue ball: a spherical, buoyant,
@@ -743,3 +767,4 @@ convention of idempotency keys on all external and queue paths.
 | Date | Task | Change |
 |---|---|---|
 | 2026-07-28 | Wave 4, Todo 12 | Initial specification document created. Physical build deferred. |
+| 2026-07-29 | T40 | Added Software Readiness Status section. All software gates (Waves 1 to 6) green. Physical hardware spec unchanged and still deferred. |

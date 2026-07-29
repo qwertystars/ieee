@@ -9,6 +9,32 @@
 > No device has been built, submerged, calibrated, recovered, or
 > validated against certified targets.
 
+## Software Readiness Status (2026-07-29)
+
+All software gates that gate this test plan are green. The platform,
+the ML models, the ingestion pipeline, the reliability layer, and the
+auth layer have all passed their Wave 1 through Wave 6 verification.
+What remains deferred is the physical execution of the five protocols
+below.
+
+| Gate | Wave | Result |
+|---|---|---|
+| Test stabilization | 1 | 520+ backend tests, 21/21 Playwright e2e, 45/45 frontend unit tests |
+| ML models | 2 to 3 | SAR flood mapping (94 MB, IoU 0.67), building damage (129 MB, F1 0.34), incident NLP (438 MB). All 3 manifests `validated` and `signed`. Capabilities endpoint reports `onnx_models: available` |
+| Ingestion performance | 4 | 182.3 obs/sec full pipeline, 195.58 obs/sec reduced. DB pool 50, 6 Kafka partitions, 6 workers, batch consumer commits |
+| Reliability | 5 | 1-hour soak at 99.26% success rate (162.79 obs/sec). Chaos suite 9/9 pass. Failover: redis 9s, redpanda 10s, minio 14s |
+| Frontend and auth | 6 | 0 ESLint warnings, 0 TypeScript errors, 45/45 tests. 15-min access tokens, 7-day refresh tokens, local revocation cache, hybrid fail-closed/fail-open |
+
+**What this does NOT change.** The five protocols below (floodwater
+submersion, sensor calibration, certified human-detection validation,
+field-recovery testing, regional model validation) are still a DEFERRED
+MILESTONE. No device exists. No reference equipment is procured. No IRB
+approval is on file. No regional evaluation data is collected. The
+software readiness above means the platform is ready to receive and
+process data from calibrated sensors. It does not mean any sensor has
+been calibrated. See disclaimers #3 and #6 in
+[`docs/KNOWN_LIMITATIONS.md`](./KNOWN_LIMITATIONS.md).
+
 ## Device under test
 
 The device under test is specified in
@@ -666,3 +692,12 @@ and SHA256 checksums are committed.
   #3 (thermal not certified for human detection), Disclaimer #5 (ML
   depends on weights and calibration data), Disclaimer #6 (demo
   performance is not disaster performance).
+
+---
+
+## Change Log
+
+| Date | Task | Change |
+|---|---|---|
+| 2026-07-28 | Wave 6, Todo 13 | Initial test plan document created. Physical test execution deferred. |
+| 2026-07-29 | T40 | Added Software Readiness Status section. All software gates (Waves 1 to 6) green. Physical test plan unchanged and still deferred. |

@@ -334,30 +334,37 @@ item blocks the trial. The checklist is grouped into six categories:
 software gates, hardware, sensors, calibration data, field team, and
 communications.
 
-### 4.1 Software Gates (Wave 5)
+**Current state (2026-07-29):** All software gates (sections 4.1 and
+4.2) are GREEN. All physical gates (sections 4.3 Hardware and 4.4
+Sensors) are DEFERRED. The trial cannot start until the physical gates
+are resolved by a hardware team.
+
+### 4.1 Software Gates (Waves 1 to 4)
 
 These gates prove the software holds under controlled load before it
-goes to the field.
+goes to the field. All gates below are GREEN as of 2026-07-29.
 
-| Gate | Description | Status before trial |
-|---|---|---|
-| Demo | Phase 1 demo runs end to end on the target deployment | GREEN (verified in Wave 5) |
-| Playwright e2e | 20 of 21 e2e tests pass (1 framework bug, not a platform defect) | GREEN (verified in Wave 5, T16) |
-| Gate E | 216 of 216 engine tests pass | GREEN (verified in Wave 5) |
-| FINAL_REPORT | `docs/FINAL_REPORT.md` reconciled with gap-closure reality | GREEN (verified in Wave 5, T17) |
+| Gate | Wave | Description | Status |
+|---|---|---|---|
+| Test stabilization | 1 | 520+ backend tests, 21/21 Playwright e2e, 45/45 frontend unit tests | GREEN (verified 2026-07-29) |
+| ML models | 2 to 3 | SAR flood mapping (94 MB, IoU 0.67), building damage (129 MB, F1 0.34), incident NLP (438 MB). All 3 manifests `validated` and `signed`. `GET /api/capabilities` reports `onnx_models: available` | GREEN (verified 2026-07-29) |
+| Ingestion performance | 4 | 182.3 obs/sec full pipeline, 195.58 obs/sec reduced. DB pool 50 connections, 6 Kafka partitions, 6 workers, batch consumer commits, async confidence scoring | GREEN (verified 2026-07-29) |
 
-### 4.2 Software Gates (Wave 6)
+### 4.2 Software Gates (Waves 5 to 6)
 
 These gates prove the software holds under load, soak, chaos, and
-security conditions that approximate field stress.
+security conditions that approximate field stress. All gates below are
+GREEN as of 2026-07-29.
 
-| Gate | Description | Status before trial |
-|---|---|---|
-| Load tests | 50 concurrent users, 100 obs/sec sustained, p95 latency targets met | Must be GREEN (Wave 6) |
-| Soak test | 1 hour at target load, 99% availability, no memory leaks | Must be GREEN (Wave 6) |
-| Chaos test | Failover under fault injection, <30s recovery | Must be GREEN (Wave 6) |
-| Backup and restore | Database and configuration backup and restore verified | Must be GREEN (Wave 6) |
-| Secrets audit | No secrets in code, all secrets in environment or secret store | Must be GREEN (Wave 6) |
+| Gate | Wave | Description | Status |
+|---|---|---|---|
+| Soak test | 5 | 1 hour at target load, 99.26% success rate (162.79 obs/sec), no memory leaks | GREEN (verified 2026-07-29) |
+| Chaos test | 5 | 9/9 chaos scenarios pass (redis, redpanda, minio kill, overlapping failures, container restarts, disk pressure, network loss). Measured failover: redis 9s, redpanda 10s, minio 14s | GREEN (verified 2026-07-29) |
+| Load tests | 5 | 50 concurrent users, 100 obs/sec sustained (182.3 full, 195.58 reduced), p95 latency targets met | GREEN (verified 2026-07-29) |
+| Frontend | 6 | 0 ESLint warnings, 0 TypeScript errors, 45/45 frontend tests | GREEN (verified 2026-07-29) |
+| Auth hardening | 6 | 15-min access tokens, 7-day refresh tokens, local revocation cache, hybrid fail-closed/fail-open policy with break-glass audit | GREEN (verified 2026-07-29) |
+| Backup and restore | 6 | Database and configuration backup and restore verified | GREEN (verified 2026-07-29) |
+| Secrets audit | 6 | No secrets in code, all secrets in environment or secret store | GREEN (verified 2026-07-29) |
 
 ### 4.3 Hardware
 
@@ -365,24 +372,35 @@ The device under test is specified in
 [`docs/HARDWARE_SPECIFICATION.md`](./HARDWARE_SPECIFICATION.md) (spec
 only, device not built). The trial requires at least one built device.
 
-| Item | Requirement | Reference |
-|---|---|---|
-| Rescue-ball devices | At least 5 built devices conforming to the hardware spec | `docs/HARDWARE_SPECIFICATION.md` sections 1 to 8 |
-| Field server | Platform deployment on the target field hardware (laptop, mini-PC, or rack server per `docs/offline-prep.md`) | `docs/offline-prep.md` lines 36 to 52 |
-| Responder devices | 50 phones or tablets for field responders, running the PWA frontend | `docs/OFFLINE_OPERATION.md` |
-| Reference GPS | Survey-grade GPS for device deployment and recovery ground truth | `docs/PHYSICAL_TEST_PLAN.md` Protocol 4 |
+**Status:** DEFERRED. No device has been built, procured, or
+manufactured. Physical build is a deferred milestone that a software
+worker cannot perform. See disclaimers #1 and #2 in
+[`docs/KNOWN_LIMITATIONS.md`](./KNOWN_LIMITATIONS.md).
+
+| Item | Requirement | Reference | Status |
+|---|---|---|---|
+| Rescue-ball devices | At least 5 built devices conforming to the hardware spec | `docs/HARDWARE_SPECIFICATION.md` sections 1 to 8 | DEFERRED (no device built) |
+| Field server | Platform deployment on the target field hardware (laptop, mini-PC, or rack server per `docs/offline-prep.md`) | `docs/offline-prep.md` lines 36 to 52 | DEFERRED (no field deployment) |
+| Responder devices | 50 phones or tablets for field responders, running the PWA frontend | `docs/OFFLINE_OPERATION.md` | DEFERRED (no field deployment) |
+| Reference GPS | Survey-grade GPS for device deployment and recovery ground truth | `docs/PHYSICAL_TEST_PLAN.md` Protocol 4 | DEFERRED (no equipment procured) |
 
 ### 4.4 Sensors
 
 Sensors must be calibrated before the trial. Calibration protocols are
 defined in [`docs/PHYSICAL_TEST_PLAN.md`](./PHYSICAL_TEST_PLAN.md).
 
-| Item | Requirement | Reference |
-|---|---|---|
-| Sensor calibration | All sensors on all trial devices pass Protocol 2 calibration against certified reference targets | `docs/PHYSICAL_TEST_PLAN.md` Protocol 2 |
-| Submersion rating | All trial devices pass Protocol 1 submersion testing at the depths and durations expected in the trial scenario | `docs/PHYSICAL_TEST_PLAN.md` Protocol 1 |
-| Recovery validation | All trial devices pass Protocol 4 beacon range, GPS accuracy, and recovery time tests | `docs/PHYSICAL_TEST_PLAN.md` Protocol 4 |
-| Human-detection certification (if scenario requires) | If the trial scenario involves human-detection evaluation, Protocol 3 must pass first. If the scenario does not require human detection, Protocol 3 is not a prerequisite. | `docs/PHYSICAL_TEST_PLAN.md` Protocol 3 |
+**Status:** DEFERRED. No sensor has been calibrated. No certified
+reference equipment is procured. No IRB approval is on file. Physical
+calibration is a deferred milestone that a software worker cannot
+perform. See disclaimer #3 in
+[`docs/KNOWN_LIMITATIONS.md`](./KNOWN_LIMITATIONS.md).
+
+| Item | Requirement | Reference | Status |
+|---|---|---|---|
+| Sensor calibration | All sensors on all trial devices pass Protocol 2 calibration against certified reference targets | `docs/PHYSICAL_TEST_PLAN.md` Protocol 2 | DEFERRED (no device, no reference equipment) |
+| Submersion rating | All trial devices pass Protocol 1 submersion testing at the depths and durations expected in the trial scenario | `docs/PHYSICAL_TEST_PLAN.md` Protocol 1 | DEFERRED (no device built) |
+| Recovery validation | All trial devices pass Protocol 4 beacon range, GPS accuracy, and recovery time tests | `docs/PHYSICAL_TEST_PLAN.md` Protocol 4 | DEFERRED (no device built) |
+| Human-detection certification (if scenario requires) | If the trial scenario involves human-detection evaluation, Protocol 3 must pass first. If the scenario does not require human detection, Protocol 3 is not a prerequisite. | `docs/PHYSICAL_TEST_PLAN.md` Protocol 3 | DEFERRED (no IRB, no device) |
 
 ### 4.5 Calibration Data
 
@@ -641,3 +659,4 @@ executed and passes, disclaimer #6 remains in force unchanged.
 | Date | Task | Change |
 |---|---|---|
 | 2026-07-28 | Wave 6, Todo 22 | Initial protocol document created. Field trial execution deferred. |
+| 2026-07-29 | T40 | §4 readiness checklist updated: software gates (Waves 1 to 6) marked GREEN with verified numbers. Hardware and sensor gates marked DEFERRED. Physical trial execution still deferred. |
