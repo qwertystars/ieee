@@ -16,7 +16,14 @@ from sqlalchemy.orm import Session
 
 from app.audit.provenance import ProvenanceChain
 from app.audit.provenance_types import ProvenanceInput
-from app.deps import check_sensitive_operation, get_current_user, get_db, oauth2_scheme, require_roles, SensitiveOperation
+from app.deps import (
+    SensitiveOperation,
+    check_sensitive_operation,
+    get_current_user,
+    get_db,
+    oauth2_scheme,
+    require_roles,
+)
 from app.lib.audit import write_audit, write_break_glass_audit_if_outage
 from app.lib.time import now_ms
 from app.models.alert import Alert

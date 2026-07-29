@@ -21,7 +21,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import app.deps as deps_module
-from app.auth.jwt import create_access_token, create_refresh_token, decode_token
+from app.auth.jwt import create_refresh_token, decode_token
 from app.auth.seed import seed_demo_users
 from app.db import SessionLocal
 from app.deps import SensitiveOperation, check_sensitive_operation, is_token_revoked, revoke_token

@@ -30,7 +30,6 @@ from app.api.routes.observations_queries import (
     to_feature,
     visible_policies,
 )
-from app.db import SessionLocal
 from app.deps import get_current_user, get_db, require_roles
 from app.lib.time import now_ms
 from app.lib.ulid import generate_ulid

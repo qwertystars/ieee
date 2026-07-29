@@ -223,6 +223,7 @@ def _wait_for_worker(
 def _ws_reconnect(token: str, incident_id: str) -> bool:
     """Try to establish a WebSocket connection. Returns True on success."""
     import asyncio
+
     import websockets
 
     async def _connect() -> bool:

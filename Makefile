@@ -94,9 +94,9 @@ lint: ## Run ruff check . (if available)
 typecheck: ## Run mypy app/ (if available)
 	@echo "=== Running mypy ==="
 	@if command -v mypy >/dev/null 2>&1; then \
-		mypy "$(BACKEND_DIR)/app/"; \
+		mypy --config-file "$(BACKEND_DIR)/mypy.ini" "$(BACKEND_DIR)/app/"; \
 	elif [ -x "$(VENV)/bin/mypy" ]; then \
-		"$(VENV)/bin/mypy" "$(BACKEND_DIR)/app/"; \
+		"$(VENV)/bin/mypy" --config-file "$(BACKEND_DIR)/mypy.ini" "$(BACKEND_DIR)/app/"; \
 	else \
 		echo "mypy not installed — skipping (install with: pip install mypy)"; \
 	fi

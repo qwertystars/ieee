@@ -159,6 +159,9 @@ class ConsumerManager:
             observations: list[Observation] = []
             for payload in payloads:
                 observation_id = payload.get("observation_id")
+                if observation_id is None:
+                    logger.warning("Payload missing observation_id, skipping")
+                    continue
                 source = str(payload.get("source_type", "unknown")).lower()
                 is_new = check_and_record(db, source, observation_id)
                 if not is_new:
