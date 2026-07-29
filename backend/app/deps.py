@@ -1,6 +1,8 @@
 """FastAPI dependency providers."""
 
+import hashlib
 import logging
+import threading
 from collections.abc import Generator
 from typing import Any
 
@@ -20,6 +22,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=True
 REVOKED_TOKENS_KEY = "revoked_tokens"
 REFRESH_TOKEN_PREFIX = "refresh_token:"
 _redis_client: Any = None
+_local_revoked_tokens: set[str] = set()
+_local_revoked_lock = threading.Lock()
 
 
 def get_redis() -> Any | None:
@@ -39,30 +43,70 @@ def get_redis() -> Any | None:
     return _redis_client
 
 
+def _hash_token(token: str) -> str:
+    """Return the SHA256 hex digest of a token string."""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
 def is_token_revoked(token: str) -> bool:
-    """Return True if token is in the Redis denylist. False if Redis is down."""
+    """Return True if token is revoked (local cache or Redis denylist).
+
+    Checks the in-memory local cache first (survives Redis outages), then
+    falls back to Redis. Returns False (fail-open) when Redis is down and
+    the token is not in the local cache.
+    """
+    token_hash = _hash_token(token)
+    with _local_revoked_lock:
+        if token_hash in _local_revoked_tokens:
+            return True
     client = get_redis()
     if client is None:
         return False
     try:
-        return bool(client.sismember(REVOKED_TOKENS_KEY, token))
+        return bool(client.sismember(REVOKED_TOKENS_KEY, token_hash))
     except Exception as exc:
         logger.warning("Redis denylist check failed: %s", exc)
         return False
 
 
 def revoke_token(token: str, ttl_seconds: int) -> None:
-    """Add token to the Redis denylist with TTL. Best-effort if Redis is down."""
+    """Add token hash to the Redis denylist with TTL and to the local cache.
+
+    Best-effort if Redis is down — the local cache is always updated.
+    """
+    token_hash = _hash_token(token)
+    with _local_revoked_lock:
+        _local_revoked_tokens.add(token_hash)
     client = get_redis()
     if client is None:
-        logger.warning("Redis unavailable — revocation skipped (best-effort)")
+        logger.warning("Redis unavailable — revocation skipped (best-effort, local cache updated)")
         return
     try:
-        client.sadd(REVOKED_TOKENS_KEY, token)
+        client.sadd(REVOKED_TOKENS_KEY, token_hash)
         if ttl_seconds > 0:
             client.expire(REVOKED_TOKENS_KEY, ttl_seconds)
     except Exception as exc:
         logger.warning("Redis revoke failed: %s", exc)
+
+
+def _populate_local_cache_from_redis() -> None:
+    """Best-effort load all revoked token hashes from Redis into the local cache."""
+    client = get_redis()
+    if client is None:
+        return
+    try:
+        members = client.smembers(REVOKED_TOKENS_KEY)
+        with _local_revoked_lock:
+            for member in members:
+                if isinstance(member, bytes):
+                    member = member.decode("utf-8", errors="replace")
+                _local_revoked_tokens.add(member)
+    except Exception as exc:
+        logger.warning("Failed to populate local revocation cache: %s", exc)
+
+
+# Best-effort: populate local cache from Redis on module import.
+_populate_local_cache_from_redis()
 
 
 def store_refresh_token(jti: str, ttl_seconds: int) -> None:
