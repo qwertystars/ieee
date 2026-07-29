@@ -687,3 +687,115 @@ def test_chaos_disk_pressure(client: httpx.Client, auth: tuple[str, str]) -> Non
     assert recovery_health.status_code == 200, "health check must succeed after cleanup"
     assert recovery_obs == 201, f"observation POST must succeed after cleanup, got {recovery_obs}"
     assert available_recovered > available_after, "disk space must be freed after cleanup"
+
+
+def test_chaos_network_loss(client: httpx.Client, auth: tuple[str, str]) -> None:
+    """Intermittent network loss: 3 cycles of 5s off / 10s on. No data loss, recovery."""
+    token, incident_id = auth
+    network = os.environ.get("CHAOS_DOCKER_NETWORK", "ieee_default")
+    container = os.environ.get("CHAOS_BACKEND_CONTAINER", "ieee-backend-1")
+
+    worker = _LoadWorker(client, token, incident_id)
+    worker.start()
+    time.sleep(2.0)
+
+    cycles = 3
+    cycle_results: list[dict[str, Any]] = []
+    disconnected = False
+
+    try:
+        for i in range(cycles):
+            disc = subprocess.run(
+                ["docker", "network", "disconnect", network, container],
+                capture_output=True, text=True, timeout=30, check=False,
+            )
+            disconnected = disc.returncode == 0
+            time.sleep(2.0)
+
+            # Check Redis fail-open during outage (backend may be unreachable).
+            outage_login = 0
+            try:
+                resp = client.post(
+                    "/api/auth/login",
+                    data={"username": USERNAME, "password": PASSWORD},
+                    timeout=3.0,
+                )
+                outage_login = resp.status_code
+            except Exception:
+                outage_login = 0
+
+            time.sleep(3.0)  # total 5s off
+
+            conn = subprocess.run(
+                ["docker", "network", "connect", network, container],
+                capture_output=True, text=True, timeout=30, check=False,
+            )
+            disconnected = False
+            time.sleep(10.0)  # 10s on for stabilization
+
+            cycle_results.append({
+                "cycle": i + 1,
+                "disconnect_rc": disc.returncode,
+                "connect_rc": conn.returncode,
+                "login_during_outage": outage_login,
+            })
+    finally:
+        if disconnected:
+            subprocess.run(
+                ["docker", "network", "connect", network, container],
+                capture_output=True, text=True, timeout=30, check=False,
+            )
+
+    # Wait for full recovery after last reconnection.
+    recovery_start = time.perf_counter()
+    recovery_time_s = _wait_for_backend(client, recovery_start, timeout_s=60.0)
+    worker.stop()
+
+    # No data loss: observation POST succeeds.
+    obs_status = _post_observation(client, token, incident_id)
+
+    # Redis fail-open: login succeeds after recovery.
+    login_resp = client.post(
+        "/api/auth/login", data={"username": USERNAME, "password": PASSWORD}, timeout=10.0
+    )
+
+    # Recovery: health + deep health.
+    health_resp = client.get("/healthz", timeout=15.0)
+    checks = _deep_health(client)
+
+    # Kafka buffers flushed: produce + consume after recovery.
+    test_obs_id = f"chaos_net_{int(time.time() * 1000)}"
+    produced = _produce_kafka_observation(incident_id, test_obs_id)
+    consumer_resumed = False
+    if produced:
+        for _ in range(10):
+            time.sleep(2.0)
+            if _observation_visible(client, token, incident_id, test_obs_id):
+                consumer_resumed = True
+                break
+
+    result = {
+        "scenario": "network_loss",
+        "cycles": cycles,
+        "cycle_results": cycle_results,
+        "load_successes": worker.successes,
+        "load_failures": worker.failures,
+        "recovery_time_s": recovery_time_s,
+        "observation_post_after_recovery": obs_status,
+        "login_after_recovery": login_resp.status_code,
+        "health_after_recovery": health_resp.status_code,
+        "deep_health_after_recovery": checks,
+        "kafka_message_produced": produced,
+        "kafka_consumer_resumed": consumer_resumed,
+        "data_loss": obs_status != 201,
+    }
+    path = _write_evidence("network_loss", result)
+    print(f"\n--- Chaos: network_loss (evidence: {path}) ---\n{json.dumps(result, indent=2)}")
+
+    assert recovery_time_s is not None, "backend must recover within 60s after network reconnection"
+    assert obs_status == 201, f"observation POST must succeed after recovery, got {obs_status}"
+    assert health_resp.status_code == 200, "health check must return 200 after recovery"
+    assert checks.get("database") is True, "database must be up after recovery"
+    assert login_resp.status_code == 200, "login must succeed after recovery (Redis fail-open)"
+    assert produced, "failed to produce test message to Kafka after recovery"
+    assert consumer_resumed, "Kafka consumer must resume after network recovery"
