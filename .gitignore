@@ -33,3 +33,7 @@ tmp/
 # Not committed to git — large GeoTIFF files. Manifest with checksums is
 # generated at download time under backend/data/calibration/manifest.json
 backend/data/calibration/
+
+# HuggingFace cache + model download cache (not source)
+backend/vendor/
+backend/models/

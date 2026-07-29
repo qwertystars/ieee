@@ -1,7 +1,7 @@
 """E2E ONNX inference test — validates the full inference plumbing.
 
 Instantiates ``ModelServing`` with the real ONNX Runtime (no mocks) and
-the local placeholder weight files in ``backend/data/models/``. For each
+the real trained weight files in ``backend/data/models/``. For each
 of the 3 catalog models, this test:
 
 1. Inserts a ``ModelRecord`` into the DB registry.
@@ -11,13 +11,10 @@ of the 3 catalog models, this test:
 4. Asserts the output matches the catalog's ``output_schema`` shape.
 5. Asserts a ``model_version`` string (``name:version``) is returned.
 
-IMPORTANT — these are SYNTHETIC PLACEHOLDER models, not trained weights.
-The HuggingFace ``resqnet`` model repos are private/gated (HTTP 401), so
-real trained weights cannot be downloaded without HF authentication.
-The placeholder models have the correct I/O schemas (tensor names, shapes,
-dtypes) but use trivial ops (Identity, ReduceMean, Constant) — they validate
-the inference PLUMBING, not model accuracy. See ``docs/KNOWN_LIMITATIONS.md``
-for details.
+The models are real pre-trained weights exported from HuggingFace:
+  - SAR flood mapping: U-Net+ResNet34 from Governor6191/sar-flood-extent-unet-resnet34
+  - Building damage: U-Net+ResNet50 from vivek20072000/xview2-checkpoints
+  - Incident NLP: BERT fine-tune from sakibalfahim/CrisisPulse
 """
 
 from __future__ import annotations
@@ -47,15 +44,15 @@ _MODELS_DIR = os.path.join(_DATA_DIR, "models")
 
 
 def _onnx_files_present() -> bool:
-    """Check if the 3 placeholder ONNX files exist in backend/data/models/."""
+    """Check if the 3 ONNX model files exist in backend/data/models/."""
     if not os.path.isdir(_MODELS_DIR):
         return False
     return any(f.endswith(".onnx") for f in os.listdir(_MODELS_DIR))
 
 
 _SKIP_REASON = (
-    "ONNX placeholder models not found in backend/data/models/ — "
-    "run scripts/generate_placeholder_onnx.py to create them"
+    "ONNX model files not found in backend/data/models/ — "
+    "run scripts/download_real_models.py to download them"
 )
 
 
@@ -175,7 +172,7 @@ def test_all_catalog_models_inference_e2e(serving, session_factory):
 
     This is the single parametrized E2E test — it iterates the full catalog,
     inserts each model into the registry, loads the real ONNX session from
-    the local placeholder file, runs inference with a zero-input fixture,
+    the local weight file, runs inference with a zero-input fixture,
     and asserts the output shapes match the catalog's output_schema.
     """
     for model in MODEL_CATALOG:
@@ -183,7 +180,7 @@ def test_all_catalog_models_inference_e2e(serving, session_factory):
         model_id = _insert_model(session_factory, record)
 
         # load_model creates a real onnxruntime.InferenceSession from the
-        # local placeholder .onnx file (served via cache_dir, no MinIO).
+        # local .onnx file (served via cache_dir, no MinIO).
         session = serving.load_model(model_id)
         assert session is not None, f"load_model returned None for {model['name']}"
 
@@ -203,18 +200,26 @@ def test_all_catalog_models_inference_e2e(serving, session_factory):
         assert "outputs" in result, f"{model['name']}: missing outputs key"
         _assert_output_shape(model, result["outputs"])
 
+        # Assert non-trivial outputs (not all zeros) — real models produce
+        # meaningful outputs even with zero input due to bias terms.
+        for name, arr in result["outputs"].items():
+            assert not np.allclose(arr, 0), (
+                f"{model['name']}: output '{name}' is all zeros — "
+                "model may have untrained weights or export issue"
+            )
+
         # Cleanup: unload to free memory.
         serving.unload_model(model_id)
 
 
 @pytest.mark.skipif(not _onnx_files_present(), reason=_SKIP_REASON)
-def test_placeholder_models_are_not_trained_weights():
-    """Honesty guard — assert the placeholder ONNX files are tiny (< 1 KB).
+def test_real_models_are_trained_weights():
+    """Honesty guard — assert the ONNX files are real trained weights (> 1 MB).
 
     Real trained ONNX models for flood mapping, damage assessment, and NLP
-    would be megabytes to gigabytes. The placeholder files are < 1 KB because
-    they contain trivial ops (Identity, ReduceMean, Constant) with no trained
-    weights. This test prevents anyone from mistaking them for real models.
+    are tens to hundreds of megabytes. Placeholder files with trivial ops
+    (Identity, ReduceMean, Constant) would be < 1 KB. This test verifies
+    the files on disk are genuine trained models, not placeholders.
     """
     if not os.path.isdir(_MODELS_DIR):
         pytest.skip(_SKIP_REASON)
@@ -222,9 +227,9 @@ def test_placeholder_models_are_not_trained_weights():
         r2_key = model["r2_key"]
         filename = os.path.basename(r2_key)
         path = os.path.join(_MODELS_DIR, filename)
-        assert os.path.exists(path), f"placeholder file missing: {path}"
+        assert os.path.exists(path), f"model file missing: {path}"
         size = os.path.getsize(path)
-        assert size < 1024, (
-            f"{filename} is {size} bytes — placeholder should be < 1 KB. "
-            "If real weights were downloaded, update KNOWN_LIMITATIONS.md."
+        assert size > 1024 * 1024, (
+            f"{filename} is {size} bytes — real trained model should be > 1 MB. "
+            "If placeholder files were regenerated, run scripts/download_real_models.py."
         )

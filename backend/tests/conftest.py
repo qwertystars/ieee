@@ -75,9 +75,9 @@ def client() -> Generator[TestClient, None, None]:
 # Placeholder ONNX weights that, if present, cause routes to attempt real
 # inference instead of returning the model_unavailable degradation response.
 _MODEL_WEIGHTS = [
-    "models/sar-flood-mapping-v1.0.0.onnx",
-    "models/building-damage-v1.0.0.onnx",
-    "models/incident-nlp-v1.0.0.onnx",
+    "models/sar-flood-mapping-v2.0.0.onnx",
+    "models/building-damage-v2.0.0.onnx",
+    "models/incident-nlp-v2.0.0.onnx",
 ]
 
 

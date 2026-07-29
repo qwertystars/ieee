@@ -1,12 +1,13 @@
-"""Tests for manifest-gated capabilities and placeholder blocking (T10).
+"""Tests for manifest-gated capabilities and model validation (T10, T17).
 
 Verifies the model manifest system end-to-end:
   1. Manifest files exist for all 3 models (sar_flood_mapping, building_damage, incident_nlp)
-  2. Placeholder manifests have validation_status="placeholder" and signed=false
-  3. Capabilities endpoint returns "degraded" for onnx_models and model_weights
-     when placeholder manifests are present
+  2. Validated manifests have validation_status="validated" and signed=true
+  3. Capabilities endpoint returns "available" for onnx_models and model_weights
+     when all manifests are validated
   4. ML endpoints (flood-map, damage-assessment, nlp-report) return
-     model_unavailable with reason="placeholder_model_not_validated"
+     model_unavailable WITHOUT reason="placeholder_model_not_validated"
+     when manifests are validated but weights are missing
 """
 
 from __future__ import annotations
@@ -100,54 +101,58 @@ def test_manifest_files_exist() -> None:
     )
 
 
-# ── Placeholder manifest status ──────────────────────────────────────────────
+# ── Validated manifest status ───────────────────────────────────────────────
 
 
-def test_placeholder_manifests_have_correct_status() -> None:
-    """All 3 manifests have validation_status='placeholder' and signed=false."""
+def test_validated_manifests_have_correct_status() -> None:
+    """All 3 manifests have validation_status='validated' and signed=true."""
     manifests = _load_manifests()
     for entry in manifests:
         model_type = entry.get("model_type", "<unknown>")
-        assert entry.get("validation_status") == "placeholder", (
+        assert entry.get("validation_status") == "validated", (
             f"model {model_type} validation_status="
-            f"{entry.get('validation_status')!r}, expected 'placeholder'"
+            f"{entry.get('validation_status')!r}, expected 'validated'"
         )
-        assert entry.get("signed") is False, (
-            f"model {model_type} signed={entry.get('signed')!r}, expected False"
+        assert entry.get("signed") is True, (
+            f"model {model_type} signed={entry.get('signed')!r}, expected True"
         )
 
 
 # ── Capabilities endpoint ────────────────────────────────────────────────────
 
 
-def test_capabilities_returns_degraded_with_placeholders() -> None:
-    """GET /api/capabilities reports onnx_models and model_weights as 'degraded'.
+def test_capabilities_returns_available_with_validated_manifests() -> None:
+    """GET /api/capabilities reports onnx_models and model_weights as 'available'.
 
-    With placeholder manifests present and ONNX weight files on disk, the
-    capabilities endpoint must report both ML features as 'degraded' (not
-    'available'), because the manifests are unvalidated placeholders.
+    With all manifests validated and ONNX weight files on disk, the
+    capabilities endpoint must report both ML features as 'available'
+    (not 'degraded'), because the manifests are validated and signed.
     """
     with TestClient(app) as client:
         resp = client.get("/api/capabilities")
     assert resp.status_code == 200, resp.text
     features = {f["feature"]: f["status"] for f in resp.json()["features"]}
-    assert features["onnx_models"] == "degraded", (
-        f"onnx_models status={features['onnx_models']!r}, expected 'degraded'"
+    assert features["onnx_models"] == "available", (
+        f"onnx_models status={features['onnx_models']!r}, expected 'available'"
     )
-    assert features["model_weights"] == "degraded", (
-        f"model_weights status={features['model_weights']!r}, expected 'degraded'"
+    assert features["model_weights"] == "available", (
+        f"model_weights status={features['model_weights']!r}, expected 'available'"
     )
 
 
-# ── ML endpoints return model_unavailable with placeholder reason ────────────
+# ── ML endpoints return model_unavailable when weights missing (not placeholder) ─
 
 
-def test_ml_endpoints_return_model_unavailable(degrade_env: None) -> None:
-    """ML endpoints return model_unavailable with reason='placeholder_model_not_validated'.
+def test_ml_endpoints_unavailable_when_weights_missing(degrade_env: None) -> None:
+    """ML endpoints return model_unavailable WITHOUT placeholder reason.
+
+    With validated manifests, the placeholder guard does NOT fire. The routes
+    fall through to the weights check and return model_unavailable because
+    the ONNX files are moved aside by degrade_env. The response must NOT
+    contain reason='placeholder_model_not_validated' — that reason only
+    appears when manifests are unvalidated placeholders.
 
     Tests flood-map (GET), damage-assessment (POST), and nlp-report (POST).
-    Each must return status='model_unavailable' and reason='placeholder_model_not_validated'
-    when the model manifests are unvalidated placeholders.
     """
     with TestClient(app) as client:
         token = _login(client, ADMIN_EMAIL)
@@ -164,8 +169,9 @@ def test_ml_endpoints_return_model_unavailable(degrade_env: None) -> None:
         assert flood_body["status"] == "model_unavailable", (
             f"flood-map status={flood_body.get('status')!r}"
         )
-        assert flood_body["reason"] == "placeholder_model_not_validated", (
-            f"flood-map reason={flood_body.get('reason')!r}"
+        assert flood_body.get("reason") != "placeholder_model_not_validated", (
+            f"flood-map reason={flood_body.get('reason')!r} — "
+            "placeholder guard should not fire with validated manifests"
         )
 
         # damage-assessment (POST)
@@ -179,8 +185,9 @@ def test_ml_endpoints_return_model_unavailable(degrade_env: None) -> None:
         assert damage_body["status"] == "model_unavailable", (
             f"damage-assessment status={damage_body.get('status')!r}"
         )
-        assert damage_body["reason"] == "placeholder_model_not_validated", (
-            f"damage-assessment reason={damage_body.get('reason')!r}"
+        assert damage_body.get("reason") != "placeholder_model_not_validated", (
+            f"damage-assessment reason={damage_body.get('reason')!r} — "
+            "placeholder guard should not fire with validated manifests"
         )
 
         # nlp-report (POST)
@@ -194,6 +201,7 @@ def test_ml_endpoints_return_model_unavailable(degrade_env: None) -> None:
         assert nlp_body["status"] == "model_unavailable", (
             f"nlp-report status={nlp_body.get('status')!r}"
         )
-        assert nlp_body["reason"] == "placeholder_model_not_validated", (
-            f"nlp-report reason={nlp_body.get('reason')!r}"
+        assert nlp_body.get("reason") != "placeholder_model_not_validated", (
+            f"nlp-report reason={nlp_body.get('reason')!r} — "
+            "placeholder guard should not fire with validated manifests"
         )

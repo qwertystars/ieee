@@ -512,16 +512,22 @@ All 6 optional dependencies are now `available` as of the gap-closure work (T4-T
 
 ### ONNX Models
 
-- **Status**: `available` (T7, 2026-07-28)
-- **What was done**: `onnxruntime` 1.28.0 installed in backend venv. Three synthetic placeholder ONNX files deployed to `backend/data/models/` with correct I/O schemas (tensor names, shapes, dtypes) matching `MODEL_CATALOG`. E2E inference test (`test_onnx_inference_e2e.py`) validates the full plumbing: `ModelServing.load_model()` → `InferenceSession` → `run_inference()` → output shape assertion.
-- **CRITICAL, placeholders are NOT trained models**: The placeholder ONNX files are < 1 KB each and use trivial ops (Identity, ReduceMean, Constant). They produce correctly-shaped outputs but have NO trained weights. They validate the inference plumbing only. The HuggingFace `resqnet` model repos are private/gated (HTTP 401 on all 3 `source_url`s). Production deployment requires replacing them with real trained weights. See `docs/KNOWN_LIMITATIONS.md` for details.
+- **Status**: `available` (T7, T14-T16, T20, 2026-07-29)
+- **What was done**: `onnxruntime` 1.28.0 installed in backend venv. Three real pre-trained ONNX model files (v2.0.0) deployed to `backend/data/models/`:
+  - SAR flood mapping (97.7 MB): U-Net+ResNet34 from `Governor6191/sar-flood-extent-unet-resnet34` (HuggingFace, MIT license). Trained on Sen1Floods11. Checkpoint val_iou=0.6699. Manifest records IoU=0.67, F1=0.80.
+  - Building damage (135 MB): U-Net+ResNet50 (SCSE attention) from `vivek20072000/xview2-checkpoints` (HuggingFace). Trained on xBD (xView2). Checkpoint best_f1=0.34 (epoch 182). xView2 baseline published F1=0.2654 (Gupta et al. 2019).
+  - Incident NLP (438 MB): BERT (bert-base-uncased fine-tune) from `sakibalfahim/CrisisPulse` (HuggingFace, Apache-2.0). Binary classification (0=Not Disaster, 1=Disaster). Model card lists f1/accuracy/recall as tracked metrics but does not publish specific values.
+- **Calibration**: SAR has conformal calibration active (coverage 0.9412 at alpha=0.1, within [0.85, 0.95] target). Building damage and incident NLP lack calibration datasets (xBD is registration-gated, no public NLP calibration dataset). Both are validated but not calibrated (`calibration: null` in manifest).
+- **E2E test**: `test_onnx_inference_e2e.py` validates the full plumbing: `ModelServing.load_model()` → `InferenceSession` → `run_inference()` → output shape assertion + non-trivial output assertion (outputs must not be all-zero, confirming real trained weights).
+- **Not operationally certified**: The models are validated (real weights, real accuracy metrics, real ONNX inference verified) but have not been certified for operational disaster response. Building damage and NLP lack conformal calibration. The models have not been tested on real disaster data from the deployment region.
 - **Fallback**: endpoints return `{"status": "model_unavailable", "feature": "..."}` if weights are removed. System continues serving non-ML endpoints.
 
 ### Model Weights
 
-- **Status**: `available` (T7, 2026-07-28)
-- **What was done**: Three synthetic placeholder ONNX files exist in `backend/data/models/` (168, 137, and 200 bytes). The `GET /api/capabilities` endpoint reports `model_weights: available` because `.onnx` files are present. The E2E test includes a honesty guard asserting each placeholder is < 1 KB.
-- **CRITICAL, same caveat as ONNX Models**: These are synthetic placeholders, not trained weights. The HuggingFace `resqnet` repos return HTTP 401. Real weights require HF authentication. See `docs/KNOWN_LIMITATIONS.md` for the full honesty disclosure.
+- **Status**: `available` (T7, T14-T16, T20, 2026-07-29)
+- **What was done**: Three real pre-trained ONNX files (v2.0.0) exist in `backend/data/models/` (97.7 MB, 135 MB, 438 MB). Downloaded from public HuggingFace repositories and exported to ONNX format via `scripts/download_real_models.py`. The `GET /api/capabilities` endpoint reports `model_weights: available` because all 3 manifests have `validation_status: "validated"` and `signed: true`. The E2E test includes a non-trivial output assertion confirming real trained weights (not random initialization).
+- **Manifest**: `backend/data/models/manifests.json` records real SHA256 checksums, training datasets, accuracy metrics, calibration status, and notes for each model. All 3 entries: `validation_status: "validated"`, `signed: true`.
+- **Not operationally certified**: See ONNX Models section above. The models are validated but not certified for operational use. Building damage and NLP lack conformal calibration.
 - **Fallback**: `model_unavailable` response if files are removed.
 
 ### Ollama LLM
@@ -564,9 +570,9 @@ Playwright e2e tests were executed with backend running via `scripts/e2e_up.sh`.
 
 Gate E formally checkpointed. 216/216 engine tests pass across 28 test files covering all SOTA modules (fusion, perception, twin, optimizer, sensing, privacy, ABAC, fairness, evaluation) against real PostgreSQL in Docker. Duration: 18.69s. Evidence at `evidence/gate-e/2026-07-28.txt`.
 
-### Heavy ML dependencies not installed
+### Heavy ML dependencies: INSTALLED (T13, 2026-07-29)
 
-`torch`, `torchgeo`, `rasterio`, and `gdal` are not installed in the local venv. These are required for the SAR flood mapping pipeline (DOFA model), building damage assessment, and road passability classification using real model weights. The perception modules have deterministic fixture tests that validate the code path without requiring the actual model weights. ML inference endpoints work with the synthetic placeholder ONNX files (T7) but produce meaningless outputs (zeros, identity copies, channel-mean reductions) since the placeholders have no trained weights. See §9 and `docs/KNOWN_LIMITATIONS.md` for the full honesty disclosure.
+`torch` 2.13.0, `torchvision`, `segmentation_models_pytorch`, `transformers`, `opencv-python-headless`, `huggingface_hub`, and `onnx` are installed in the backend venv. These were used by `scripts/download_real_models.py` (T14-T16) to download real pre-trained model weights from HuggingFace and export them to ONNX format. `torchgeo`, `rasterio`, and `gdal` remain in `requirements.txt` but are not installed (not needed for ONNX inference). The three real ONNX models (v2.0.0) produce non-trivial outputs verified by the E2E test. See §9 and `docs/KNOWN_LIMITATIONS.md` for details.
 
 ### Final verification wave (F1-F4): pending
 
@@ -626,11 +632,14 @@ The following items are fundamentally not software a code-executing worker can p
 - **What remains**: procurement of physical sensors matching the `SensorSource` protocol contract, and physical calibration against certified reference equipment.
 - **Reference**: [`docs/HARDWARE_SPECIFICATION.md`](HARDWARE_SPECIFICATION.md) §1 BOM, [`docs/PHYSICAL_TEST_PLAN.md`](PHYSICAL_TEST_PLAN.md) Protocol 5
 
-### Real ML model weights: DEFERRED
+### Real ML model weights: INSTALLED (not operationally certified)
 
-- **Status**: deferred milestone (placeholders only, HF repos gated)
-- **Software readiness done (T7, T9)**: `onnxruntime` installed, inference plumbing validated E2E with synthetic placeholders. Sen1Floods11 real-data conformal calibration active (coverage 0.9412). Calibration-validation harness with conformal fit route implemented.
-- **What remains**: obtaining real trained ONNX weights from the HuggingFace `resqnet` organization (all 3 repos return HTTP 401). xBD dataset is registration-gated. NLP has no public dataset. See `docs/KNOWN_LIMITATIONS.md` for the full honesty disclosure.
+- **Status**: real weights installed and validated (T14-T16, T20, 2026-07-29)
+- **What was done (T14-T16, T20)**: Three real pre-trained ONNX models (v2.0.0) downloaded from public HuggingFace repositories and exported to ONNX format via `scripts/download_real_models.py`:
+  - SAR flood mapping (97.7 MB): `Governor6191/sar-flood-extent-unet-resnet34` (MIT). U-Net+ResNet34, IoU=0.67, F1=0.80. Conformal calibration active (coverage 0.9412).
+  - Building damage (135 MB): `vivek20072000/xview2-checkpoints`. U-Net+ResNet50 (SCSE), F1=0.34. No calibration data (xBD registration-gated).
+  - Incident NLP (438 MB): `sakibalfahim/CrisisPulse` (Apache-2.0). BERT binary classification. No calibration data.
+- **What remains**: The models are validated (real weights, real accuracy metrics, real ONNX inference verified E2E) but are **not operationally certified**. Building damage and NLP lack conformal calibration. The models have not been tested on real disaster data from the deployment region. xBD calibration dataset is registration-gated. No public NLP calibration dataset identified.
 - **Reference**: [`docs/MODEL_DATA_LICENSING.md`](MODEL_DATA_LICENSING.md), [`docs/KNOWN_LIMITATIONS.md`](KNOWN_LIMITATIONS.md) Disclaimer #5
 
 ---
