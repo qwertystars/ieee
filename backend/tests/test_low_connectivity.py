@@ -13,14 +13,46 @@ No mocking — we test the real degradation behavior against the real
 
 from __future__ import annotations
 
+import socket
+from urllib.parse import urlparse
+
 import pytest
 from fastapi.testclient import TestClient
 
 from app.auth.seed import seed_demo_users
+from app.config import settings
 from app.db import SessionLocal
 from app.deps import get_redis, is_token_revoked
 from app.main import app
 from app.streaming.producer import ProducerManager
+
+
+def _redis_is_reachable() -> bool:
+    """Return True if a TCP connection to the Redis URL host:port succeeds."""
+    parsed = urlparse(settings.REDIS_URL)
+    host = parsed.hostname or "localhost"
+    port = parsed.port or 6379
+    try:
+        with socket.create_connection((host, port), timeout=2):
+            return True
+    except OSError:
+        return False
+
+
+def _redpanda_is_reachable() -> bool:
+    """Return True if a TCP connection to the Redpanda bootstrap host:port succeeds."""
+    bootstrap = settings.REDPANDA_BOOTSTRAP_SERVERS
+    host, _, port = bootstrap.partition(":")
+    host = host or "localhost"
+    try:
+        port_int = int(port) if port else 9092
+    except ValueError:
+        port_int = 9092
+    try:
+        with socket.create_connection((host, port_int), timeout=2):
+            return True
+    except OSError:
+        return False
 
 PASSWORD = "demo1234"
 
@@ -34,6 +66,8 @@ def _seed_users() -> None:
 
 def test_get_redis_returns_none_when_unavailable() -> None:
     """get_redis() returns None when Redis is unreachable (not an exception)."""
+    if _redis_is_reachable():
+        pytest.skip("Redis is running — cannot test unavailability")
     # Reset the cached client so it tries to reconnect.
     import app.deps as deps_module
     deps_module._redis_client = None
@@ -115,12 +149,29 @@ def test_producer_manager_fails_gracefully() -> None:
 
 
 def test_deep_health_check_reports_redis_and_redpanda_down() -> None:
-    """Deep health check reports redis=False and redpanda=False when down."""
+    """Deep health check reports redis=False and redpanda=False when down.
+
+    Adaptive: when Redis/Redpanda are actually running (e.g. Docker stack up),
+    we skip the corresponding down-assertions instead of asserting False.
+    The database is always expected to be up in the test environment.
+    """
     with TestClient(app) as client:
         resp = client.get("/healthz/deep")
         assert resp.status_code == 200
         body = resp.json()
         checks = body["checks"]
         assert checks["database"] is True, "database should be up"
-        assert checks["redis"] is False, "redis should be down"
-        assert checks["redpanda"] is False, "redpanda should be down"
+
+        if _redis_is_reachable():
+            assert checks["redis"] is True, (
+                "redis is reachable — should report True"
+            )
+        else:
+            assert checks["redis"] is False, "redis should be down"
+
+        if _redpanda_is_reachable():
+            assert checks["redpanda"] is True, (
+                "redpanda is reachable — should report True"
+            )
+        else:
+            assert checks["redpanda"] is False, "redpanda should be down"
