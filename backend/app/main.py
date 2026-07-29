@@ -212,6 +212,9 @@ from app.api.routes.hypotheses import router as hypotheses_router
 from app.api.routes.incidents import router as incidents_router
 from app.api.routes.ingest import router as ingest_router
 from app.api.routes.observations import router as observations_router
+from app.api.routes.observations_batch import (
+    router as observations_batch_router,
+)
 from app.api.routes.optimize import (
     incident_router as optimize_incident_router,
 )
@@ -232,6 +235,7 @@ api_router = APIRouter(prefix="/api")
 api_router.include_router(auth_router)
 api_router.include_router(incidents_router)
 api_router.include_router(observations_router)
+api_router.include_router(observations_batch_router)
 api_router.include_router(hypotheses_router)
 api_router.include_router(scenarios_router)
 api_router.include_router(optimize_router)

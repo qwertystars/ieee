@@ -157,6 +157,7 @@ services:
       DATABASE_URL: postgresql+psycopg://disaster:disaster@db:5432/disaster
       REDIS_URL: redis://redis:6379/0
       REDPANDA_BOOTSTRAP_SERVERS: redpanda:9092
+      TOPIC_PARTITIONS: "6"
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: minio
       MINIO_SECRET_KEY: minio123

@@ -10,12 +10,12 @@
 #
 # Environment variables:
 #   REDPANDA_BOOTSTRAP_SERVERS  Kafka bootstrap servers (default: localhost:19092)
-#   TOPIC_PARTITIONS            Number of partitions per topic (default: 1)
+#   TOPIC_PARTITIONS            Number of partitions per topic (default: 6)
 #   TOPIC_REPLICAS              Replication factor per topic (default: 1)
 set -euo pipefail
 
 BOOTSTRAP="${REDPANDA_BOOTSTRAP_SERVERS:-localhost:19092}"
-PARTITIONS="${TOPIC_PARTITIONS:-1}"
+PARTITIONS="${TOPIC_PARTITIONS:-6}"
 REPLICAS="${TOPIC_REPLICAS:-1}"
 
 TOPICS=(
