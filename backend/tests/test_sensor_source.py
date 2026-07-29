@@ -200,6 +200,8 @@ async def test_full_pipeline_mock_to_postgres():
     # Step 3: feed the payload to the consumer's _process() method
     cm = ConsumerManager(bootstrap_servers="localhost:9092")
     await cm._process(captured_payload)
+    # _process buffers payloads for batch insertion — flush to commit to DB
+    await cm._flush_batch()
 
     # Step 4: query PostgreSQL to verify the observation was stored
     db = SessionLocal()

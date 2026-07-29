@@ -10,22 +10,28 @@ import json
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.attributes import flag_modified
 
+from app.api.routes.observations_fusion import run_single_post_commit_fusion
 from app.api.routes.observations_queries import (
     apply_filters,
     fetch_feature,
     to_feature,
     visible_policies,
 )
+from app.db import SessionLocal
 from app.deps import get_current_user, get_db, require_roles
-from app.fusion.confidence import ConfidenceVectorCalculator
-from app.fusion.hypothesis_update import update_hypotheses_for_observation
-from app.lib.audit import write_audit
 from app.lib.time import now_ms
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
@@ -68,6 +74,7 @@ def _parse_bbox(bbox: str | None) -> tuple[float, float, float, float] | None:
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_observation(
     request: Request,
+    background_tasks: BackgroundTasks,
     feature: dict[str, Any],
     incident_id: str = Query(..., description="Incident ID to scope this observation to"),
     db: Session = Depends(get_db),
@@ -147,44 +154,12 @@ def create_observation(
         ) from None
     db.refresh(obs)
 
-    try:
-        calc = ConfidenceVectorCalculator()
-        vector = calc.compute_vector(obs, db_session=db)
-        calc.attach_to_observation(obs, vector)
-        obs.quality_flags["display_confidence"] = (
-            calc.compute_display_confidence(vector)
-        )
-        flag_modified(obs, "quality_flags")
-        db.commit()
-        db.refresh(obs)
-    except Exception as exc:
-        logger.warning(
-            "Confidence vector computation failed for %s: %s",
-            observation_id,
-            exc,
-        )
-        db.rollback()
-
-    try:
-        update_hypotheses_for_observation(db, obs)
-    except Exception as exc:
-        logger.warning(
-            "Hypothesis update failed for %s: %s", observation_id, exc
-        )
-        db.rollback()
-
-    write_audit(
-        db,
-        org_id=org_id,
-        incident_id=incident_id,
-        actor=user.email,
-        action="observation.created",
-        entity=observation_id,
-        after={
-            "event_type": obs.event_type,
-            "phenomenon": obs.phenomenon,
-            "observed_at": obs.observed_at,
-        },
+    background_tasks.add_task(
+        run_single_post_commit_fusion,
+        observation_id,
+        org_id,
+        incident_id,
+        user.email,
     )
 
     result = fetch_feature(db, observation_id, org_id)

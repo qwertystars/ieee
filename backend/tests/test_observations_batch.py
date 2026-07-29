@@ -198,3 +198,74 @@ def test_single_obs_post_still_works() -> None:
     body = resp.json()
     assert body["type"] == "Feature"
     assert body["properties"]["event_type"] == "flood_depth"
+
+
+# ── Single-obs POST async confidence (T25) ───────────────────────────────────
+
+
+def test_single_obs_post_returns_without_confidence_vector() -> None:
+    """POST /api/observations returns 201 without confidence_vector in response.
+
+    Confidence/hypothesis/audit are deferred to a BackgroundTask, so the
+    response should NOT include quality_flags.confidence_vector. The
+    background task runs after the response is sent (TestClient waits for
+    it before returning), so the DB row WILL have the vector after the call.
+    """
+    with TestClient(app) as client:
+        token = _login(client, ADMIN_EMAIL)
+        inc_id = _create_incident(client, token)
+        resp = client.post(
+            "/api/observations",
+            params={"incident_id": inc_id},
+            json=_feature(42),
+            headers=_auth_header(token),
+        )
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    qf = body["properties"].get("quality_flags", {})
+    assert "confidence_vector" not in qf, (
+        "response must not include confidence_vector — it is computed async"
+    )
+
+    # Background task has run by now (TestClient is synchronous) — verify DB.
+    obs_id = body["properties"]["observation_id"]
+    db = SessionLocal()
+    try:
+        obs = db.get(Observation, obs_id)
+        assert obs is not None
+        assert "confidence_vector" in (obs.quality_flags or {}), (
+            "background task must populate confidence_vector after response"
+        )
+    finally:
+        db.close()
+
+
+def test_single_obs_post_creates_audit_entry() -> None:
+    """POST /api/observations writes an audit entry via BackgroundTask."""
+    from sqlalchemy import select
+
+    from app.models.events import Event
+
+    with TestClient(app) as client:
+        token = _login(client, ADMIN_EMAIL)
+        inc_id = _create_incident(client, token)
+        resp = client.post(
+            "/api/observations",
+            params={"incident_id": inc_id},
+            json=_feature(99),
+            headers=_auth_header(token),
+        )
+    assert resp.status_code == 201
+    obs_id = resp.json()["properties"]["observation_id"]
+
+    db = SessionLocal()
+    try:
+        evt = db.execute(
+            select(Event).where(
+                Event.action == "observation.created",
+                Event.entity == obs_id,
+            )
+        ).scalar_one_or_none()
+        assert evt is not None, "audit entry must be written by background task"
+    finally:
+        db.close()

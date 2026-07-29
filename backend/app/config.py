@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # Redpanda (Kafka)
     REDPANDA_BOOTSTRAP_SERVERS: str = "redpanda:9092"
 
+    # Worker concurrency (number of parallel consumer instances)
+    WORKER_CONCURRENCY: int = 1
+
     # MinIO (S3-compatible object storage)
     MINIO_ENDPOINT: str = "minio:9000"
     MINIO_ACCESS_KEY: str = "minio"

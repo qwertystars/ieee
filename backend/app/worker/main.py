@@ -44,10 +44,17 @@ retry_attempts_total = Counter(
 
 
 async def run_worker() -> None:
-    """Start the consumer, run the consume loop, and shut down on signal."""
-    consumer = ConsumerManager(
-        bootstrap_servers=settings.REDPANDA_BOOTSTRAP_SERVERS,
-    )
+    """Start N consumers, run their consume loops, and shut down on signal.
+
+    N = settings.WORKER_CONCURRENCY (default 1). All consumers share the
+    same consumer group (``observations-consumer``), so Kafka auto-assigns
+    partitions among them — no manual partition assignment needed.
+    """
+    concurrency = settings.WORKER_CONCURRENCY
+    consumers = [
+        ConsumerManager(bootstrap_servers=settings.REDPANDA_BOOTSTRAP_SERVERS)
+        for _ in range(concurrency)
+    ]
 
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
@@ -59,27 +66,40 @@ async def run_worker() -> None:
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, _request_stop)
 
-    await consumer.start(TOPICS)
+    for consumer in consumers:
+        await consumer.start(TOPICS)
+
     logger.info(
-        "Worker started — topics=%s bootstrap=%s",
+        "Worker started — consumers=%d topics=%s bootstrap=%s",
+        concurrency,
         TOPICS,
         settings.REDPANDA_BOOTSTRAP_SERVERS,
     )
 
-    consume_task = asyncio.create_task(consumer.consume())
+    consume_tasks = [
+        asyncio.create_task(consumer.consume()) for consumer in consumers
+    ]
     stop_task = asyncio.create_task(stop_event.wait())
 
-    done, _ = await asyncio.wait(
-        {consume_task, stop_task},
+    done, pending = await asyncio.wait(
+        {*consume_tasks, stop_task},
         return_when=asyncio.FIRST_COMPLETED,
     )
 
-    if consume_task not in done:
-        consume_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await consume_task
+    for task in consume_tasks:
+        if task not in done:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
 
-    await consumer.stop()
+    if stop_task in pending:
+        stop_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await stop_task
+
+    for consumer in consumers:
+        await consumer.stop()
+
     logger.info("Worker stopped")
 
 

@@ -9,21 +9,19 @@ audit provenance. Malformed messages are forwarded to `observations.dlq`.
 import asyncio
 import json
 import logging
+import os
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.attributes import flag_modified
 
 from app.config import settings
 from app.db import SessionLocal
-from app.fusion.confidence import ConfidenceVectorCalculator
-from app.fusion.hypothesis_update import update_hypotheses_for_observation
-from app.lib.audit import write_audit
 from app.lib.idempotency import check_and_record
 from app.lib.time import now_ms
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
 from app.models.observation import Observation
+from app.streaming.post_commit import run_post_commit_fusion
 
 logger = logging.getLogger("app.streaming.consumer")
 
@@ -42,6 +40,13 @@ class ConsumerManager:
         self._bootstrap = bootstrap_servers or settings.REDPANDA_BOOTSTRAP_SERVERS
         self._consumer: AIOKafkaConsumer | None = None
         self._dlq_producer: AIOKafkaProducer | None = None
+        self._batch_size = int(os.environ.get("CONSUMER_BATCH_SIZE", "10"))
+        self._flush_interval_s = float(
+            os.environ.get("CONSUMER_FLUSH_INTERVAL_S", "5")
+        )
+        self._buffer: list[dict] = []
+        self._last_flush_ms = now_ms()
+        self._flush_task: asyncio.Task[None] | None = None
 
     async def start(self, topics: list[str]) -> None:
         """Subscribe to the given Kafka topics and start the DLQ producer."""
@@ -61,6 +66,7 @@ class ConsumerManager:
         )
         await self._dlq_producer.start()
 
+        self._flush_task = asyncio.create_task(self._timer_flush())
         logger.info("Consumer started on topics %s", topics)
 
     async def consume(self) -> None:
@@ -114,65 +120,81 @@ class ConsumerManager:
                 await asyncio.sleep(delays[attempt])
 
     async def _process(self, payload: dict) -> None:
-        """Parse, dedup, and INSERT a single observation."""
+        """Validate and buffer a payload for batch insertion.
+
+        The payload is added to an in-memory buffer. When the buffer reaches
+        ``_batch_size`` or ``_flush_interval_s`` seconds elapse, the buffer is
+        flushed via ``_flush_batch`` which does a single ``add_all`` + ``commit``.
+        Confidence/hypothesis/audit run as a post-commit background thread.
+        """
         observation_id = payload.get("observation_id")
         if not observation_id:
             raise ValueError("missing observation_id")
 
+        self._buffer.append(payload)
+        if len(self._buffer) >= self._batch_size:
+            await self._flush_batch()
+            return
+        if self._should_flush_by_time():
+            await self._flush_batch()
+
+    def _should_flush_by_time(self) -> bool:
+        """True if ``_flush_interval_s`` has elapsed since the last flush."""
+        return (now_ms() - self._last_flush_ms) / 1000.0 >= self._flush_interval_s
+
+    async def _flush_batch(self) -> None:
+        """Flush buffered payloads: idempotency check + batch INSERT + spawn fusion."""
+        if not self._buffer:
+            return
+
+        payloads = self._buffer[:]
+        self._buffer.clear()
+        self._last_flush_ms = now_ms()
+
         db = SessionLocal()
+        observation_ids: list[str] = []
+        audit_payloads: list[dict] = []
         try:
-            source = str(payload.get("source_type", "unknown")).lower()
-            is_new = check_and_record(db, source, observation_id)
-            if not is_new:
-                logger.debug("Duplicate observation_id=%s, skipping", observation_id)
-                return
+            observations: list[Observation] = []
+            for payload in payloads:
+                observation_id = payload.get("observation_id")
+                source = str(payload.get("source_type", "unknown")).lower()
+                is_new = check_and_record(db, source, observation_id)
+                if not is_new:
+                    logger.debug(
+                        "Duplicate observation_id=%s, skipping", observation_id
+                    )
+                    continue
+                observations.append(self._build_observation(payload))
+                observation_ids.append(observation_id)
+                audit_payloads.append(payload)
 
-            obs = self._build_observation(payload)
-            db.add(obs)
-            db.commit()
-
-            try:
-                calc = ConfidenceVectorCalculator()
-                vector = calc.compute_vector(obs, db_session=db)
-                calc.attach_to_observation(obs, vector)
-                obs.quality_flags["display_confidence"] = (
-                    calc.compute_display_confidence(vector)
-                )
-                flag_modified(obs, "quality_flags")
+            if observations:
+                db.add_all(observations)
                 db.commit()
-            except Exception as exc:
-                logger.warning(
-                    "Confidence vector computation failed for %s: %s",
-                    observation_id,
-                    exc,
-                )
-                db.rollback()
-
-            try:
-                update_hypotheses_for_observation(db, obs)
-            except Exception as exc:
-                logger.warning(
-                    "Hypothesis update failed for %s: %s",
-                    observation_id,
-                    exc,
-                )
-                db.rollback()
-
-            write_audit(
-                db,
-                org_id=payload.get("org_id", ""),
-                incident_id=payload.get("incident_id", ""),
-                actor="streaming-consumer",
-                action="observation.ingested",
-                entity=observation_id,
-                after={
-                    "source_type": payload.get("source_type"),
-                    "observed_at": payload.get("observed_at"),
-                },
-            )
-            logger.info("Inserted observation %s", observation_id)
+                logger.info("Flushed batch of %d observations", len(observations))
+        except Exception:
+            db.rollback()
+            raise
         finally:
             db.close()
+
+        if observation_ids:
+            asyncio.create_task(
+                asyncio.to_thread(
+                    run_post_commit_fusion, observation_ids, audit_payloads
+                )
+            )
+
+    async def _timer_flush(self) -> None:
+        """Periodically flush non-empty buffer between message arrivals."""
+        while True:
+            await asyncio.sleep(self._flush_interval_s)
+            if self._buffer:
+                try:
+                    await self._flush_batch()
+                except Exception as exc:
+                    logger.error("Timer flush failed: %s", exc)
 
     def _build_observation(self, p: dict) -> Observation:
         """Map a normalized payload dict to an Observation ORM instance."""
@@ -224,7 +246,19 @@ class ConsumerManager:
         logger.warning("Sent message to DLQ: %s", error)
 
     async def stop(self) -> None:
-        """Gracefully shut down consumer and DLQ producer."""
+        """Gracefully shut down: cancel timer, flush buffer, stop consumer/producer."""
+        if self._flush_task is not None:
+            self._flush_task.cancel()
+            try:
+                await self._flush_task
+            except asyncio.CancelledError:
+                pass
+            self._flush_task = None
+        if self._buffer:
+            try:
+                await self._flush_batch()
+            except Exception as exc:
+                logger.error("Final flush failed: %s", exc)
         if self._consumer is not None:
             await self._consumer.stop()
             self._consumer = None
