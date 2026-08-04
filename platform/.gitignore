@@ -1,8 +1,0 @@
-node_modules/
-dist/
-.wrangler/
-.dev.vars
-*.log
-coverage/
-.turbo/
-worker-configuration.d.ts
