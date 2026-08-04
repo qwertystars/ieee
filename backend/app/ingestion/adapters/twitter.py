@@ -17,7 +17,11 @@ import logging
 import httpx
 from sqlalchemy.orm import Session
 
-from app.lib.idempotency import check_and_record
+from app.lib.idempotency import (
+    check_and_record,
+    record_published_raw_event,
+    stable_ingestion_claim,
+)
 from app.lib.time import from_iso, now_ms
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
@@ -190,6 +194,7 @@ class TwitterAdapter:
             "valid_until": None,
             "received_at": now_ms(),
             "source_id": source_id,
+            "external_id": tweet_id,
             "source_type": SourceType.social_media.value,
             "collection_method": "twitter_api_v2",
             "source_reliability": 0.5,
@@ -236,10 +241,24 @@ class TwitterAdapter:
             tweet_id = tweet.get("id")
             if not tweet_id:
                 continue
-            if not check_and_record(db, "twitter", tweet_id):
-                continue
             obs = self.map_to_observation(tweet, org_id, incident_id)
-            await producer.send("observations.raw", obs)
+            if not check_and_record(
+                db,
+                "twitter",
+                tweet_id,
+                org_id=org_id,
+                incident_id=incident_id,
+                payload=stable_ingestion_claim(obs),
+                commit=False,
+            ):
+                continue
+            try:
+                await producer.send("observations.raw", obs)
+                record_published_raw_event(db, obs)
+                db.commit()
+            except (OSError, RuntimeError, TimeoutError):
+                db.rollback()
+                raise
             count += 1
 
         logger.info("Twitter: published %d/%d tweets", count, len(tweets))

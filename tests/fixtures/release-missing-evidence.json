@@ -1,0 +1,12 @@
+{
+  "revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "claim_classes": {
+    "research": {"bounded_claim": "fixture only", "package": {"file_hashes": {}, "gate_sources": []}, "prerequisite_ids": ["dataset.flood.sen1floods11"], "status": "DEFERRED_EXTERNAL"},
+    "production": {"bounded_claim": "no production claim", "prerequisite_ids": ["dataset.nlp.incident-evaluation"], "status": "DEFERRED_EXTERNAL"},
+    "shadow": {"bounded_claim": "no shadow claim", "prerequisite_ids": ["dataset.operator.human-factors"], "status": "DEFERRED_EXTERNAL"},
+    "field": {"bounded_claim": "no field claim", "prerequisite_ids": ["dataset.sensor.regional-trial"], "status": "DEFERRED_EXTERNAL"}
+  },
+  "prerequisite_hashes": ["6cb552992f67188c9b150770b0d8dfd63da6afcf92d95befaff4da937dd24f4f"],
+  "gate_attestations": [],
+  "expires_at": "2027-08-03T00:00:00Z"
+}

@@ -131,13 +131,11 @@ class DamageAssessor:
         """
         input_data = self._prepare_damage_input(image_tensor, pre_event_tensor)
 
-        if self._model_serving is not None:
-            result = self._model_serving.run_inference(self._model_id, input_data)
-            logits = np.asarray(result["outputs"]["damage_class"])
-            model_version = result["model_version"]
-        else:
-            logits = np.array([[0.5, 0.5, 1.0, 0.5]])
-            model_version = "heuristic:1.0.0"
+        if self._model_serving is None:
+            raise RuntimeError("building damage weights unavailable")
+        result = self._model_serving.run_inference(self._model_id, input_data)
+        logits = np.asarray(result["outputs"]["damage_class"])
+        model_version = result["model_version"]
 
         probs = self._softmax(logits[-1])
         class_probs = {

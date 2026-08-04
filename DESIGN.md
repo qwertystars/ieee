@@ -233,3 +233,64 @@ an assigned rescue task, and a generatable situation report.
 Explainable recommendations; show confidence + data age + source; raw data retained; citizen
 reports unverified until corroborated; human approval for life-critical actions; design for
 missing data and low bandwidth.
+
+## 13. Canonical event and provenance contract
+
+The canonical runtime contract supersedes the older UUID/timezone notes in §3. All durable
+domain identifiers are 26-character uppercase ULIDs and all durable times are UTC epoch
+milliseconds. The contract is represented by frozen Pydantic values in
+`backend/app/models/events.py` and `backend/app/models/observation.py`; SQLAlchemy rows are
+mutable projections and never replace the canonical input.
+
+### Contract records
+
+- `RawEvent` is immutable and requires `event_id`, `org_id`, `incident_id`, `source_id`,
+  `external_id`, `event_type`, `source_time_ms`, `receipt_time_ms`, `sequence`, `payload`,
+  visibility, review status, and `schema_version`. Source time is supplied by the producer;
+  receipt time is assigned by the trusted ingest boundary.
+- `NormalizedObservation` is a deterministic projection of one raw event. It retains
+  `raw_event_id`, both times, sequence, source scope, canonical payload hash, and provenance.
+  `from_raw_event()` is the rebuild boundary; it does not mutate the raw event.
+- `Prediction` requires source event lineage and a complete `ModelProvenance` record containing
+  model, feature-schema, preprocessing, calibration, and output-schema versions. Predictions
+  default to `review_status=draft`.
+- `Decision` requires organization/incident scope, input lineage, actor, rationale, and a
+  decision time. High-consequence effects remain subject to the approval policy in §7 and the
+  security model.
+- `Event` is the append-only audit projection. `RawEventRecord`, `PredictionRecord`, and
+  `CanonicalDecisionRecord` are forward-migration storage projections. Existing legacy rows are
+  marked `legacy-v1` and remain verifiable without rewriting their historical hashes.
+
+### Canonical bytes and hashes
+
+Canonical JSON bytes are RFC 8785-compatible UTF-8: object keys are ordered by UTF-16 code
+units, whitespace is omitted, non-ASCII text is preserved, and non-finite numbers are rejected.
+New hashes are `SHA-256(ASCII(prev_hash) || canonical_event_bytes)`, represented as lowercase
+hex (or `sha256:` plus hex for content hashes). Canonical bytes bind event ID, tenant and
+incident scope, event/source identity, source/receipt times, sequence, actor/action/entity,
+state snapshots, payload, provenance, visibility, review status, schema version, and
+serialization version.
+Legacy rows continue using their recorded legacy serialization marker.
+
+Each organization has a durable `audit_chain_heads` checkpoint. Verification requires a
+contiguous sequence beginning at one, matching predecessor hashes, matching recomputed hashes,
+and a final row equal to the persisted head. This detects payload tampering, deletion,
+reordering, and predecessor forks. A failed verification is not repaired by rewriting history.
+
+### Compatibility, projections, and rebuilds
+
+Migration `0006` is forward-only: it adds nullable projection columns, backfills legacy sequence
+and serialization markers, creates canonical raw/prediction/decision tables, and preserves all
+historical rows. Readers accept schema `1.x`; a new major schema requires an explicit migration.
+The migration is intentionally irreversible: `downgrade()` raises before executing any DROP, so
+canonical rows and tenant-scoped idempotency data cannot be silently deleted by rollback.
+Raw events are the rebuild authority. Normalized observations and model outputs may be deleted
+and rebuilt from retained raw events with the pinned schema/model/calibration versions; audit
+rows and raw payloads are never rebuilt in place.
+
+External delivery is at-least-once and application is exactly-once per
+`(org_id, source, external_id)`. A retry with the same canonical payload is a no-op; the same
+key with different payload bytes is a conflict, including missing-versus-supplied payloads. The
+legacy two-argument helper remains valid for unscoped historical callers and stores the empty
+compatibility tenant. Production streaming and ingestion callers provide tenant, incident, and
+payload fields; the streaming consumer records idempotency inside the observation transaction.

@@ -17,6 +17,8 @@ set -euo pipefail
 BOOTSTRAP="${REDPANDA_BOOTSTRAP_SERVERS:-localhost:19092}"
 PARTITIONS="${TOPIC_PARTITIONS:-6}"
 REPLICAS="${TOPIC_REPLICAS:-1}"
+DLQ_RETENTION_DAYS="${DLQ_RETENTION_DAYS:-30}"
+DLQ_RETENTION_MS=$((DLQ_RETENTION_DAYS * 24 * 60 * 60 * 1000))
 
 TOPICS=(
     "observations.raw"
@@ -41,12 +43,20 @@ create_topic() {
     local topic="$1"
     # rpk topic create exits non-zero if the topic already exists.
     # We treat that as success (idempotent).
+    local config_args=()
+    if [[ "${topic}" == "observations.dlq" ]]; then
+        config_args+=(--config "retention.ms=${DLQ_RETENTION_MS}")
+    fi
     if "${RPK_CMD[@]}" topic create "${topic}" \
         --partitions "${PARTITIONS}" \
-        --replicas "${REPLICAS}" 2>&1; then
+        --replicas "${REPLICAS}" "${config_args[@]}" 2>&1; then
         echo "Created topic: ${topic}"
     else
-        echo "Topic already exists (skipped): ${topic}"
+        if [[ "${topic}" == "observations.dlq" ]] && "${RPK_CMD[@]}" topic alter-config "${topic}" --set "retention.ms=${DLQ_RETENTION_MS}" 2>&1; then
+            echo "Topic already exists; configured DLQ retention: ${DLQ_RETENTION_DAYS} days"
+        else
+            echo "Topic already exists; DLQ retention provisioning is DEFERRED_EXTERNAL" >&2
+        fi
     fi
 }
 

@@ -1,6 +1,6 @@
 // ResQNet-SAGE service worker — app-shell caching (cache-first).
 // Bump CACHE_VERSION on deploys to invalidate old caches.
-const CACHE_VERSION = 'resqnet-v1';
+const CACHE_VERSION = 'resqnet-v2';
 const CACHE_NAME = `${CACHE_VERSION}-shell`;
 
 // App shell: known static URLs precached on install. Hashed Vite assets
@@ -35,6 +35,12 @@ self.addEventListener('activate', (event) => {
           .filter((k) => !k.startsWith(CACHE_VERSION))
           .map((k) => caches.delete(k)),
       ),
+    ).then(() => caches.open(CACHE_NAME)).then((cache) =>
+      cache.keys().then((requests) => Promise.all(
+        requests
+          .filter((cachedRequest) => new URL(cachedRequest.url).pathname.startsWith('/api/'))
+          .map((cachedRequest) => cache.delete(cachedRequest)),
+      )),
     ),
   );
   self.clients.claim();
@@ -46,6 +52,13 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // API responses may contain authenticated or sensitive data. Never put them
+  // in the public app-shell cache, even when a caller forgets an auth header.
+  if (url.pathname.startsWith('/api/') || request.headers.has('Authorization') || request.credentials === 'include') {
+    event.respondWith(fetch(new Request(request, { cache: 'no-store' })).catch(() => new Response('', { status: 503 })));
+    return;
+  }
 
   // Cache-first: serve from cache if present, otherwise fetch and cache.
   event.respondWith(
@@ -66,10 +79,8 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // Offline fallback: serve cached index.html for navigation requests.
-          if (request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-          return undefined;
+          if (request.mode === 'navigate') return caches.match('/index.html');
+          return new Response('', { status: 503 });
         });
     }),
   );

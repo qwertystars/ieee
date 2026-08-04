@@ -19,6 +19,8 @@ a configurable TTL (default 1 hour). An expired override is treated as if
 it does not exist.
 """
 
+from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.auth.abac_types import (
@@ -31,6 +33,7 @@ from app.auth.abac_types import (
 from app.lib.audit import write_audit
 from app.lib.time import now_ms
 from app.lib.ulid import generate_ulid
+from app.models.coordination import EmergencyOverrideRecord
 
 DEFAULT_OVERRIDE_TTL_SECONDS = 3600
 
@@ -58,15 +61,14 @@ ACTION_MIN_ROLES: dict[str, frozenset[str]] = {
 class ABACEngine:
     """Attribute-based access control policy engine.
 
-    Emergency overrides are stored in-memory (per engine instance). In
-    production, overrides should be persisted (e.g., in a DB table or KV
-    store) for durability across restarts. The engine accepts an injectable
-    clock for deterministic testing of override expiry.
+    Emergency overrides are PostgreSQL rows scoped by organization and
+    target user. The engine accepts an injectable clock for deterministic
+    testing of override expiry.
     """
 
-    def __init__(self, clock: Clock | None = None) -> None:
-        self._overrides: dict[str, EmergencyOverride] = {}
+    def __init__(self, clock: Clock | None = None, db: Session | None = None) -> None:
         self._clock: Clock = clock or now_ms
+        self._db = db
 
     def can(
         self,
@@ -82,6 +84,11 @@ class ABACEngine:
         if actor.org_id != subject.org_id:
             return False
         if actor.org_id != context.current_org_id:
+            return False
+        if (
+            context.current_incident_id is not None
+            and context.current_incident_id != subject.incident_id
+        ):
             return False
 
         override_active = self._is_override_active(actor)
@@ -112,15 +119,36 @@ class ABACEngine:
         if ttl_seconds <= 0:
             raise ValueError("ttl_seconds must be positive")
 
+        self._db = db
         now = self._clock()
         expires_at = now + ttl_seconds * 1000
+        override_id = generate_ulid()
         override = EmergencyOverride(
             granted_by=admin_actor.user_id,
             reason=reason,
             granted_at=now,
             expires_at=expires_at,
         )
-        self._overrides[target_user_id] = override
+        active = db.execute(
+            select(EmergencyOverrideRecord).where(
+                EmergencyOverrideRecord.org_id == admin_actor.org_id,
+                EmergencyOverrideRecord.target_user_id == target_user_id,
+                EmergencyOverrideRecord.revoked_at_ms.is_(None),
+            )
+        ).scalars().all()
+        for record in active:
+            record.revoked_at_ms = now
+        db.add(
+            EmergencyOverrideRecord(
+                id=override_id,
+                org_id=admin_actor.org_id,
+                target_user_id=target_user_id,
+                granted_by=admin_actor.user_id,
+                reason=reason,
+                granted_at_ms=now,
+                expires_at_ms=expires_at,
+            )
+        )
 
         write_audit(
             db,
@@ -131,7 +159,7 @@ class ABACEngine:
             entity=f"user:{target_user_id}",
             before=None,
             after={
-                "override_id": generate_ulid(),
+                "override_id": override_id,
                 "reason": reason,
                 "granted_by": admin_actor.user_id,
                 "granted_at": now,
@@ -151,7 +179,18 @@ class ABACEngine:
         if admin_actor.role not in OVERRIDE_GRANTOR_ROLES:
             raise PermissionError("only admin can revoke emergency overrides")
 
-        removed = self._overrides.pop(target_user_id, None)
+        self._db = db
+        now = self._clock()
+        rows = db.execute(
+            select(EmergencyOverrideRecord).where(
+                EmergencyOverrideRecord.org_id == admin_actor.org_id,
+                EmergencyOverrideRecord.target_user_id == target_user_id,
+                EmergencyOverrideRecord.revoked_at_ms.is_(None),
+            )
+        ).scalars().all()
+        removed = rows[-1] if rows else None
+        for record in rows:
+            record.revoked_at_ms = now
         write_audit(
             db,
             org_id=admin_actor.org_id,
@@ -160,7 +199,7 @@ class ABACEngine:
             action="emergency_override_revoke",
             entity=f"user:{target_user_id}",
             before=(
-                {"reason": removed.reason, "expires_at": removed.expires_at}
+                {"reason": removed.reason, "expires_at": removed.expires_at_ms}
                 if removed is not None
                 else None
             ),
@@ -168,24 +207,33 @@ class ABACEngine:
         )
         return removed is not None
 
-    def get_override(self, user_id: str) -> EmergencyOverride | None:
+    def get_override(self, user_id: str, org_id: str) -> EmergencyOverride | None:
         """Return the active override for a user, or None if expired/absent."""
-        ov = self._overrides.get(user_id)
-        if ov is None:
+        if self._db is None:
             return None
-        if self._clock() >= ov.expires_at:
+        try:
+            query = select(EmergencyOverrideRecord).where(
+                EmergencyOverrideRecord.target_user_id == user_id,
+                EmergencyOverrideRecord.revoked_at_ms.is_(None),
+                EmergencyOverrideRecord.expires_at_ms > self._clock(),
+            )
+            query = query.where(EmergencyOverrideRecord.org_id == org_id)
+            record = self._db.execute(
+                query.order_by(EmergencyOverrideRecord.granted_at_ms.desc())
+            ).scalars().first()
+        except SQLAlchemyError:
             return None
-        return ov
+        if record is None:
+            return None
+        return EmergencyOverride(
+            granted_by=record.granted_by,
+            reason=record.reason,
+            granted_at=record.granted_at_ms,
+            expires_at=record.expires_at_ms,
+        )
 
     def _is_override_active(self, actor: Actor) -> bool:
-        """Check actor's embedded override and the engine's override store."""
-        if actor.emergency_override is not None:
-            if self._clock() < actor.emergency_override.expires_at:
-                return True
-        stored = self._overrides.get(actor.user_id)
-        if stored is not None and self._clock() < stored.expires_at:
-            return True
-        return False
+        return self.get_override(actor.user_id, actor.org_id) is not None
 
 
 def _check_jurisdiction(

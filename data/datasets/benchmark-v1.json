@@ -1,0 +1,108 @@
+{
+  "schema_version": "resqnet.benchmark-manifest.v1",
+  "manifest_version": "1.0.0",
+  "claim_policy": "real-data execution requires artifact availability; offline fixture is validation-only",
+  "split_policy": {
+    "unit": "incident",
+    "temporal_cutoff": "2024-01-01T00:00:00Z",
+    "h3_resolution": 8,
+    "spatial_buffer_km": 10,
+    "spatial_distance_method": "geodesic_haversine",
+    "assignment_seed": 2025,
+    "calibration_examples_per_group": 200,
+    "ordering": "train_then_calibration_before_cutoff; final_test_on_or_after_cutoff"
+  },
+  "datasets": [
+    {
+      "dataset_id": "sen1floods11-flood",
+      "dataset_type": "flood",
+      "immutable_id": "github:cloudtostreet/Sen1Floods11@b9e460dabe70230111a3c3d36cd0c5ce03606ee9",
+      "source_url": "https://github.com/cloudtostreet/Sen1Floods11",
+      "source_authority": "Cloud to Street / Sen1Floods11 maintainers",
+      "license_name": "CC BY 4.0",
+      "license_authority": "Creative Commons",
+      "status": "DEFERRED_EXTERNAL",
+      "artifact_available": false,
+      "artifact_sha256": null,
+      "artifact_reference": null,
+      "pending_reason": "artifact_not_available_in_workspace",
+      "preprocessing_version": "resqnet-sar-features-v1",
+      "crs": "EPSG:4326",
+      "resolution": "10 m source pixels; 512x512 chips",
+      "split_hash_scope": "offline_contract_fixture_only",
+      "split_hashes": {"train": "11f9f93b33a392a70d89cd7c71bef2f0e1c1ceec5bbdd79adefe2eca49a9efcb", "calibration": "431a17ce78f02378b686ab59b9494e96d80ea795e76a4c8734993a622a04831c", "test": "8986dd2da8f49b1e7e514c7799bc4fdbe37d7f04e8bdd7c71b11ba77eb0c46d0"}
+    },
+    {
+      "dataset_id": "floodnet-flood",
+      "dataset_type": "flood",
+      "immutable_id": "github:BinaLab/FloodNet-Supervised_v1.0@1cba183788e5661c1ec326d7ded1f2536f82e9ad",
+      "source_url": "https://github.com/BinaLab/FloodNet-Supervised_v1.0",
+      "source_authority": "Bina Lab / FloodNet maintainers",
+      "license_name": "LICENSE_PENDING_AUTHORIZATION",
+      "license_authority": "FloodNet maintainers",
+      "status": "DEFERRED_EXTERNAL",
+      "artifact_available": false,
+      "artifact_sha256": null,
+      "artifact_reference": null,
+      "pending_reason": "license_not_verified",
+      "preprocessing_version": "resqnet-rgb-segmentation-v1",
+      "crs": "EPSG:4326",
+      "resolution": "source resolution; verify from artifact before use",
+      "split_hash_scope": "offline_contract_fixture_only",
+      "split_hashes": {"train": "be2dc8b7bb9b20400c5e03a3232587addd5893fdd2c662d5ba8f4920016b76b3", "calibration": "a0a0effe9c771c225908bb353806328039b2a1afe7ede3dff199f19ebd27bb29", "test": "d748286331ed4ec0accce0f685c105d4c6e16c18a3a3e8db44c6fea66177b0a9"}
+    },
+    {
+      "dataset_id": "xbd-damage",
+      "dataset_type": "damage",
+      "immutable_id": "github:DIUx-xView/xView2_baseline@821d9f8b9201ee7952aef13b073c9fd38ce11d4b",
+      "source_url": "https://xview2.org/dataset",
+      "source_authority": "xView2 program",
+      "license_name": "Non-commercial research license",
+      "license_authority": "xView2 program",
+      "status": "DEFERRED_EXTERNAL",
+      "artifact_available": false,
+      "artifact_sha256": null,
+      "artifact_reference": null,
+      "pending_reason": "license_not_permitted",
+      "preprocessing_version": "resqnet-xbd-damage-v1",
+      "crs": "EPSG:4326",
+      "resolution": "source resolution; verify from artifact before use",
+      "split_hash_scope": "offline_contract_fixture_only",
+      "split_hashes": {"train": "a83fd443ee7f3a83e4e8f2c2a345b3455afe349b881a8964c9b9811d7f097fd5", "calibration": "41d1fffa0c2dafbae523877fdd29022f39a94e4981a5daf29aa428eb7ebc3bd6", "test": "dcd666451fcf203c506e605172bbb28f525235b605c61df0d4c26a2a3b8f469f"}
+    }
+  ],
+  "preprocessing": {
+    "crs": {"value": "EPSG:4326", "fit_partition": "none"},
+    "resolution": {"value": "dataset-native; recorded before execution", "fit_partition": "none"},
+    "normalization": {"value": "per-dataset train statistics", "fit_partition": "train"},
+    "vocabulary": {"value": "not applicable to image tasks", "fit_partition": "none"},
+    "threshold": {"value": "selected from calibration only", "fit_partition": "calibration"},
+    "calibration": {"value": "model-specific calibration artifact", "fit_partition": "calibration"}
+  },
+  "fit_partitions": {
+    "normalization": "train",
+    "vocabulary": "none",
+    "threshold": "calibration",
+    "calibration": "calibration"
+  },
+  "splits": {
+    "train": ["sen-train-01", "floodnet-train-01", "xbd-train-01"],
+    "calibration": ["sen-cal-01", "floodnet-cal-01", "xbd-cal-01"],
+    "test": ["sen-test-01", "floodnet-test-01", "xbd-test-01"],
+    "train_sha256": "db0e835c6c9566964f1288ed1d0743dc60d2765c25030a3a6cccd49d5a1dc172",
+    "calibration_sha256": "b4f9c0e03c1fc6c7aede452989b801527e57f105be5f97422d7319d9edcbb761",
+    "test_sha256": "4bdd33b52e49799bdb065ef99decbf9123ff1c8f4609dcfc02db8584936525e3"
+  },
+  "final_test_sha256": "4bdd33b52e49799bdb065ef99decbf9123ff1c8f4609dcfc02db8584936525e3",
+  "records": [
+    {"record_id": "sen-train-01", "dataset_id": "sen1floods11-flood", "split": "train", "incident_id": "sen-incident-train", "event_id": "sen-event-train", "parent_incident_id": "sen-parent-train", "source_id": "sen-source-train", "source_asset_id": "sen-asset-train", "tile_id": "sen-tile-train", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "phash": "0000000000000000", "acquired_at": "2023-01-01T00:00:00Z", "latitude": 0.0, "longitude": 0.0},
+    {"record_id": "sen-cal-01", "dataset_id": "sen1floods11-flood", "split": "calibration", "incident_id": "sen-incident-cal", "event_id": "sen-event-cal", "parent_incident_id": "sen-parent-cal", "source_id": "sen-source-cal", "source_asset_id": "sen-asset-cal", "tile_id": "sen-tile-cal", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "phash": "1111111111111111", "acquired_at": "2023-06-01T00:00:00Z", "latitude": 0.0, "longitude": 20.0},
+    {"record_id": "sen-test-01", "dataset_id": "sen1floods11-flood", "split": "test", "incident_id": "sen-incident-test", "event_id": "sen-event-test", "parent_incident_id": "sen-parent-test", "source_id": "sen-source-test", "source_asset_id": "sen-asset-test", "tile_id": "sen-tile-test", "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "phash": "2222222222222222", "acquired_at": "2024-06-01T00:00:00Z", "latitude": 0.0, "longitude": 40.0},
+    {"record_id": "floodnet-train-01", "dataset_id": "floodnet-flood", "split": "train", "incident_id": "floodnet-incident-train", "event_id": "floodnet-event-train", "parent_incident_id": "floodnet-parent-train", "source_id": "floodnet-source-train", "source_asset_id": "floodnet-asset-train", "tile_id": "floodnet-tile-train", "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "phash": "3333333333333333", "acquired_at": "2023-02-01T00:00:00Z", "latitude": 20.0, "longitude": 0.0},
+    {"record_id": "floodnet-cal-01", "dataset_id": "floodnet-flood", "split": "calibration", "incident_id": "floodnet-incident-cal", "event_id": "floodnet-event-cal", "parent_incident_id": "floodnet-parent-cal", "source_id": "floodnet-source-cal", "source_asset_id": "floodnet-asset-cal", "tile_id": "floodnet-tile-cal", "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "phash": "4444444444444444", "acquired_at": "2023-07-01T00:00:00Z", "latitude": 20.0, "longitude": 20.0},
+    {"record_id": "floodnet-test-01", "dataset_id": "floodnet-flood", "split": "test", "incident_id": "floodnet-incident-test", "event_id": "floodnet-event-test", "parent_incident_id": "floodnet-parent-test", "source_id": "floodnet-source-test", "source_asset_id": "floodnet-asset-test", "tile_id": "floodnet-tile-test", "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "phash": "5555555555555555", "acquired_at": "2024-07-01T00:00:00Z", "latitude": 20.0, "longitude": 40.0},
+    {"record_id": "xbd-train-01", "dataset_id": "xbd-damage", "split": "train", "incident_id": "xbd-incident-train", "event_id": "xbd-event-train", "parent_incident_id": "xbd-parent-train", "source_id": "xbd-source-train", "source_asset_id": "xbd-asset-train", "tile_id": "xbd-tile-train", "sha256": "1111111111111111111111111111111111111111111111111111111111111111", "phash": "6666666666666666", "acquired_at": "2023-03-01T00:00:00Z", "latitude": -20.0, "longitude": 0.0},
+    {"record_id": "xbd-cal-01", "dataset_id": "xbd-damage", "split": "calibration", "incident_id": "xbd-incident-cal", "event_id": "xbd-event-cal", "parent_incident_id": "xbd-parent-cal", "source_id": "xbd-source-cal", "source_asset_id": "xbd-asset-cal", "tile_id": "xbd-tile-cal", "sha256": "2222222222222222222222222222222222222222222222222222222222222222", "phash": "7777777777777777", "acquired_at": "2023-08-01T00:00:00Z", "latitude": -20.0, "longitude": 20.0},
+    {"record_id": "xbd-test-01", "dataset_id": "xbd-damage", "split": "test", "incident_id": "xbd-incident-test", "event_id": "xbd-event-test", "parent_incident_id": "xbd-parent-test", "source_id": "xbd-source-test", "source_asset_id": "xbd-asset-test", "tile_id": "xbd-tile-test", "sha256": "3333333333333333333333333333333333333333333333333333333333333333", "phash": "8888888888888888", "acquired_at": "2024-08-01T00:00:00Z", "latitude": -20.0, "longitude": 40.0}
+  ]
+}

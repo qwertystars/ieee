@@ -20,6 +20,7 @@ All outputs are PROBABILISTIC — ``flood_prob`` is in [0, 1], never binarized.
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from typing import Any, Protocol
 
 import torch
@@ -27,7 +28,6 @@ import torch.nn.functional as F
 from torch import nn
 
 from app.lib.time import now_ms
-from app.perception.ensemble_types import _ResNet50S1Segmentation
 from app.perception.flood_types import FloodMapResult, QualityFlag
 
 logger = logging.getLogger(__name__)
@@ -37,6 +37,8 @@ _PATCH_SIZE = 224
 
 class _FloodMemberLike(Protocol):
     """Structural type for ensemble members."""
+
+    provenance: Mapping[str, str]
 
     def run_inference(
         self,
@@ -51,12 +53,17 @@ class ResNet50S1Mapper:
 
     Same duck-typed interface as ``SARFloodMapper`` — ``run_inference(tensor)
     -> FloodMapResult`` — so it can be injected as an ensemble member. The
-    encoder is lazy-loaded on first use; falls back to ``_RandomEncoder``
-    when torchgeo weights are unavailable.
+    encoder is lazy-loaded on first use; missing torchgeo weights make this
+    member unavailable rather than producing an untrained output.
     """
 
-    def __init__(self, model: nn.Module | None = None) -> None:
+    def __init__(
+        self,
+        model: nn.Module | None = None,
+        provenance: Mapping[str, str] | None = None,
+    ) -> None:
         self._model = model
+        self.provenance = dict(provenance or {})
 
     def run_inference(
         self,
@@ -86,7 +93,7 @@ class ResNet50S1Mapper:
 
     def _get_model(self) -> nn.Module:
         if self._model is None:
-            self._model = _ResNet50S1Segmentation(pretrained=False)
+            raise RuntimeError("ResNet50 S1 model weights unavailable")
         return self._model
 
     @staticmethod
@@ -107,11 +114,18 @@ class GFMMember:
     GFM is an external operational product (not a model that runs on the
     input tensor). ``run_inference`` ignores the input tensor and returns
     the stored flood probability map. The product dict must contain
-    ``flood_prob`` (tensor or scalar in [0, 1]).
+    ``flood_prob`` raster and provenance (tensor values in [0, 1]).
     """
 
     def __init__(self, gfm_product: dict) -> None:
+        flood_prob = gfm_product.get("flood_prob")
+        provenance = gfm_product.get("provenance")
+        if isinstance(flood_prob, (float, int)) or flood_prob is None:
+            raise ValueError("GFM requires a real raster product, not a constant")
+        if not isinstance(provenance, Mapping) or not provenance:
+            raise ValueError("GFM raster product provenance is required")
         self._product = gfm_product
+        self.provenance = {str(key): str(value) for key, value in provenance.items()}
 
     def run_inference(
         self,
@@ -163,6 +177,10 @@ class FloodEnsemble:
     ) -> None:
         if not members:
             raise ValueError("FloodEnsemble requires at least one member")
+        for member in members:
+            provenance = getattr(member, "provenance", None)
+            if not isinstance(provenance, Mapping) or not provenance:
+                raise ValueError("ensemble member provenance is required")
         self._members = list(members)
         n = len(self._members)
         if weights is None:
@@ -199,6 +217,7 @@ class FloodEnsemble:
             weights=torch.tensor(weights),
             observation_time=now_ms(),
             quality_flag=self._assess_quality(float(disagreement.mean())),
+            member_provenance=tuple(dict(member.provenance) for member in self._members),
         )
 
     def _resolve_weights(self, zone_id: str | None) -> list[float]:

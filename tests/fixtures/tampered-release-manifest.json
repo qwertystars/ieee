@@ -1,0 +1,34 @@
+{
+  "revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "claim_classes": {
+    "field": {"bounded_claim": "tampered", "prerequisite_ids": ["dataset.sensor.regional-trial", "dataset.operator.human-factors"], "status": "DEFERRED_EXTERNAL"},
+    "production": {"bounded_claim": "No production-readiness claim", "prerequisite_ids": ["dataset.flood.sen1floods11", "dataset.nlp.incident-evaluation"], "status": "DEFERRED_EXTERNAL"},
+    "research": {
+      "bounded_claim": "Tampered claim that must not verify.",
+      "package": {
+        "attestation_policy": {},
+        "clean_room": {},
+        "commands": [],
+        "file_hashes": {"code": {}, "data": {}, "model": {}, "environment": {}, "evidence": {}},
+        "format_version": "resqnet.sota-reproducibility.v1",
+        "gate_sources": [],
+        "invalidation_inputs": [],
+        "integrity": {"manifest_sha256": "5069fc45a7ca5f83a9356e185e3d02f19ec3b5339f351ece79c5438c68c72b5e"},
+        "metric_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "metric_metadata": {},
+        "nondeterminism_policy": {},
+        "prerequisite_source": "evidence/sota/prerequisites.json",
+        "runtime_constraints": {"python_major_minor": "3.11"},
+        "split_metadata": {},
+        "tolerances": {},
+        "hardware_constraints": {"architecture": "x86_64", "minimum_cpu_cores": 2, "os": "Linux"}
+      },
+      "prerequisite_ids": ["dataset.flood.sen1floods11", "dataset.flood.floodnet", "dataset.damage.xbd", "dataset.nlp.incident-evaluation"],
+      "status": "DEFERRED_EXTERNAL"
+    },
+    "shadow": {"bounded_claim": "No shadow-readiness claim", "prerequisite_ids": ["dataset.flood.sen1floods11", "dataset.sensor.regional-trial", "dataset.operator.human-factors"], "status": "DEFERRED_EXTERNAL"}
+  },
+  "expires_at": "2027-08-03T00:00:00Z",
+  "gate_attestations": [],
+  "prerequisite_hashes": ["65b982196a807063179d02ee87d2f155e0fb1173c6e45c932dc7eaafda184e83"]
+}

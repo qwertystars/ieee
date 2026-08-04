@@ -24,9 +24,12 @@ VENV_PYTEST := $(VENV)/bin/pytest
 export PYTHONPATH := $(BACKEND_DIR)
 
 .DEFAULT_GOAL := help
+RPO_TARGET_S ?= 60
+RTO_TARGET_S ?= 900
 
 .PHONY: help bootstrap migrate seed test lint typecheck build demo verify e2e \
         docker-build docker-up docker-up-full docker-down clean backup restore \
+        backup-restore-verify backup-restore-verify-corrupt \
         load-test load-test-full load-test-reduced
 
 help: ## Show available targets
@@ -167,6 +170,28 @@ restore: ## Restore from a backup directory (usage: make restore BACKUP=<path>)
 	@echo "=== Restoring from $(BACKUP) ==="
 	bash "$(ROOT_DIR)/scripts/restore.sh" "$(BACKUP)"
 	@echo "=== Restore complete ==="
+
+backup-restore-verify: ## Verify encrypted fixture backup/restore and RPO/RTO targets
+	@set -Eeuo pipefail; \
+	evidence="$(ROOT_DIR)/evidence/task-10-backup-restore.txt"; mkdir -p "$$(dirname "$$evidence")"; \
+	tmp="$$(mktemp -d)"; key="$$tmp/backup.key"; marker="$$tmp/restore.success"; \
+	cleanup() { rc=$$?; printf 'finished_at_utc=%s\nexit_code=%s\nstatus=%s\ncleanup=temporary workspace removed\n' "$$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$$rc" "$$(test "$$rc" -eq 0 && printf PASS || printf FAIL)" >> "$$evidence"; rm -rf "$$tmp"; exit "$$rc"; }; trap cleanup EXIT; \
+	{ printf 'task_id=10\ncommand=make backup-restore-verify RPO_TARGET_S=$(RPO_TARGET_S) RTO_TARGET_S=$(RTO_TARGET_S)\ncwd=%s\ncode_revision=%s\nstarted_at_utc=%s\ninputs=fixture database/object envelope; external key file; RPO_TARGET_S=$(RPO_TARGET_S); RTO_TARGET_S=$(RTO_TARGET_S)\n' "$(ROOT_DIR)" "$$(git rev-parse HEAD)" "$$(date -u +%Y-%m-%dT%H:%M:%SZ)"; } > "$$evidence"; \
+	printf 'fixture-key-material\n' > "$$key"; \
+	if [ -n "$(BACKUP_FIXTURE)" ]; then \
+		printf 'failure_assertion=corrupt or partial fixture must exit nonzero with no success marker\n'; \
+		set +e; BACKUP_ENCRYPTION_KEY_FILE="$$key" RESTORE_SUCCESS_MARKER="$$marker" bash "$(ROOT_DIR)/scripts/restore.sh" "$(BACKUP_FIXTURE)"; rc=$$?; set -e; \
+		printf 'failure_exit_code=%s\nsuccess_marker_exists=%s\n' "$$rc" "$$(test -e "$$marker" && printf true || printf false)" | tee -a "$$evidence"; \
+		test "$$rc" -ne 0; test ! -e "$$marker"; exit 1; \
+	fi; \
+	BACKUP_ROOT="$$tmp/backups" BACKUP_FIXTURE_DIR="$(ROOT_DIR)/tests/fixtures/backup-restore" BACKUP_ENCRYPTION_KEY_FILE="$$key" BACKUP_OFFSITE_DIR="$$tmp/offsite" bash "$(ROOT_DIR)/scripts/backup.sh" | tee -a "$$evidence"; \
+	backup_path="$$(find "$$tmp/backups" -mindepth 1 -maxdepth 1 -type d -name '20*' -print -quit)"; test -n "$$backup_path"; \
+	RESTORE_TARGET_DIR="$$tmp/clean-room" RESTORE_REPORT="$$tmp/restore.report.json" RESTORE_SUCCESS_MARKER="$$marker" BACKUP_ENCRYPTION_KEY_FILE="$$key" RPO_TARGET_S="$(RPO_TARGET_S)" RTO_TARGET_S="$(RTO_TARGET_S)" bash "$(ROOT_DIR)/scripts/restore.sh" "$$backup_path" | tee -a "$$evidence"; \
+	test -f "$$marker"; \
+	python3 -c 'import json, pathlib, sys; m=json.load(open(sys.argv[1])); r=json.load(open(sys.argv[2])); assert r["status"] == "PASS"; assert m["rpo"]["measured_seconds"] <= $(RPO_TARGET_S); assert m["rto"]["measured_seconds"] <= $(RTO_TARGET_S); assert r["archive_sha256"] == m["integrity"]["archive_sha256"]; p=pathlib.Path(sys.argv[3]); p.write_text(p.read_text()+"metrics="+json.dumps({"rpo_seconds":m["rpo"]["measured_seconds"],"rto_seconds":m["rto"]["measured_seconds"]},sort_keys=True)+"\nhashes="+json.dumps({"archive_sha256":r["archive_sha256"]},sort_keys=True)+"\nfailure_assertion=corruption and partial dependency failures are fail-fast; exercised separately\n")' "$$backup_path/manifest.json" "$$tmp/restore.report.json" "$$evidence"
+
+backup-restore-verify-corrupt: ## Run the intentionally corrupt fixture and return nonzero
+	@$(MAKE) backup-restore-verify BACKUP_FIXTURE=tests/fixtures/corrupt.tar RPO_TARGET_S=60 RTO_TARGET_S=900
 
 # ── Load test (locust) ───────────────────────────────────────────────────────
 # Two-phase design: 50 operators (SLOs 1,3,4,5) then 50 ingest users (SLO 2).

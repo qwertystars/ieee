@@ -24,7 +24,7 @@ source code, not test execution.
 | stub | Route/endpoint returns `{"status":"ok"}` or placeholder |
 | broken | Source present but known-defective (wrong type, drift, crash) |
 | missing | No source exists |
-| historical | Source exists but is legacy/superseded (e.g. Cloudflare `platform/`) |
+| historical | Source removed (e.g. Cloudflare `platform/` deleted) |
 
 ## Capability table
 
@@ -78,7 +78,7 @@ source code, not test execution.
 | stub | 0 (counted under partial — 5 stub routes) |
 | broken | 4 (ORM-schema consistency, source registry, security weaknesses, + enum mismatch) |
 | missing | 2 (consumer lifecycle, PWA/offline) |
-| historical | 0 (Cloudflare `platform/` is out of scope) |
+| historical | 1 (Cloudflare `platform/` removed — out of scope) |
 | **Total** | **37** |
 
 ## Key findings

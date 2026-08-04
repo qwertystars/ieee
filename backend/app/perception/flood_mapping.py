@@ -56,13 +56,13 @@ class _DOFASegmentation(nn.Module):
     @staticmethod
     def _load_dofa(pretrained: bool) -> nn.Module:
         """Lazy-import torchgeo.models and load DOFA encoder."""
+        if not pretrained:
+            raise RuntimeError("DOFA requires a registered pretrained artifact")
         try:
             from torchgeo.models import dofa
-
             return dofa(pretrained=pretrained)  # type: ignore[operator]
-        except Exception:
-            logger.warning("DOFA unavailable, using random encoder")
-            return _RandomEncoder()
+        except (ImportError, OSError, RuntimeError) as exc:
+            raise RuntimeError("DOFA weights unavailable") from exc
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.shape[1] == 2:
@@ -74,16 +74,6 @@ class _DOFASegmentation(nn.Module):
             H = W = int(N ** 0.5)
             feats = feats.transpose(1, 2).reshape(B, C, H, W)
         return self.head(self.dropout(feats))
-
-
-class _RandomEncoder(nn.Module):
-    """Fallback encoder when DOFA weights are unavailable."""
-
-    embed_dim = 256
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        B, _, H, W = x.shape
-        return torch.randn(B, self.embed_dim, H // 16, W // 16)
 
 
 class SARFloodMapper:
@@ -238,7 +228,12 @@ class SARFloodMapper:
         gfm_product: dict,
     ) -> FloodMapResult:
         """Fuse model output with GFM product — weighted average."""
-        gfm_data = gfm_product.get("flood_prob", 0.0)
+        gfm_data = gfm_product.get("flood_prob")
+        provenance = gfm_product.get("provenance")
+        if isinstance(gfm_data, (float, int)) or gfm_data is None:
+            raise ValueError("GFM requires a real raster product, not a constant")
+        if not isinstance(provenance, dict) or not provenance:
+            raise ValueError("GFM raster product provenance is required")
         gfm_prob = torch.as_tensor(
             gfm_data, dtype=model_output.flood_prob.dtype
         )
@@ -273,7 +268,7 @@ class SARFloodMapper:
 
     def _get_model(self) -> nn.Module:
         if self._model is None:
-            self._model = _DOFASegmentation(pretrained=False)
+            raise RuntimeError("SAR model weights unavailable")
         return self._model
 
     @staticmethod

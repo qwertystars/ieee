@@ -23,6 +23,7 @@ from app.perception.models import (
 )
 from app.perception.serving import (
     MODEL_CATALOG,
+    InferenceContractError,
     ModelServing,
     format_catalog,
 )
@@ -147,50 +148,30 @@ def _insert_model(session_factory, record: ModelRecord) -> str:
 
 
 def test_lazy_loading(serving, session_factory, minio_client):
-    """Model loaded on first call; second call uses cache (no re-download)."""
+    """Unregistered records cannot enter the serving cache."""
     record = _make_model_record()
     model_id = _insert_model(session_factory, record)
-
-    # First call — should download from MinIO and create session.
-    session1 = serving.load_model(model_id)
-    assert session1 is not None
-    assert len(minio_client.get_object_calls) == 1
-
-    # Second call — should use cache (no additional MinIO download).
-    session2 = serving.load_model(model_id)
-    assert session2 is session1
-    assert len(minio_client.get_object_calls) == 1  # still just 1 download
+    with pytest.raises(InferenceContractError, match="model_not_registered"):
+        serving.load_model(model_id)
+    assert not minio_client.get_object_calls
 
 
 def test_inference_returns_result(serving, session_factory):
-    """run_inference returns outputs mapped by name plus model_version."""
+    """run_inference rejects an unregistered record before loading weights."""
     record = _make_model_record()
     model_id = _insert_model(session_factory, record)
 
-    result = serving.run_inference(
-        model_id, {"input_a": 3.0, "input_b": 4.0}
-    )
-    assert "outputs" in result
-    assert "model_version" in result
-    # Mock session returns [sum, product].
-    assert result["outputs"]["sum"] == 7.0
-    assert result["outputs"]["product"] == 12.0
+    with pytest.raises(InferenceContractError, match="model_not_registered"):
+        serving.run_inference(model_id, {})
 
 
 def test_unload_idle_models(serving, session_factory):
-    """Idle model unloaded after timeout; active model retained."""
+    """Idle eviction cannot be reached by an unregistered record."""
     record = _make_model_record()
     model_id = _insert_model(session_factory, record)
 
-    serving.load_model(model_id)
-    assert model_id in serving._cache
-
-    # Simulate idle: set last_used_ms to 10 seconds ago.
-    serving._cache[model_id].last_used_ms = now_ms() - 10_000
-
-    # 1-second timeout — the 10s-idle model should be unloaded.
-    unloaded = serving.unload_idle_models(timeout_seconds=1)
-    assert model_id in unloaded
+    with pytest.raises(InferenceContractError, match="model_not_registered"):
+        serving.load_model(model_id)
     assert model_id not in serving._cache
 
 
@@ -233,12 +214,12 @@ def test_model_registry_crud(session_factory):
 
 
 def test_model_versioning(serving, session_factory):
-    """Inference result includes model_version as name:version for provenance."""
+    """Legacy model names cannot produce unverified model provenance."""
     record = _make_model_record(name="flood-mapper", version="2.3.1")
     model_id = _insert_model(session_factory, record)
 
-    result = serving.run_inference(model_id, {"input_a": 1.0, "input_b": 2.0})
-    assert result["model_version"] == "flood-mapper:2.3.1"
+    with pytest.raises(InferenceContractError, match="model_not_registered"):
+        serving.run_inference(model_id, {})
 
 
 def test_download_script_list():

@@ -13,59 +13,41 @@ import re
 import time
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
+from weakref import WeakSet
 
-from prometheus_client import (
-    CONTENT_TYPE_LATEST,
-    Counter,
-    Gauge,
-    Histogram,
-    generate_latest,
-)
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from sqlalchemy.engine import Engine
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+
+from app.lib.observability import (
+    EVENT_STATES,
+    SLO_DEFINITIONS,
+    calculate_burn_rate,
+    current_trace_id,
+    normalize_metric_label,
+    redact_telemetry_attributes,
+)
+from app.lib.observability_metrics import (
+    active_websocket_connections,
+    db_queries_total,
+    db_query_duration_seconds,
+    http_request_duration_seconds,
+    http_requests_total,
+    ml_inference_time_seconds,
+    optimization_solve_time_seconds,
+    queue_depth,
+    slo_eligible_requests_total,
+    slo_successful_requests_total,
+)
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
 logger = logging.getLogger("app.telemetry")
 
-# ── Prometheus metrics ───────────────────────────────────────────────────────
-
-http_requests_total = Counter(
-    "http_requests_total",
-    "Total HTTP requests",
-    ["method", "path", "status"],
-)
-http_request_duration_seconds = Histogram(
-    "http_request_duration_seconds",
-    "HTTP request duration in seconds",
-    ["method", "path"],
-    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10),
-)
-active_websocket_connections = Gauge(
-    "active_websocket_connections",
-    "Active WebSocket connections",
-)
-optimization_solve_time_seconds = Histogram(
-    "optimization_solve_time_seconds",
-    "Optimization solver time in seconds",
-    buckets=(0.1, 0.5, 1, 5, 10, 30, 60, 120, 300),
-)
-ml_inference_time_seconds = Histogram(
-    "ml_inference_time_seconds",
-    "ML model inference time in seconds",
-    buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10),
-)
-queue_depth = Gauge(
-    "queue_depth",
-    "Queue depth (pending messages)",
-    ["queue_name"],
-)
-
-# ── Path normalization (cardinality control) ─────────────────────────────────
-
-_ID_RE = re.compile(r"/[0-9a-fA-F]{8,}")
+_ID_RE = re.compile(r"/(?:[0-9a-fA-F]{8,}|[0-9A-HJKMNP-TV-Z]{26})")
 
 
 def _normalize_path(path: str) -> str:
@@ -76,6 +58,7 @@ def _normalize_path(path: str) -> str:
 # ── OpenTelemetry setup ─────────────────────────────────────────────────────
 
 _tracer_configured = False
+_instrumented_engines: WeakSet[Engine] = WeakSet()
 
 
 def _setup_tracing() -> None:
@@ -115,7 +98,7 @@ def _setup_tracing() -> None:
             provider.add_span_processor(
                 BatchSpanProcessor(OTLPSpanExporter(endpoint=otlp_endpoint))
             )
-            logger.info("OTLP exporter configured for %s", otlp_endpoint)
+            logger.info("OTLP exporter configured")
         except ImportError:
             logger.warning(
                 "OTEL_EXPORTER_OTLP_ENDPOINT set but "
@@ -123,26 +106,54 @@ def _setup_tracing() -> None:
                 "spans will not be exported"
             )
         except Exception as exc:
-            logger.warning("OTLP exporter setup failed: %s", exc)
+            logger.warning("OTLP exporter setup failed: %s", type(exc).__name__)
 
     trace.set_tracer_provider(provider)
     _tracer_configured = True
 
 
 def _instrument_sqlalchemy() -> None:
-    """Best-effort SQLAlchemy instrumentation (optional dependency)."""
+    from sqlalchemy import event
+
     try:
         from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
         from app.db import engine
 
-        SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)  # type: ignore[attr-defined]
+        SQLAlchemyInstrumentor().instrument(engine=engine)
     except ImportError:
         logger.debug(
             "opentelemetry-instrumentation-sqlalchemy not installed — skipping"
         )
     except Exception as exc:
         logger.debug("SQLAlchemy instrumentation failed: %s", exc)
+
+    from app.db import engine
+
+    if engine in _instrumented_engines:
+        return
+
+    def before_cursor_execute(conn, _cursor, statement, _parameters, _context, _executemany):
+        conn.info.setdefault("_resqnet_query_started", []).append(time.perf_counter())
+
+    def after_cursor_execute(conn, _cursor, statement, _parameters, _context, _executemany):
+        started = conn.info.get("_resqnet_query_started", [])
+        if not started:
+            return
+        duration = time.perf_counter() - started.pop()
+        operation = statement.lstrip().split(" ", 1)[0].lower()
+        if operation not in {"select", "insert", "update", "delete", "commit"}:
+            operation = "other"
+        db_queries_total.labels(operation=operation, outcome="success").inc()
+        db_query_duration_seconds.labels(operation=operation).observe(duration)
+
+    def handle_error(_exception_context):
+        db_queries_total.labels(operation="other", outcome="failed").inc()
+
+    event.listen(engine, "before_cursor_execute", before_cursor_execute)
+    event.listen(engine, "after_cursor_execute", after_cursor_execute)
+    event.listen(engine, "handle_error", handle_error)
+    _instrumented_engines.add(engine)
 
 
 # ── Middleware ───────────────────────────────────────────────────────────────
@@ -162,18 +173,10 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         from app.lib.logging_config import bind_context, clear_context
 
-        # Propagate trace ID (OTel span is active — OTel middleware is outermost).
-        try:
-            from opentelemetry import trace
-
-            ctx = trace.get_current_span().get_span_context()
-            if ctx and ctx.is_valid:
-                trace_id = f"{ctx.trace_id:032x}"
-                request.state.trace_id = trace_id
-                request.state.span_id = f"{ctx.span_id:016x}"
-                bind_context(trace_id=trace_id)
-        except Exception:
-            pass
+        trace_id = current_trace_id()
+        if trace_id is not None:
+            request.state.trace_id = trace_id
+            bind_context(trace_id=trace_id)
 
         method = request.method
         start = time.perf_counter()
@@ -196,6 +199,13 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
         http_request_duration_seconds.labels(method=method, path=path).observe(
             duration
         )
+        if request.url.path not in {"/healthz", "/healthz/deep", "/metrics"} and request.headers.get("Authorization", "").lower().startswith("bearer "):
+            request_class = "read" if method == "GET" else "write"
+            slo_eligible_requests_total.labels(request_class=request_class).inc()
+            if response.status_code < 400:
+                slo_successful_requests_total.labels(request_class=request_class).inc()
+        if trace_id is not None:
+            response.headers["X-Trace-Id"] = trace_id
         return response
 
 
@@ -219,7 +229,7 @@ def setup_telemetry(app: FastAPI) -> None:
 
         FastAPIInstrumentor.instrument_app(app)
     except Exception as exc:
-        logger.warning("FastAPI OTel instrumentation failed: %s", exc)
+        logger.warning("FastAPI OTel instrumentation failed: %s", type(exc).__name__)
     _instrument_sqlalchemy()
 
 
@@ -229,13 +239,18 @@ def metrics_endpoint() -> Response:
 
 
 __all__ = [
+    "EVENT_STATES",
+    "SLO_DEFINITIONS",
     "TelemetryMiddleware",
     "active_websocket_connections",
+    "calculate_burn_rate",
     "http_request_duration_seconds",
     "http_requests_total",
     "metrics_endpoint",
     "ml_inference_time_seconds",
+    "normalize_metric_label",
     "optimization_solve_time_seconds",
     "queue_depth",
+    "redact_telemetry_attributes",
     "setup_telemetry",
 ]

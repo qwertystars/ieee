@@ -59,6 +59,27 @@ layer on top.
 
 ---
 
+## Human-centered workflow measures (protocol only)
+
+This section is a participant protocol, not an automated test result. The
+eventual study requires 12 trained operators across 100 incidents and must
+record, per scenario, time-to-decision, severe-error rate, NASA-TLX workload,
+SUS usability, stale-data comprehension, and conflict-resolution outcome. The
+success thresholds are NASA-TLX no worse than baseline plus 10 points, SUS at
+least 70, severe-error rate no worse than baseline, and stale-data comprehension
+at least 90 percent. Conflict measures must record whether the operator saw
+the authoritative server state, chose a permitted resolution, and avoided a
+silent last-write-wins effect.
+
+Playwright and axe results are scripted rendering and interaction proxies only.
+They do not measure participant workload, comprehension, agency approval,
+field readiness, time-to-decision, or severe-error rate. The operator study
+remains `DEFERRED_EXTERNAL` until an agency, IRB approval, consented
+participants, and hashed study evidence exist in
+`evidence/sota/prerequisites.json`.
+
+---
+
 ## 1. Trial Objectives and Success Criteria
 
 The trial validates the six SLOs from locked decision D3 under real

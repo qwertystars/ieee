@@ -33,6 +33,7 @@ class _MockMember:
     def __init__(self, flood_prob: torch.Tensor, name: str = "mock") -> None:
         self._flood_prob = flood_prob
         self._name = name
+        self.provenance = {"model_id": name, "artifact_sha256": "a" * 64}
 
     def run_inference(self, tensor: torch.Tensor, **kwargs) -> FloodMapResult:
         return FloodMapResult(
@@ -169,7 +170,10 @@ def test_gfm_member_optional(member_probs, sar_tensor):
 def test_gfm_member_wrapper(member_probs, sar_tensor):
     """GFMMember wraps a GFM product dict and returns its flood_prob."""
     _, _, p_gfm = member_probs
-    gfm_product = {"flood_prob": p_gfm}
+    gfm_product = {
+        "flood_prob": p_gfm,
+        "provenance": {"model_id": "gfm", "artifact_sha256": "b" * 64},
+    }
     gfm_member = GFMMember(gfm_product)
 
     result = gfm_member.run_inference(sar_tensor)
@@ -180,13 +184,8 @@ def test_gfm_member_wrapper(member_probs, sar_tensor):
 
 def test_gfm_member_scalar_broadcast(sar_tensor):
     """GFMMember with scalar flood_prob broadcasts to tensor shape."""
-    gfm_product = {"flood_prob": 0.5}
-    gfm_member = GFMMember(gfm_product)
-
-    result = gfm_member.run_inference(sar_tensor)
-
-    assert result.flood_prob.shape == (224, 224)
-    assert torch.allclose(result.flood_prob, torch.full((224, 224), 0.5))
+    with pytest.raises(ValueError, match="real raster"):
+        GFMMember({"flood_prob": 0.5})
 
 
 def test_per_zone_weighting(three_members, member_probs, sar_tensor):

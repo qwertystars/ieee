@@ -12,6 +12,7 @@ interface Toast {
 export default function PlanningPage() {
   const queryClient = useQueryClient()
   const [toast, setToast] = useState<Toast | null>(null)
+  const [dispatchPendingAlertIds, setDispatchPendingAlertIds] = useState<Set<string>>(new Set())
 
   const incidentsQ = useQuery({
     queryKey: ['incidents'],
@@ -23,6 +24,14 @@ export default function PlanningPage() {
     queryKey: ['alerts', incidentId],
     queryFn: ({ signal }) => api.getAlerts(incidentId!, signal),
     enabled: !!incidentId,
+    refetchInterval: 5000,
+  })
+
+  const tasksQ = useQuery({
+    queryKey: ['tasks', incidentId],
+    queryFn: ({ signal }) => api.getTasks(incidentId!, signal),
+    enabled: !!incidentId,
+    refetchInterval: 5000,
   })
 
   function showToast(message: string, kind: 'success' | 'error' = 'success') {
@@ -38,8 +47,8 @@ export default function PlanningPage() {
   const approveMut = useMutation({
     mutationFn: (vars: { alertId: string; rationale: string }) =>
       api.approveAlert(incidentId!, vars.alertId, vars.rationale),
-    onSuccess: () => {
-      showToast('Alert approved successfully')
+    onSuccess: (result) => {
+      showToast(result === undefined ? 'Approval queued for reconnect' : 'Alert approved successfully')
       invalidateAfterDecision()
     },
     onError: (e: unknown) => {
@@ -88,6 +97,11 @@ export default function PlanningPage() {
     if (action) modifyMut.mutate({ alertId, action })
   }
 
+  function handleDispatchRequest(alertId: string) {
+    setDispatchPendingAlertIds(current => new Set(current).add(alertId))
+    showToast('Dispatch pending dual approval — no task created')
+  }
+
   if (incidentsQ.isLoading) {
     return <div className="flex h-full items-center justify-center"><LoadingState message="Loading incidents…" /></div>
   }
@@ -102,6 +116,7 @@ export default function PlanningPage() {
   const proposals = alerts.filter(a => a.status === 'draft' || a.status === 'modified')
   const reviewed = alerts.filter(a => a.status === 'approved' || a.status === 'dismissed')
   const pending = approveMut.isPending || dismissMut.isPending || modifyMut.isPending
+  const tasks = tasksQ.data?.tasks ?? []
 
   return (
     <div className="flex flex-col gap-4 p-6" aria-label="Planning page">
@@ -131,6 +146,25 @@ export default function PlanningPage() {
 
       {alertsQ.isLoading && <LoadingState message="Loading action proposals…" />}
       {alertsQ.isError && <ErrorState message="Failed to load alerts" onRetry={() => alertsQ.refetch()} />}
+      {tasksQ.isError && <ErrorState message="Failed to load task status" onRetry={() => tasksQ.refetch()} />}
+
+      {tasks.length > 0 && (
+        <section aria-label="Alert task status">
+          <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">
+            Alert Tasks ({tasks.length})
+          </h2>
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-2" role="list">
+            {tasks.slice(0, 6).map(task => (
+              <div key={task.id} role="listitem" className="rounded border border-gray-700 bg-gray-900/70 px-3 py-2 text-xs text-gray-300">
+                <span className="font-medium text-gray-100">{task.title}</span>
+                <span className="ml-2 rounded bg-gray-800 px-1.5 py-0.5 text-gray-400" data-testid="task-status">
+                  {task.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {alertsQ.data && proposals.length === 0 && reviewed.length === 0 && (
         <EmptyState message="No action proposals" hint="Alerts will appear here when the system generates recommendations." />
@@ -150,6 +184,8 @@ export default function PlanningPage() {
                   onApprove={handleApprove}
                   onDismiss={handleDismiss}
                   onModify={handleModify}
+                  onDispatchRequest={handleDispatchRequest}
+                  dispatchPending={dispatchPendingAlertIds.has(a.id)}
                 />
               </div>
             ))}

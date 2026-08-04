@@ -1,0 +1,268 @@
+{
+  "schema_version": "resqnet.published-baselines.v1",
+  "registry_version": "1.0.0",
+  "policy": {
+    "confidence_level": 0.95,
+    "bootstrap_resamples": 10000,
+    "bootstrap_unit": "incident",
+    "seeds": [1, 2, 3, 4, 5],
+    "holm_correction": "holm",
+    "superiority_threshold": 0.02,
+    "final_test_tuning": false,
+    "required_metrics": ["flood_miou", "damage_combined_f1", "nlp_macro_f1"]
+  },
+  "ablation_plan": [
+    "no_calibrated_uncertainty",
+    "no_provenance",
+    "no_active_sensing",
+    "no_robust_optimization",
+    "no_infrastructure_dependencies",
+    "no_telecom_silence",
+    "no_fairness_constraints",
+    "no_edge_operation",
+    "no_human_counterfactual"
+  ],
+  "baselines": [
+    {
+      "baseline_id": "sen1floods11-unet-published-v1",
+      "task": "sen1floods11",
+      "dataset_id": "sen1floods11-flood",
+      "status": "DEFERRED_EXTERNAL",
+      "pending_reason": "published_weights_and_dataset_artifact_not_available_in_workspace",
+      "paper_title": "Sen1Floods11: A Georeferenced Dataset to Train and Test Deep Learning Flood Algorithms for Sentinel-1",
+      "paper_url": "https://openaccess.thecvf.com/content_CVPRW_2020/html/w11/Bonafilia_Sen1Floods11_A_Georeferenced_Dataset_to_Train_and_Test_Deep_Learning_Flood_Algorithms_for_Sentinel-1_CVPRW_2020_paper.html",
+      "repository": {
+        "url": "https://github.com/cloudtostreet/Sen1Floods11",
+        "commit": "b9e460dabe70230111a3c3d36cd0c5ce03606ee9"
+      },
+      "license": {
+        "name": "CC BY 4.0",
+        "authority": "Creative Commons",
+        "allowed_use_status": "ALLOWED"
+      },
+      "artifact": {
+        "kind": "published_baseline_weights",
+        "reference": "github:cloudtostreet/Sen1Floods11@b9e460dabe70230111a3c3d36cd0c5ce03606ee9",
+        "sha256": null,
+        "available": false
+      },
+      "command": "python scripts/run_baseline.py --config benchmarks/baselines/sen1floods11.yaml",
+      "config_path": "benchmarks/baselines/sen1floods11.yaml",
+      "metric_protocol": {
+        "primary_metric": "flood_miou",
+        "direction": "higher_is_better",
+        "required_metrics": ["flood_miou", "flood_precision", "flood_recall", "flood_f1"],
+        "per_class_metrics": ["not_flood_iou", "flood_iou"],
+        "per_event_metrics": ["event_miou", "event_f1"]
+      },
+      "preprocessing": {
+        "version": "sen1floods11-sentinel1-v1",
+        "inputs": ["VV", "VH"],
+        "normalization_fit": "train",
+        "threshold_fit": "calibration",
+        "test_tuning": false
+      },
+      "hyperparameters": {
+        "architecture": "U-Net",
+        "encoder": "segmentation_models_pytorch",
+        "package_version": "0.3.3",
+        "optimizer": "Adam",
+        "selection": "published configuration only"
+      },
+      "hardware": {
+        "accelerator": "CUDA GPU when available; CPU execution is permitted for validation",
+        "precision": "float32",
+        "memory_gb_min": 8
+      },
+      "split_hashes": {
+        "train": "11f9f93b33a392a70d89cd7c71bef2f0e1c1ceec5bbdd79adefe2eca49a9efcb",
+        "calibration": "431a17ce78f02378b686ab59b9494e96d80ea795e76a4c8734993a622a04831c",
+        "test": "8986dd2da8f49b1e7e514c7799bc4fdbe37d7f04e8bdd7c71b11ba77eb0c46d0"
+      },
+      "split_hash_scope": "todo-14-canonical-split-ids",
+      "variants": [
+        {"variant_id": "sen1-sar-only", "kind": "modality_only", "modalities": ["sar"]},
+        {"variant_id": "sen1-sar-context-fusion", "kind": "fusion", "modalities": ["sar", "context"]}
+      ]
+    },
+    {
+      "baseline_id": "floodnet-deeplabv3plus-published-v1",
+      "task": "floodnet",
+      "dataset_id": "floodnet-flood",
+      "status": "DEFERRED_EXTERNAL",
+      "pending_reason": "license_and_published_weights_not_verified_in_workspace",
+      "paper_title": "FloodNet: A High Resolution Aerial Imagery Dataset for Post Flood Assessment",
+      "paper_url": "https://arxiv.org/abs/2012.02981",
+      "repository": {
+        "url": "https://github.com/BinaLab/FloodNet-Supervised_v1.0",
+        "commit": "1cba183788e5661c1ec326d7ded1f2536f82e9ad"
+      },
+      "license": {
+        "name": "LICENSE_PENDING_AUTHORIZATION",
+        "authority": "FloodNet maintainers",
+        "allowed_use_status": "PENDING_AUTHORIZATION"
+      },
+      "artifact": {
+        "kind": "published_baseline_weights",
+        "reference": "github:BinaLab/FloodNet-Supervised_v1.0@1cba183788e5661c1ec326d7ded1f2536f82e9ad",
+        "sha256": null,
+        "available": false
+      },
+      "command": "python scripts/run_baseline.py --config benchmarks/baselines/floodnet-deeplabv3plus.yaml",
+      "config_path": "benchmarks/baselines/floodnet-deeplabv3plus.yaml",
+      "metric_protocol": {
+        "primary_metric": "flood_miou",
+        "direction": "higher_is_better",
+        "required_metrics": ["flood_miou", "flood_precision", "flood_recall", "flood_f1"],
+        "per_class_metrics": ["background_iou", "water_iou"],
+        "per_event_metrics": ["event_miou", "event_f1"]
+      },
+      "preprocessing": {
+        "version": "floodnet-rgb-v1",
+        "inputs": ["RGB"],
+        "normalization_fit": "train",
+        "threshold_fit": "calibration",
+        "test_tuning": false
+      },
+      "hyperparameters": {
+        "architecture": "DeepLabV3+",
+        "encoder": "published configuration",
+        "selection": "published configuration only"
+      },
+      "hardware": {
+        "accelerator": "CUDA GPU when available; CPU execution is permitted for validation",
+        "precision": "float32",
+        "memory_gb_min": 8
+      },
+      "split_hashes": {
+        "train": "be2dc8b7bb9b20400c5e03a3232587addd5893fdd2c662d5ba8f4920016b76b3",
+        "calibration": "a0a0effe9c771c225908bb353806328039b2a1afe7ede3dff199f19ebd27bb29",
+        "test": "d748286331ed4ec0accce0f685c105d4c6e16c18a3a3e8db44c6fea66177b0a9"
+      },
+      "split_hash_scope": "todo-14-canonical-split-ids",
+      "variants": [
+        {"variant_id": "floodnet-rgb-only", "kind": "modality_only", "modalities": ["rgb"]},
+        {"variant_id": "floodnet-rgb-context-fusion", "kind": "fusion", "modalities": ["rgb", "context"]}
+      ]
+    },
+    {
+      "baseline_id": "xview2-published-v1",
+      "task": "xview2",
+      "dataset_id": "xbd-damage",
+      "status": "DEFERRED_EXTERNAL",
+      "pending_reason": "xview2_registration_gated_artifact_not_available_in_workspace",
+      "paper_title": "xBD: A Dataset for Assessing Building Damage from Satellite Imagery",
+      "paper_url": "https://arxiv.org/abs/1810.01987",
+      "repository": {
+        "url": "https://github.com/DIUx-xView/xView2_baseline",
+        "commit": "821d9f8b9201ee7952aef13b073c9fd38ce11d4b"
+      },
+      "license": {
+        "name": "Non-commercial research license",
+        "authority": "xView2 program",
+        "allowed_use_status": "NOT_PERMITTED"
+      },
+      "artifact": {
+        "kind": "published_baseline_weights",
+        "reference": "github:DIUx-xView/xView2_baseline@821d9f8b9201ee7952aef13b073c9fd38ce11d4b",
+        "sha256": null,
+        "available": false
+      },
+      "command": "python scripts/run_baseline.py --config benchmarks/baselines/xview2.yaml",
+      "config_path": "benchmarks/baselines/xview2.yaml",
+      "metric_protocol": {
+        "primary_metric": "damage_combined_f1",
+        "direction": "higher_is_better",
+        "required_metrics": ["damage_combined_f1", "damage_macro_f1", "damage_precision", "damage_recall"],
+        "per_class_metrics": ["no_damage_f1", "minor_f1", "major_f1", "destroyed_f1"],
+        "per_event_metrics": ["event_damage_combined_f1"]
+      },
+      "preprocessing": {
+        "version": "xbd-pre-post-v1",
+        "inputs": ["pre_disaster", "post_disaster"],
+        "normalization_fit": "train",
+        "threshold_fit": "calibration",
+        "test_tuning": false
+      },
+      "hyperparameters": {
+        "architecture": "published xView2 baseline",
+        "selection": "published configuration only"
+      },
+      "hardware": {
+        "accelerator": "CUDA GPU required by the published training recipe",
+        "precision": "float32",
+        "memory_gb_min": 16
+      },
+      "split_hashes": {
+        "train": "a83fd443ee7f3a83e4e8f2c2a345b3455afe349b881a8964c9b9811d7f097fd5",
+        "calibration": "41d1fffa0c2dafbae523877fdd29022f39a94e4981a5daf29aa428eb7ebc3bd6",
+        "test": "dcd666451fcf203c506e605172bbb28f525235b605c61df0d4c26a2a3b8f469f"
+      },
+      "split_hash_scope": "todo-14-canonical-split-ids",
+      "variants": [
+        {"variant_id": "xbd-pre-only", "kind": "modality_only", "modalities": ["pre_disaster"]},
+        {"variant_id": "xbd-post-only", "kind": "modality_only", "modalities": ["post_disaster"]},
+        {"variant_id": "xbd-pre-post-fusion", "kind": "fusion", "modalities": ["pre_disaster", "post_disaster"]}
+      ]
+    },
+    {
+      "baseline_id": "incident-nlp-majority-crisispulse-v1",
+      "task": "incident-nlp",
+      "dataset_id": "incident-nlp-evaluation",
+      "status": "DEFERRED_EXTERNAL",
+      "pending_reason": "no_licensed_labeled_incident_evaluation_corpus_available",
+      "paper_title": "CrisisPulse model card; no labeled evaluation publication registered",
+      "paper_url": "https://huggingface.co/sakibalfahim/CrisisPulse",
+      "repository": {
+        "url": "https://huggingface.co/sakibalfahim/CrisisPulse",
+        "commit": "crisis-pulse-artifact"
+      },
+      "license": {
+        "name": "Apache-2.0 for the model artifact; evaluation corpus unregistered",
+        "authority": "CrisisPulse model card",
+        "allowed_use_status": "ALLOWED"
+      },
+      "artifact": {
+        "kind": "CrisisPulse_model_artifact",
+        "reference": "sha256:038e4fa15021d0da8ec9c5e02ceed9de37d05cd4cd9a6eb73b0a9824999a81a7",
+        "sha256": "038e4fa15021d0da8ec9c5e02ceed9de37d05cd4cd9a6eb73b0a9824999a81a7",
+        "available": false
+      },
+      "command": "python scripts/run_baseline.py --config benchmarks/baselines/crisis-nlp.yaml",
+      "config_path": "benchmarks/baselines/crisis-nlp.yaml",
+      "metric_protocol": {
+        "primary_metric": "nlp_macro_f1",
+        "direction": "higher_is_better",
+        "required_metrics": ["nlp_macro_f1", "nlp_micro_f1", "nlp_precision", "nlp_recall"],
+        "per_class_metrics": ["non_disaster_f1", "disaster_f1"],
+        "per_event_metrics": ["event_macro_f1"]
+      },
+      "preprocessing": {
+        "version": "incident-nlp-redaction-tokenizer-v1",
+        "inputs": ["text"],
+        "normalization_fit": "train",
+        "threshold_fit": "calibration",
+        "test_tuning": false
+      },
+      "hyperparameters": {
+        "architecture": "majority-class reference plus CrisisPulse BERT artifact",
+        "selection": "published configuration only"
+      },
+      "hardware": {
+        "accelerator": "CPU permitted for majority-class reference; accelerator requirements follow artifact card",
+        "precision": "float32",
+        "memory_gb_min": 8
+      },
+      "split_hashes": {
+        "train": null,
+        "calibration": null,
+        "test": null
+      },
+      "split_hash_scope": "DEFERRED_EXTERNAL_until_licensed_labeled_corpus_is_registered",
+      "variants": [
+        {"variant_id": "incident-text-only", "kind": "modality_only", "modalities": ["text"]},
+        {"variant_id": "incident-text-context-fusion", "kind": "fusion", "modalities": ["text", "context"]}
+      ]
+    }
+  ]
+}

@@ -4,9 +4,9 @@ Wires the DigitalTwinTestbed to API endpoints:
   - POST /run           — generate testbed infrastructure + observation stream
   - GET  /results/{task_id} — retrieve stored evaluation results
 
-Results are stored in an in-memory dict keyed by task_id (ULID). This is
-sufficient for single-process demo operation; production would use a DB
-table or queue. Task 33 will extend this file with ablation/baselines.
+Evaluation job state and results are stored in PostgreSQL rows keyed by the
+organization-scoped ULID task_id, so reads converge across backend instances
+and survive process restart. Task 33 extends this file with ablation/baselines.
 """
 
 from __future__ import annotations
@@ -16,10 +16,11 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
-from app.deps import require_roles
+from app.deps import get_db, require_roles
+from app.eval.jobs import EvaluationJobStore, job_response
 from app.lib.time import now_ms
-from app.lib.ulid import generate_ulid
 from app.models.user import User
 
 logger = logging.getLogger("app.api.routes.eval")
@@ -27,10 +28,6 @@ logger = logging.getLogger("app.api.routes.eval")
 router = APIRouter(prefix="/eval", tags=["eval"])
 
 _WRITE_ROLES = ("admin", "emergency_manager")
-
-# In-memory result store (single-process demo). Keyed by task_id.
-_results: dict[str, dict[str, Any]] = {}
-
 
 class EvalRunRequest(BaseModel):
     """Request body for POST /eval/run."""
@@ -46,11 +43,19 @@ class EvalRunRequest(BaseModel):
 def run_eval(
     payload: EvalRunRequest,
     user: User = Depends(require_roles(*_WRITE_ROLES)),
+    db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Run a testbed evaluation — generates infrastructure + observation stream."""
     from app.eval.testbed import DigitalTwinTestbed
     from app.eval.testbed_types import TestbedParams
 
+    store = EvaluationJobStore(db)
+    job = store.create(
+        user.org_id,
+        user.id,
+        "eval",
+        {"seed": payload.seed, "duration_hours": payload.duration_hours, "params": payload.params or {}},
+    )
     params = TestbedParams(**payload.params) if payload.params else TestbedParams()
     testbed = DigitalTwinTestbed(params=params)
     infra = testbed.generate(seed=payload.seed)
@@ -59,7 +64,7 @@ def run_eval(
     )
     fingerprint = testbed.fingerprint()
 
-    task_id = generate_ulid()
+    task_id = job.id
     result: dict[str, Any] = {
         "task_id": task_id,
         "status": "completed",
@@ -83,7 +88,7 @@ def run_eval(
         "created_at": now_ms(),
         "created_by": user.email,
     }
-    _results[task_id] = result
+    store.complete(task_id, user.org_id, result)
     return result
 
 
@@ -91,15 +96,16 @@ def run_eval(
 def get_eval_results(
     task_id: str,
     user: User = Depends(require_roles()),
+    db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Retrieve stored evaluation results by task_id."""
-    result = _results.get(task_id)
-    if result is None:
+    job = EvaluationJobStore(db).get(task_id, user.org_id)
+    if job is None:
         raise HTTPException(
             status_code=404,
             detail=f"eval task not found: {task_id}",
         )
-    return result
+    return job_response(job)
 
 
 def _count_by_source(observations: list[Any]) -> dict[str, int]:
@@ -128,6 +134,7 @@ class AblationRequest(BaseModel):
 def run_ablation(
     payload: AblationRequest,
     user: User = Depends(require_roles(*_WRITE_ROLES)),
+    db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """POST /eval/ablation — run ablation study removing one component at a time.
 
@@ -138,6 +145,8 @@ def run_ablation(
     from app.eval.testbed import DigitalTwinTestbed
     from app.eval.testbed_types import TestbedParams
 
+    store = EvaluationJobStore(db)
+    job = store.create(user.org_id, user.id, "ablation", {"seed": payload.seed})
     testbed = DigitalTwinTestbed(params=TestbedParams())
     testbed.generate(seed=payload.seed)
     runner = AblationRunner()
@@ -153,8 +162,8 @@ def run_ablation(
     comparison = runner.compare_ablations(results)
     significant = runner.get_significant_ablations(results)
 
-    return {
-        "task_id": generate_ulid(),
+    response = {
+        "task_id": job.id,
         "status": "completed",
         "seed": payload.seed,
         "ablation_count": len(results),
@@ -178,6 +187,8 @@ def run_ablation(
         "created_at": now_ms(),
         "created_by": user.email,
     }
+    store.complete(job.id, user.org_id, response)
+    return response
 
 
 # ── Baselines comparison (T43) ──────────────────────────────────────────────
@@ -193,6 +204,7 @@ class BaselinesRequest(BaseModel):
 def run_baselines(
     payload: BaselinesRequest,
     user: User = Depends(require_roles(*_WRITE_ROLES)),
+    db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """POST /eval/baselines — run 4-baseline comparison on the same testbed.
 
@@ -204,14 +216,16 @@ def run_baselines(
     from app.eval.testbed import DigitalTwinTestbed
     from app.eval.testbed_types import TestbedParams
 
+    store = EvaluationJobStore(db)
+    job = store.create(user.org_id, user.id, "baselines", {"seed": payload.seed})
     testbed = DigitalTwinTestbed(params=TestbedParams())
     testbed.generate(seed=payload.seed)
     runner = BaselineRunner()
     results = runner.run_all_baselines(testbed, seed=payload.seed)
     comparison = runner.compare_baselines(results)
 
-    return {
-        "task_id": generate_ulid(),
+    response = {
+        "task_id": job.id,
         "status": "completed",
         "seed": payload.seed,
         "baseline_count": len(results),
@@ -235,3 +249,5 @@ def run_baselines(
         "created_at": now_ms(),
         "created_by": user.email,
     }
+    store.complete(job.id, user.org_id, response)
+    return response

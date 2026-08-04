@@ -13,37 +13,42 @@ ceiling.
 from __future__ import annotations
 
 import json
-import logging
 from typing import Any
 
 from fastapi import (
     APIRouter,
     BackgroundTasks,
     Depends,
+    Header,
     HTTPException,
     Query,
     Request,
     status,
 )
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db import SessionLocal
+from app.api.routes.observations_fusion import run_single_post_commit_fusion
+from app.api.routes.observations_validation import parse_feature_collection
 from app.deps import get_db, require_roles
 from app.lib.audit import write_audit
+from app.lib.idempotency import (
+    IdempotencyConflictError,
+    claim_raw_event,
+    next_raw_sequence,
+)
+from app.lib.observability_metrics import record_event_state
 from app.lib.time import now_ms
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
+from app.models.events import RawEvent, RawEventRecord
 from app.models.observation import Observation
 from app.models.user import User
-
-logger = logging.getLogger("app.api.routes.observations_batch")
 
 router = APIRouter(prefix="/observations", tags=["observations"])
 
 _MAX_BATCH = 100
-_FUSION_CHUNK_SIZE = 10
 _WRITE_ROLES = (
     "admin",
     "emergency_manager",
@@ -83,7 +88,7 @@ def _build_observation(
             detail="source_id is a required property",
         )
 
-    observed_at = int(props.get("observed_at", ts_now))
+    observed_at = props.get("observed_at") or ts_now
     return Observation(
         observation_id=generate_ulid(),
         event_type=props["event_type"],
@@ -95,7 +100,7 @@ def _build_observation(
         ),
         geometry_uncertainty=float(props.get("geometry_uncertainty", 0.0)),
         observed_at=observed_at,
-        valid_from=int(props.get("valid_from", observed_at)),
+        valid_from=props.get("valid_from") or observed_at,
         valid_until=props.get("valid_until"),
         received_at=ts_now,
         source_id=props["source_id"],
@@ -119,59 +124,6 @@ def _build_observation(
     )
 
 
-def _run_post_commit_fusion(
-    observation_ids: list[str], org_id: str, incident_id: str
-) -> None:
-    """Background task: compute confidence vectors + update hypotheses.
-
-    Processes observations in chunks of 10, releasing the DB connection
-    between chunks so the pool is not monopolized during large batches.
-    Failures are logged and swallowed — the observations are already
-    committed; fusion is best-effort enrichment.
-    """
-    from sqlalchemy.orm.attributes import flag_modified
-
-    from app.fusion.confidence import ConfidenceVectorCalculator
-    from app.fusion.hypothesis_update import update_hypotheses_for_observation
-
-    calc = ConfidenceVectorCalculator()
-    for i in range(0, len(observation_ids), _FUSION_CHUNK_SIZE):
-        chunk = observation_ids[i : i + _FUSION_CHUNK_SIZE]
-        db = SessionLocal()
-        try:
-            for obs_id in chunk:
-                obs = db.get(Observation, obs_id)
-                if obs is None:
-                    continue
-                try:
-                    vector = calc.compute_vector(obs, db_session=db)
-                    calc.attach_to_observation(obs, vector)
-                    obs.quality_flags["display_confidence"] = (
-                        calc.compute_display_confidence(vector)
-                    )
-                    flag_modified(obs, "quality_flags")
-                    db.commit()
-                except Exception as exc:
-                    logger.warning(
-                        "Batch confidence computation failed for %s: %s",
-                        obs_id,
-                        exc,
-                    )
-                    db.rollback()
-                    continue
-                try:
-                    update_hypotheses_for_observation(db, obs)
-                except Exception as exc:
-                    logger.warning(
-                        "Batch hypothesis update failed for %s: %s", obs_id, exc
-                    )
-                    db.rollback()
-        except Exception as exc:
-            logger.error("Post-commit batch fusion chunk failed: %s", exc)
-        finally:
-            db.close()
-
-
 @router.post("/batch", status_code=status.HTTP_201_CREATED)
 def create_observations_batch(
     request: Request,
@@ -180,6 +132,7 @@ def create_observations_batch(
     incident_id: str = Query(
         ..., description="Incident ID to scope these observations to"
     ),
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
     db: Session = Depends(get_db),
     user: User = Depends(require_roles(*_WRITE_ROLES)),
 ) -> dict[str, Any]:
@@ -197,17 +150,7 @@ def create_observations_batch(
             detail="org_id not resolved from token",
         )
 
-    if body.get("type") != "FeatureCollection":
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="GeoJSON FeatureCollection required",
-        )
-    features = body.get("features") or []
-    if len(features) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="FeatureCollection must contain at least one feature",
-        )
+    features = parse_feature_collection(body)
     if len(features) > _MAX_BATCH:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -215,10 +158,69 @@ def create_observations_batch(
         )
 
     ts_now = now_ms()
-    observations = [
-        _build_observation(feat, org_id, incident_id, ts_now)
-        for feat in features
-    ]
+    observations: list[Observation] = []
+    results: list[dict[str, str]] = []
+    for index, feature in enumerate(features):
+        observation = _build_observation(feature, org_id, incident_id, ts_now)
+        props = feature.get("properties") or {}
+        source_id = str(props["source_id"])
+        external_id = str(
+            props.get("external_id")
+            or (f"{idempotency_key}:{index}" if idempotency_key else observation.observation_id)
+        )
+        raw_event = RawEvent(
+            event_id=generate_ulid(),
+            org_id=org_id,
+            incident_id=incident_id,
+            source_id=source_id,
+            external_id=external_id,
+            event_type=str(props["event_type"]),
+            source_time_ms=observation.observed_at,
+            receipt_time_ms=ts_now,
+            sequence=next_raw_sequence(db, org_id, source_id),
+            payload=feature,
+        )
+        try:
+            is_new = claim_raw_event(
+                db, raw_event, feature, idempotency_key=(
+                    f"{idempotency_key}:{index}" if idempotency_key else None
+                )
+            )
+        except IdempotencyConflictError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="idempotency key conflicts with a different payload",
+            ) from None
+        if not is_new:
+            existing_raw = db.execute(
+                select(RawEventRecord).where(
+                    RawEventRecord.org_id == org_id,
+                    RawEventRecord.source_id == source_id,
+                    RawEventRecord.external_id == external_id,
+                )
+            ).scalar_one_or_none()
+            existing_id = None
+            if existing_raw is not None:
+                existing_id = db.execute(
+                    select(Observation.observation_id).where(
+                        Observation.raw_event_id == existing_raw.id,
+                        Observation.org_id == org_id,
+                    )
+                ).scalar_one_or_none()
+            results.append({"id": existing_id or observation.observation_id, "status": "duplicate"})
+            continue
+        observation.raw_event_id = raw_event.event_id
+        observation.source_time_ms = raw_event.source_time_ms
+        observation.receipt_time_ms = raw_event.receipt_time_ms
+        observation.sequence = raw_event.sequence
+        observation.payload_hash = raw_event.canonical_hash()
+        observation.raw_data_hash = raw_event.canonical_hash()
+        observation.visibility = raw_event.visibility.value
+        observation.review_status = raw_event.review_status.value
+        observation.schema_version = raw_event.schema_version
+        observations.append(observation)
+        results.append({"id": observation.observation_id, "status": "created"})
 
     db.add_all(observations)
     try:
@@ -229,6 +231,7 @@ def create_observations_batch(
             status_code=status.HTTP_409_CONFLICT,
             detail="batch could not be created (constraint violation)",
         ) from None
+    record_event_state("accepted", "api", "observations.raw")
 
     observation_ids = [obs.observation_id for obs in observations]
 
@@ -245,16 +248,16 @@ def create_observations_batch(
         },
     )
 
-    # Confidence/hypothesis fusion skipped for batch POSTs to avoid
-    # exhausting the DB connection pool under high-throughput ingest.
-    # The consumer pipeline (Kafka) handles enrichment asynchronously.
-    # background_tasks.add_task(
-    #     _run_post_commit_fusion, observation_ids, org_id, incident_id
-    # )
+    for observation_id in observation_ids:
+        background_tasks.add_task(
+            run_single_post_commit_fusion,
+            observation_id,
+            org_id,
+            incident_id,
+            user.email,
+        )
 
     return {
-        "observations": [
-            {"id": oid, "status": "created"} for oid in observation_ids
-        ],
-        "count": len(observation_ids),
+        "observations": results,
+        "count": len(results),
     }

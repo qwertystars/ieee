@@ -16,6 +16,14 @@ test-results/
 playwright-report/
 frontend/tests/.auth/
 
+# Playwright trace archives (regenerable evidence; commit summaries/screenshots only)
+*.trace.zip
+evidence/gate-c/**/*.zip
+evidence/final-verification/**/trace-*.zip
+
+# Runtime backup artifacts (make backup -> backups/<timestamp>/)
+backups/
+
 # OS / editor
 .DS_Store
 .idea/

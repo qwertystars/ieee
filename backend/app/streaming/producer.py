@@ -9,11 +9,18 @@ import json
 import logging
 
 from aiokafka import AIOKafkaProducer
+from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.lib.idempotency import record_replay_dispatch, replay_payload
+from app.lib.observability import inject_trace_headers, telemetry_span
+from app.lib.observability_metrics import record_event_state, record_queue_message
 from app.lib.ulid import generate_ulid
+from app.models.events import Event, RawEvent
 
 logger = logging.getLogger("app.streaming.producer")
+
+RAW_TOPIC = "observations.raw"
 
 
 class ProducerManager:
@@ -32,14 +39,19 @@ class ProducerManager:
 
     async def start(self) -> None:
         """Connect to Redpanda and start the underlying aiokafka producer."""
-        self._producer = AIOKafkaProducer(
+        producer = AIOKafkaProducer(
             bootstrap_servers=self._bootstrap,
             value_serializer=lambda v: json.dumps(v, default=str).encode("utf-8"),
             key_serializer=lambda k: k.encode("utf-8") if k else None,
             enable_idempotence=True,
             acks="all",
         )
-        await self._producer.start()
+        try:
+            await producer.start()
+        except (OSError, RuntimeError, TimeoutError):
+            await producer.stop()
+            raise
+        self._producer = producer
         logger.info("Kafka producer connected to %s", self._bootstrap)
 
     async def send(self, topic: str, message: dict, key: str | None = None) -> None:
@@ -52,8 +64,38 @@ class ProducerManager:
             raise RuntimeError("Producer not started — call start() first")
         if key is None:
             key = message.get("observation_id") or generate_ulid()
-        await self._producer.send_and_wait(topic, message, key=key)
-        logger.debug("Sent message to %s (key=%s)", topic, key)
+        trace_headers: dict[str, str] = {}
+        inject_trace_headers(trace_headers)
+        kafka_headers = [(name, value.encode("ascii")) for name, value in trace_headers.items()]
+        with telemetry_span("queue.publish", {"queue_name": topic}):
+            await self._producer.send_and_wait(topic, message, key=key, headers=kafka_headers)
+        record_queue_message(topic, "published")
+        record_event_state("accepted", "api", topic)
+        logger.debug("Published durable queue message")
+
+    async def send_raw_event(self, event: RawEvent) -> None:
+        await self.send(
+            RAW_TOPIC,
+            event.model_dump(mode="json"),
+            key=f"{event.org_id}:{event.source_id}:{event.external_id}",
+        )
+
+    async def replay_failure(
+        self,
+        db: Session,
+        entity: str,
+        *,
+        org_id: str,
+        actor: str,
+        role: str,
+    ) -> Event:
+        failure, payload = replay_payload(db, entity, org_id=org_id, role=role)
+        await self.send(
+            RAW_TOPIC,
+            payload,
+            key=str(payload.get("external_id") or payload.get("observation_id") or entity),
+        )
+        return record_replay_dispatch(db, failure, actor=actor, role=role)
 
     @property
     def is_started(self) -> bool:
@@ -68,4 +110,4 @@ class ProducerManager:
             logger.info("Kafka producer stopped")
 
 
-__all__ = ["ProducerManager"]
+__all__ = ["RAW_TOPIC", "ProducerManager"]

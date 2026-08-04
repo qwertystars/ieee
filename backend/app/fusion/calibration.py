@@ -22,6 +22,27 @@ import numpy as np
 from mapie.regression import SplitConformalRegressor, TimeSeriesRegressor
 from sklearn.linear_model import LinearRegression
 
+from app.fusion.calibration_metrics import (
+    compute_brier_score,
+    compute_coverage,
+    compute_ece,
+    compute_false_confidence_rate,
+    compute_interval_width,
+    compute_nll,
+    compute_reliability_data,
+)
+from app.fusion.calibration_policy import (
+    CALIBRATION_POLICIES,
+    AbstentionDecision,
+    AbstentionInput,
+    CalibrationPolicy,
+    OutputType,
+    ReleaseGateDecision,
+    decide_abstention,
+    policy_for_output_type,
+    release_gate,
+)
+
 # Default miscoverage rate alpha = 0.1 -> 90% confidence level.
 _DEFAULT_ALPHA = 0.1
 # Train/calibration split ratio for the internal conformalization.
@@ -135,108 +156,12 @@ class ConformalCalibrator:
         cal.update(np.asarray(X, dtype=float), np.asarray(y, dtype=float))
         return self
 
-    # ------------------------------------------------------------------
-    # Metric utilities (static — accept raw arrays)
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def compute_brier_score(y_true: np.ndarray, y_prob: np.ndarray) -> float:
-        """Brier score = mean((y_prob - y_true)^2) for binary labels."""
-        y_true = np.asarray(y_true, dtype=float)
-        y_prob = np.asarray(y_prob, dtype=float)
-        return float(np.mean((y_prob - y_true) ** 2))
-
-    @staticmethod
-    def compute_ece(
-        y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 10
-    ) -> float:
-        """Expected Calibration Error.
-
-        Bins predictions by confidence, computes |accuracy - confidence|
-        per bin weighted by bin proportion.
-        """
-        y_true = np.asarray(y_true, dtype=float)
-        y_prob = np.asarray(y_prob, dtype=float)
-        bins = np.linspace(0.0, 1.0, n_bins + 1)
-        ece = 0.0
-        n = len(y_true)
-        for i in range(n_bins):
-            mask = (y_prob >= bins[i]) & (y_prob < bins[i + 1])
-            if i == n_bins - 1:
-                mask = (y_prob >= bins[i]) & (y_prob <= bins[i + 1])
-            count = int(np.sum(mask))
-            if count == 0:
-                continue
-            acc = float(np.mean(y_true[mask]))
-            conf = float(np.mean(y_prob[mask]))
-            ece += (count / n) * abs(acc - conf)
-        return ece
-
-    @staticmethod
-    def compute_reliability_data(
-        y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 10
-    ) -> dict[str, Any]:
-        """Reliability diagram data: per-bin accuracy, confidence, count."""
-        y_true = np.asarray(y_true, dtype=float)
-        y_prob = np.asarray(y_prob, dtype=float)
-        bins = np.linspace(0.0, 1.0, n_bins + 1)
-        bin_lower: list[float] = []
-        bin_upper: list[float] = []
-        bin_count: list[int] = []
-        bin_accuracy: list[float] = []
-        bin_confidence: list[float] = []
-        for i in range(n_bins):
-            mask = (y_prob >= bins[i]) & (y_prob < bins[i + 1])
-            if i == n_bins - 1:
-                mask = (y_prob >= bins[i]) & (y_prob <= bins[i + 1])
-            count = int(np.sum(mask))
-            bin_lower.append(float(bins[i]))
-            bin_upper.append(float(bins[i + 1]))
-            bin_count.append(count)
-            if count == 0:
-                bin_accuracy.append(0.0)
-                bin_confidence.append(float(bins[i]))
-                continue
-            bin_accuracy.append(float(np.mean(y_true[mask])))
-            bin_confidence.append(float(np.mean(y_prob[mask])))
-        return {
-            "bin_lower": bin_lower,
-            "bin_upper": bin_upper,
-            "bin_count": bin_count,
-            "bin_accuracy": bin_accuracy,
-            "bin_confidence": bin_confidence,
-            "n_bins": n_bins,
-        }
-
-    @staticmethod
-    def compute_coverage(
-        y_true: np.ndarray, y_pred_lower: np.ndarray, y_pred_upper: np.ndarray
-    ) -> float:
-        """Fraction of true values within [lower, upper] interval."""
-        y_true = np.asarray(y_true, dtype=float)
-        lo = np.asarray(y_pred_lower, dtype=float)
-        hi = np.asarray(y_pred_upper, dtype=float)
-        return float(np.mean((y_true >= lo) & (y_true <= hi)))
-
-    @staticmethod
-    def compute_nll(y_true: np.ndarray, y_prob: np.ndarray) -> float:
-        """Negative log-likelihood for binary labels (clipped to avoid log 0)."""
-        y_true = np.asarray(y_true, dtype=float)
-        y_prob = np.clip(np.asarray(y_prob, dtype=float), 1e-15, 1.0 - 1e-15)
-        return float(-np.mean(y_true * np.log(y_prob) + (1 - y_true) * np.log(1 - y_prob)))
-
-    @staticmethod
-    def compute_false_confidence_rate(
-        y_true: np.ndarray, y_prob: np.ndarray, threshold: float = 0.9
-    ) -> float:
-        """Fraction of high-confidence predictions (>= threshold) that are wrong."""
-        y_true = np.asarray(y_true, dtype=float)
-        y_prob = np.asarray(y_prob, dtype=float)
-        high_conf = y_prob >= threshold
-        if not np.any(high_conf):
-            return 0.0
-        wrong = y_true[high_conf] != 1.0
-        return float(np.mean(wrong))
+    compute_brier_score = staticmethod(compute_brier_score)
+    compute_ece = staticmethod(compute_ece)
+    compute_reliability_data = staticmethod(compute_reliability_data)
+    compute_coverage = staticmethod(compute_coverage)
+    compute_nll = staticmethod(compute_nll)
+    compute_false_confidence_rate = staticmethod(compute_false_confidence_rate)
 
     # ------------------------------------------------------------------
     # Dashboard / zone management
@@ -273,9 +198,7 @@ class ConformalCalibrator:
             metrics["conformal_coverage"] = self.compute_coverage(
                 y_true, y_pred_lower, y_pred_upper
             )
-            metrics["interval_width"] = float(
-                np.mean(np.asarray(y_pred_upper) - np.asarray(y_pred_lower))
-            )
+            metrics["interval_width"] = compute_interval_width(y_pred_lower, y_pred_upper)
         self._metrics = metrics
         return metrics
 
@@ -288,4 +211,15 @@ class ConformalCalibrator:
         return self._zones[h3_zone]
 
 
-__all__ = ["ConformalCalibrator"]
+__all__ = [
+    "CALIBRATION_POLICIES",
+    "AbstentionDecision",
+    "AbstentionInput",
+    "CalibrationPolicy",
+    "ConformalCalibrator",
+    "OutputType",
+    "ReleaseGateDecision",
+    "decide_abstention",
+    "policy_for_output_type",
+    "release_gate",
+]

@@ -13,15 +13,12 @@ layer; it is never collapsed into the probability or silently discarded.
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 
 import torch
 from torch import nn
 
 from app.perception.flood_types import QualityFlag
-
-logger = logging.getLogger(__name__)
 
 _PATCH_SIZE = 224
 
@@ -43,27 +40,17 @@ class EnsembleResult:
     weights: torch.Tensor
     observation_time: int
     quality_flag: QualityFlag
-
-
-class _RandomEncoder(nn.Module):
-    """Fallback encoder when ResNet50 S1 weights are unavailable."""
-
-    out_features = 2048
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        B, _, H, W = x.shape
-        return torch.randn(B, self.out_features, H // 32, W // 32)
+    member_provenance: tuple[dict[str, str], ...] = ()
 
 
 class _ResNet50S1Segmentation(nn.Module):
     """ResNet50 (SENTINEL1_GRD_MOCO) encoder + lightweight segmentation head.
 
     Lazy-imports ``torchgeo.models.resnet50`` with
-    ``ResNet50_Weights.SENTINEL1_GRD_MOCO`` inside ``__init__``. If torchgeo
-    is unavailable or the weights API has changed, falls back to
-    ``_RandomEncoder`` so the module still imports and tests can inject
-    mocks. A Conv2d head maps encoder features to 2-class logits
-    (background, water).
+    ``ResNet50_Weights.SENTINEL1_GRD_MOCO`` inside ``__init__``. Missing
+    weights raise an unavailable error; callers must inject a registered model
+    rather than receiving an untrained fallback. A Conv2d head maps encoder
+    features to 2-class logits (background, water).
     """
 
     def __init__(self, pretrained: bool = True) -> None:
@@ -76,14 +63,14 @@ class _ResNet50S1Segmentation(nn.Module):
     @staticmethod
     def _load_resnet50(pretrained: bool) -> nn.Module:
         """Lazy-import torchgeo.models and load ResNet50 S1 MOCO weights."""
+        if not pretrained:
+            raise RuntimeError("ResNet50 S1 requires a registered pretrained artifact")
         try:
             from torchgeo.models import ResNet50_Weights, resnet50
-
             weights = ResNet50_Weights.SENTINEL1_GRD_MOCO if pretrained else None
             return resnet50(weights=weights)
-        except Exception:
-            logger.warning("ResNet50 S1 MOCO unavailable, using random encoder")
-            return _RandomEncoder()
+        except (ImportError, OSError, RuntimeError) as exc:
+            raise RuntimeError("ResNet50 S1 weights unavailable") from exc
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.shape[1] == 2:
@@ -96,4 +83,4 @@ class _ResNet50S1Segmentation(nn.Module):
         return self.head(self.dropout(feats))
 
 
-__all__ = ["EnsembleResult", "_RandomEncoder", "_ResNet50S1Segmentation"]
+__all__ = ["EnsembleResult", "_ResNet50S1Segmentation"]

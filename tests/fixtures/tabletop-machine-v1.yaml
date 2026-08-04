@@ -1,0 +1,130 @@
+schema_version: resqnet.tabletop-machine.v1
+exercise_id: tabletop-machine-v1
+mode: machine_replay
+claim_class: tabletop_machine
+interoperability:
+  profile: config/cap-profile-v1.2.yaml
+  lock: config/validators.lock
+  fixtures: tests/fixtures/interoperability/valid
+  offline: false
+security:
+  fail_closed: true
+  dual_control: true
+  signature: Ed25519
+  replay_protection: true
+  tenant_scope: true
+  network_access: none
+role_authorization:
+  roles:
+    incident_commander:
+      allowed_actions: [declare_incident, approve_public_warning]
+    emergency_manager:
+      allowed_actions: [approve_public_warning]
+    responder_coordinator:
+      allowed_actions: [approve_public_warning, dispatch]
+    situation_unit_leader:
+      allowed_actions: [review_alert, resolve_conflict, propose_public_warning]
+    field_responder:
+      allowed_actions: [submit_report]
+  cases:
+    - id: unauthorized-dispatch
+      actor_role: field_responder
+      action: dispatch
+      expected: deny
+      side_effects: 0
+    - id: authorized-dispatch
+      actor_role: responder_coordinator
+      action: dispatch
+      expected: allow
+      side_effects: 1
+authority:
+  public_warning:
+    status: approved
+    required_roles: [emergency_manager, responder_coordinator]
+    approvals:
+      - role: emergency_manager
+        approved: true
+        signature: verified
+      - role: responder_coordinator
+        approved: true
+        signature: verified
+conflicting_reports:
+  reports:
+    - report_id: report-agency-a
+      source: agency-a
+      claim: {water_level_m: 2.1}
+    - report_id: report-agency-b
+      source: agency-b
+      claim: {water_level_m: 3.8}
+  resolution:
+    detected: true
+    pre_resolution_state: abstain
+    method: manual_authority_review
+    selected_report: report-agency-b
+    last_write_wins: false
+offline_sync:
+  queue:
+    - item_id: outbox-1
+      device_id: device-a
+      device_sequence: 1
+      idempotency_key: device-a-1
+    - item_id: outbox-2
+      device_id: device-a
+      device_sequence: 2
+      idempotency_key: device-a-2
+    - item_id: outbox-3
+      device_id: device-a
+      device_sequence: 3
+      idempotency_key: device-a-3
+  duplicate_replay:
+    status: duplicate
+    side_effects: 0
+  conflict:
+    status: conflict
+    resolution: human_resolution_required
+    last_write_wins: false
+    side_effects: 0
+audit_reconstruction:
+  incident_id: incident-tabletop-1
+  sanitized: true
+  events:
+    - sequence: 1
+      prev_hash: "0000000000000000000000000000000000000000000000000000000000000000"
+      hash: 8cdbefc685ef3988075ee6385ab410097e7c3d377fd1a48da030dfe57d36fdc8
+      payload:
+        action: role_authorization
+        actor_role: field_responder
+        outcome: deny
+        side_effects: 0
+    - sequence: 2
+      prev_hash: 8cdbefc685ef3988075ee6385ab410097e7c3d377fd1a48da030dfe57d36fdc8
+      hash: da509998e003c674a95bfeb50ecad527c7501972575d8df8b485ee952dcbb339
+      payload:
+        action: public_warning
+        approvals: 2
+        status: approved
+    - sequence: 3
+      prev_hash: da509998e003c674a95bfeb50ecad527c7501972575d8df8b485ee952dcbb339
+      hash: b864fc6da83608be2d61ffc2f2892fc025a436561172b61d6fda140c772b77b8
+      payload:
+        action: conflicting_reports
+        resolution: manual_authority_review
+        state: abstain
+    - sequence: 4
+      prev_hash: b864fc6da83608be2d61ffc2f2892fc025a436561172b61d6fda140c772b77b8
+      hash: 1d22b380ed8d3828210a4ebe948edcb79d93ab2bd38ea0fa510c989e9c64845b
+      payload:
+        action: offline_sync
+        duplicate: duplicate
+        conflict: human_resolution_required
+replay_tamper:
+  original_chain: PASS
+  detector_status: FAIL_CLOSED
+  tampered_event:
+    prev_hash: 8cdbefc685ef3988075ee6385ab410097e7c3d377fd1a48da030dfe57d36fdc8
+    payload:
+      action: public_warning_tampered
+      approvals: 1
+      status: published
+  tampered_hash: "0000000000000000000000000000000000000000000000000000000000000000"
+  side_effects: 0

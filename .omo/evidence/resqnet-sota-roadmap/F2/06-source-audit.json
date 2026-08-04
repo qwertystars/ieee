@@ -1,0 +1,26 @@
+{
+  "cleanup": "No source, dependency, or lockfile changes; command output was captured read-only.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "python scripts/verify_source_audit.py --files-from <(git diff --name-only $(git merge-base HEAD main)..HEAD) --checks security,durability,contracts",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 0,
+  "failure_assertion": "Exit 1 is a tested quality failure; exit 2 is reserved for unavailable external tooling.",
+  "finished_at": "2026-08-03T05:27:22.024373Z",
+  "hashes": {
+    "command_sha256": "4122cc63d96bc2560da78b5e5315a7bb1876dc19950256601b07a92285ecd470",
+    "scripts/verify_source_audit.py": "cb9cb9481b687468798cfcad17fdcae56f9086a0a0519634b672c71ad31174e3"
+  },
+  "inputs": [
+    "scripts/verify_source_audit.py"
+  ],
+  "metrics": {
+    "expectation_met": true,
+    "expected_exit_code": 0,
+    "stderr": "",
+    "stdout": "source audit PASS: git diff scope contains no files\n"
+  },
+  "observed_exit_code": 0,
+  "started_at": "2026-08-03T05:27:21.967391Z",
+  "status": "PASS",
+  "task_id": "resqnet-sota-roadmap-F2-06-source-audit"
+}

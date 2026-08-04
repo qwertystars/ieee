@@ -768,3 +768,24 @@ convention of idempotency keys on all external and queue paths.
 |---|---|---|
 | 2026-07-28 | Wave 4, Todo 12 | Initial specification document created. Physical build deferred. |
 | 2026-07-29 | T40 | Added Software Readiness Status section. All software gates (Waves 1 to 6) green. Physical hardware spec unchanged and still deferred. |
+
+## Software Integration Harness (Task 25)
+
+The repository includes a read-only contract harness for signed telemetry:
+`scripts/run_sensor_harness.py`. It verifies provisioning and organization
+binding, Ed25519 signatures over canonical telemetry bytes, strict sequence
+ordering, loss/duplicate/replay quarantine, calibration provenance, key
+rotation/revocation, declared clock source and skew, replay windows, and
+sequence-wrap rejection using NDJSON fixtures. The happy fixture's protocol
+gate is machine evidence only; it does not establish a physical device.
+
+Run the machine gate with:
+
+```text
+backend/.venv/bin/python scripts/run_sensor_harness.py --fixture tests/fixtures/sensor-valid.ndjson --verify-signature --verify-sequence --report evidence/sota/task-25-machine.json
+```
+
+Secure boot, physical calibration, environmental limits, and production key
+custody are separate prerequisites. Missing evidence returns
+`DEFERRED_EXTERNAL` and never promotes sensing, human-detection, rescue-ball,
+field, agency, or operational readiness claims.

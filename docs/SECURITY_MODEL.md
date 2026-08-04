@@ -5,6 +5,54 @@ access control (RBAC) with 6 roles, attribute-based access control (ABAC) for
 fine-grained policy, org-level tenancy, emergency override, and progressive
 precision PII redaction.
 
+## Canonical event and provenance security
+
+Task 4 establishes the root-of-truth boundary for event data. `RawEvent` values are frozen
+Pydantic contracts and require ULID identity, server-captured receipt time, producer source
+time, monotonic sequence, `org_id`, `incident_id`, source identity, external identity, and
+explicit `visibility` and `review_status`. The raw event is retained; normalized observations,
+predictions, and decisions are mutable projections with a `raw_event_id` or source-lineage
+reference and cannot silently become a replacement for the raw input.
+
+Prediction provenance is not a free-form model label. It binds model ID/version,
+feature-schema version, preprocessing version, calibration version, and output-schema version.
+Predictions and AI-derived decisions enter as `review_status=draft`; publication or a
+high-consequence action requires the existing role-gated approval path. `public`, `internal`,
+and `sensitive` visibility is carried by the contract and redaction remains enforced at the
+response boundary.
+
+### Hash-chain verification
+
+New audit rows use RFC 8785-compatible UTF-8 canonical JSON and
+`SHA-256(ASCII(prev_hash) || canonical_event_bytes)`. Canonical bytes bind tenant and incident
+scope, event identity, sequence, source/receipt times, action/state snapshots, provenance,
+visibility, review status, schema version, and `serialization_version`. Legacy rows are marked `legacy-v1` and verified
+with their historical serializer, so migration does not discard evidence.
+
+`audit_chain_heads` is a durable per-organization terminal checkpoint. Verification fails for a
+changed payload or hash, a missing middle or tail row, a sequence reorder/gap, a forked
+predecessor, or a head mismatch. Verification never repairs or reorders audit history. Database
+write permissions for production must remain restricted to the append path; direct mutation is
+treated as tampering even when the database permits it in development tests.
+
+### Idempotency and tenant isolation
+
+External effects are deduplicated by `(org_id, source, external_id)`. The first canonical
+payload is recorded; an identical retry returns a no-op, while a different payload raises a
+conflict instead of reporting misleading success. Missing payload versus supplied payload is
+also a conflict. The migration backfills the compatibility
+tenant for historical unscoped keys and preserves those rows. New boundary callers must supply
+the authenticated organization and incident context; client-provided organization values are
+never trusted over JWT middleware state.
+
+Raw events are the only rebuild authority. Projection rebuilds must retain source lineage and
+versioned model/calibration provenance, and must not overwrite immutable raw events or audit
+rows. Malformed provenance, stale review state, duplicate external IDs, interrupted retries,
+and failed chain verification are quarantine/error states rather than successful effects.
+Migration `0006` has an explicit irreversible downgrade policy: its downgrade entry point fails
+before any destructive operation, preserving canonical rows and preventing rollback-based data
+loss.
+
 ## Authentication
 
 ### JWT-based auth
@@ -35,9 +83,8 @@ is used directly because passlib 1.7.x is incompatible with bcrypt 4.x
 ### Token revocation
 
 When Redis is available, the token denylist checks revoked tokens on every
-protected request. When Redis is down, the denylist fails open: revoked
-tokens remain valid until their natural expiry. This is a deliberate
-trade-off for availability over security in degraded conditions.
+protected request. When Redis is down, protected authorization fails closed;
+revoked state is never inferred from availability.
 
 ### Passkey support
 
@@ -181,7 +228,7 @@ All security-relevant actions are logged to the hash-chained audit trail
 
 - `prev_hash` — SHA-256 of the previous event in the chain
 - `hash` — SHA-256 of this event's content
-- `actor` — user ID of the actor
+- `actor` — stable actor ID or salted pseudonym when the source is direct PII
 - `action` — what was done (e.g., `emergency_override_grant`)
 - `entity` — what was acted upon (e.g., `user:01J...`)
 - `before` / `after` — state change payload
@@ -291,11 +338,12 @@ For production:
 
 The application logger never emits secret values. Verified by audit:
 
-- `backend/app/lib/telemetry.py` logs only the OTLP endpoint URL, trace IDs,
+- `backend/app/lib/telemetry.py` logs only trace IDs and generic exporter status,
   and generic warning text. No `settings.JWT_SECRET`,
   `settings.MINIO_SECRET_KEY`, or `settings.DATABASE_URL` is ever logged.
-- `backend/app/main.py` `/healthz` returns the string `"configured"` for
-  each service, never the connection string or credentials.
+- `backend/app/api/routes/service_health.py` reports dependency state as
+  `unknown` until a probe runs, never as healthy merely because configuration
+  exists, and never returns a connection string or credential.
 - Ingestion adapters log `"api_key missing, skipping ..."` when a key is
   absent; they never log the key value itself.
 - HTTP `Authorization: Bearer ...` headers are constructed in adapter code
@@ -304,3 +352,26 @@ The application logger never emits secret values. Verified by audit:
 A grep for `password|secret|token|jwt|api_key|access_key` across
 `logger.*(` and `print(` calls in `backend/app/` returns zero matches that
 emit a secret value.
+
+## Task 21 provenance and privacy boundaries
+
+High-consequence dispatch uses exactly one active `emergency_manager` and one
+active `responder_coordinator`. Each approval is independently authenticated,
+bound to an organization-owned Ed25519 key, signed over the fixed
+`RESQNET-SIG-V1 || u32be(length(payload)) || payload || nonce || expires_at_ms`
+frame, and rejected when stale, expired, replayed, revoked, over-age, or
+outside the 30-second clock-skew window. Emergency overrides never bypass this
+quorum. Denials are appended as PII-safe audit events.
+
+Audit reconstruction joins actor, agency, device, authentication, source and
+receipt times, sequence, derivation, signature/payload hashes, retention
+metadata, command approvals, and offline conflict history. Exported audit
+records contain hashes rather than raw signatures or direct identifiers, and
+chain verification detects gaps, forks, truncation, and tampering.
+
+Protected API responses use `private, no-store` headers and are bypassed by the
+service-worker cache. Logs redact direct identifiers and sensitive fields.
+Subject deletion replaces live login PII with a salted non-routable tombstone;
+immutable audit retains only the pseudonym and legal retention reason, bounded
+by seven years or a shorter tenant policy. External key custody, agency root
+authority, and device provisioning remain `DEFERRED_EXTERNAL` prerequisites.

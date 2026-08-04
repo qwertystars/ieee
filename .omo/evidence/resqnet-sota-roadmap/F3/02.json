@@ -1,0 +1,33 @@
+{
+  "cleanup": "Command output was captured; no external validators, data, participants, credentials, or production state were created or modified by the wrapper.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": ".venv/bin/python -m pytest tests/test_websocket_fallback.py tests/test_tenant_isolation.py tests/test_real_input_routes.py -q",
+  "cwd": "/root/srijan/ieee/backend",
+  "exit_code": 0,
+  "failure_assertion": "The observed exit/status pair must match the exact F3 expectation; expected DEFERRED_EXTERNAL is accepted only for the declared external preflight.",
+  "finished_at": "2026-08-03T23:36:00.612601Z",
+  "hashes": {
+    "/usr/bin/python3.11": "6d972cf21be56fe3c947ab6ba257ff8d08c342dd2714442986791bd9a6dfabfe",
+    "command_sha256": "fa0dc58bf2ac8df54c19633ccf6d31caced8c417c14c60de80ab8e6309b72632",
+    "tests/test_real_input_routes.py": "f753291c83cef4756fe014277847287dbe0a69da6cdda6fc3f3389c914a55277",
+    "tests/test_tenant_isolation.py": "806c15e8f3da66d5fb39fb931bc586f13c8d75409c5ea7f09a359342c7aac854",
+    "tests/test_websocket_fallback.py": "11361288f77768e4cc8781685c6336aa301ad76dfadd63978018f0c87907ee26"
+  },
+  "inputs": [
+    "/usr/bin/python3.11",
+    "tests/test_websocket_fallback.py",
+    "tests/test_tenant_isolation.py",
+    "tests/test_real_input_routes.py"
+  ],
+  "metrics": {
+    "expected_exit_code": 0,
+    "expected_pair_match": true,
+    "expected_status": "PASS",
+    "observed_exit_code": 0,
+    "stderr": "",
+    "stdout": ".......................                                                  [100%]\n=============================== warnings summary ===============================\n.venv/lib/python3.11/site-packages/fastapi/testclient.py:1\n  /root/srijan/ieee/backend/.venv/lib/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.\n    from starlette.testclient import TestClient as TestClient  # noqa\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n23 passed, 1 warning in 24.72s\n"
+  },
+  "started_at": "2026-08-03T23:35:21.484433Z",
+  "status": "PASS",
+  "task_id": "resqnet-sota-roadmap-F3-F3-02"
+}

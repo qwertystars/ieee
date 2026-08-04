@@ -1,0 +1,87 @@
+{
+  "cleanup": "Fixture state was discarded; no production Compose project, database rows, queues, external feeds, or secrets were modified.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "scripts/run_production_parity.sh --instances 2 --operators 50 --ingest-rate 100 --duration 3600 --report evidence/sota/task-12-happy.json",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 2,
+  "failure_assertion": "The exact one-hour happy path defers without an external driver, secret custody, TLS material, and managed HA attestation; migration interruption returns nonzero UNSAFE_RELEASE while acknowledged-event reconciliation loss remains zero.",
+  "finished_at": "2026-08-02T22:08:07.564561+00:00",
+  "hashes": {
+    "Dockerfile.db": "892d47c503798b9ca81864a0d5807ba4f4eb44606a38fb9dc7eb51501cd1f9d3",
+    "backend/Dockerfile": "5db6d6ba057a89dc4651aae6febff5d99e3e20243c0cfc37356bcf923440837a",
+    "config/production-matrix.json": "03325962be8bf4957b69e9dd5a0b6025241aaf27d3abcf09808a7d8cb0e47d3b",
+    "config/production-parity.json": "c202c30e9198fe56d30186b47ed628ffe7b3570dcf4905394f503c751ce5d8b7",
+    "deploy/production-parity/haproxy.cfg": "f009b1350f14d4a32f88c78b0997d67336447afa99e908314027a95189ee60fe",
+    "docker-compose.production-parity.yml": "b240e01ac0f83866dfbb3e76a49e33ed773032cb97a47530b5ce324ef082b463",
+    "docker-compose.yml": "3b46b3a3cd6e795b7cfa2ab90e397069aa1a0bd325a64680c495734900a931c0",
+    "docs/PRODUCTION_PARITY_RUNBOOK.md": "2a778c94020b77da0d3751d6ddfcc0e2c9ea837ad057c69f3c0eca2e52c91a1d",
+    "evidence/sota/task-12-failure.json": "e0dc1a4830c914d97a534e07a67d7a3a7496fd90c6c46e30f468ebf88103ff7f",
+    "evidence/sota/task-12-happy.json": "33db814a8a3c8b8421ab87a7b0f1d36af1659e8b6078c5f9a4a45a8f036fbe93",
+    "frontend/Dockerfile": "3aba880ec513fd512f8d6b960ec276821c761a90c126506903c34037221aaa70",
+    "scripts/run_production_parity.sh": "01f8f3168e06608713b9ebbc293504726a0f2865a91181fa8d88ffcd0daea5cf",
+    "tests/test_production_parity_contract.py": "74e0c726a37fadaa673b73dbf9e9490dbddef12ea3779543589c8b80df48f1d9"
+  },
+  "inputs": [
+    "config/production-parity.json",
+    "config/production-matrix.json",
+    "docker-compose.production-parity.yml",
+    "docker-compose.yml",
+    "backend/Dockerfile",
+    "frontend/Dockerfile",
+    "Dockerfile.db",
+    "deploy/production-parity/haproxy.cfg",
+    "docs/PRODUCTION_PARITY_RUNBOOK.md",
+    "scripts/run_production_parity.sh",
+    "tests/test_production_parity_contract.py",
+    "evidence/sota/task-12-happy.json",
+    "evidence/sota/task-12-failure.json"
+  ],
+  "metrics": {
+    "failure_exit_code": 1,
+    "failure_reconciliation": {
+      "acknowledged": 200,
+      "acknowledged_event_loss": 0,
+      "backend_hashes": [
+        "sha256:fixture-reconciliation",
+        "sha256:fixture-reconciliation"
+      ],
+      "duplicate_effects": 0,
+      "hashes_identical": true,
+      "ledger_effects": 200
+    },
+    "failure_status": "FAIL",
+    "happy_exit_code": 2,
+    "happy_status": "DEFERRED_EXTERNAL",
+    "policy": {
+      "acknowledged_event_loss": 0.0,
+      "availability": 0.999,
+      "duplicate_acknowledged_effects": 0,
+      "failover_seconds": 30,
+      "failure_budget": 0.001,
+      "latency_seconds": {
+        "api_read": {
+          "p50": 0.5,
+          "p95": 0.5,
+          "p99": 1.0
+        },
+        "dashboard": {
+          "p50": 1.0,
+          "p95": 2.0,
+          "p99": 4.0
+        }
+      },
+      "reconciliation_hashes_identical": true,
+      "saturation": {
+        "cpu": 0.7,
+        "database_connections": 0.8,
+        "memory": 0.75,
+        "queue_age_p95_seconds": 60
+      }
+    },
+    "production_claim_allowed": false,
+    "single_machine_soak_reused": false
+  },
+  "started_at": "2026-08-02T22:07:50Z",
+  "status": "DEFERRED_EXTERNAL",
+  "task_id": "12"
+}

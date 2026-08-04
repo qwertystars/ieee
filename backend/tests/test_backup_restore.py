@@ -196,6 +196,104 @@ def _upload_minio_test_file() -> None:
     _docker_exec("minio", f"mc cp /tmp/{TEST_MINIO_OBJECT} local/{MINIO_BUCKET}/{TEST_MINIO_OBJECT}")
 
 
+def _write_metadata_dir(path: Path) -> None:
+    """Write the seven files production backup.sh requires.
+
+    The hardened envelope validates queue offsets, model/object metadata
+    consistency, signing-key escrow policy, and the audit hash chain, so
+    the fixtures must be self-consistent rather than empty placeholders.
+    """
+    import hashlib
+    import json
+
+    path.mkdir(parents=True, exist_ok=True)
+
+    def _now_ms() -> int:
+        from app.lib.time import now_ms
+        return now_ms()
+
+    test_file_bytes = b"backup-test-content\n"
+    object_sha256 = hashlib.sha256(test_file_bytes).hexdigest()
+
+    events = [
+        {
+            "sequence": 1,
+            "prev_hash": None,
+            "action": "create",
+            "entity": f"raw_events:{OBSERVATION_ID}",
+            "payload": {"value": 1.75},
+        },
+        {
+            "sequence": 2,
+            "prev_hash": None,
+            "action": "project",
+            "entity": f"evaluation_jobs:{OBSERVATION_ID}",
+            "payload": {"status": "completed"},
+        },
+    ]
+    for index, event in enumerate(events):
+        if index > 0:
+            event["prev_hash"] = events[0]["hash"]
+        body = {key: value for key, value in event.items() if key != "hash"}
+        digest = hashlib.sha256(
+            json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        event["hash"] = f"sha256:{digest}"
+
+    (path / "queue_offsets.json").write_text(json.dumps({
+        "broker": "redpanda:9092",
+        "consumer_group": "observations-consumer",
+        "topics": [
+            {"topic": "observations.normalized", "partition": 0, "offset": 42},
+            {"topic": "observations.dlq", "partition": 0, "offset": 3},
+        ],
+    }))
+    (path / "model_manifests.json").write_text(json.dumps([{
+        "model_id": "test-model",
+        "version": "1.0.0",
+        "checksum": object_sha256,
+        "artifact": {
+            "r2_key": TEST_MINIO_OBJECT,
+            "sha256": object_sha256,
+        },
+        "validation_status": "validated",
+        "signed": True,
+    }]))
+    (path / "object_metadata.json").write_text(json.dumps([{
+        "bucket": MINIO_BUCKET,
+        "key": TEST_MINIO_OBJECT,
+        "size": len(test_file_bytes),
+        "sha256": object_sha256,
+        "etag": "test-etag",
+    }]))
+    (path / "signing_key_escrow.json").write_text(json.dumps({
+        "algorithm": "Ed25519",
+        "live_keys_external": True,
+        "private_keys_in_backup": False,
+        "escrow_reference": "secret-manager/backup-signing-key",
+        "public_key_ids": ["01J9BACKUPKEY00000000000001"],
+        "policy": "restore public verification metadata only",
+    }))
+    (path / "audit_chain.json").write_text(json.dumps({
+        "org_id": ORG_ID,
+        "events": events,
+        "head": {
+            "last_sequence": len(events),
+            "last_hash": events[-1]["hash"],
+        },
+    }))
+    (path / "source_snapshot.json").write_text(json.dumps({
+        "latest_source_event_at_ms": _now_ms(),
+        "source": "test-clock",
+        "checkpoint": "backup-test-001",
+    }))
+    (path / "row_counts.json").write_text(json.dumps({
+        "raw_events": 1,
+        "evaluation_jobs": 1,
+        "audit_chain_heads": 1,
+    }))
+
+
 def _delete_minio_test_file() -> None:
     _docker_exec("minio", f"mc rm local/{MINIO_BUCKET}/{TEST_MINIO_OBJECT} 2>/dev/null || true")
 
@@ -209,39 +307,68 @@ def _minio_test_file_exists() -> bool:
     return "EXISTS" in result.stdout
 
 
-def _run_backup() -> Path:
+def _run_backup(encryption_key: Path, metadata_dir: Path) -> Path:
     """Run scripts/backup.sh with PG_DB=TEST_DB, return the backup directory path."""
     env = os.environ.copy()
     env["PG_DB"] = TEST_DB
     env["PG_USER"] = PG_USER
+    env["BACKUP_ENCRYPTION_KEY_FILE"] = str(encryption_key)
+    env["BACKUP_METADATA_DIR"] = str(metadata_dir)
     result = _run(["bash", str(SCRIPTS / "backup.sh")], env=env)
-    # Extract the backup path from the "Path:" line
     for line in result.stdout.splitlines():
-        if line.strip().startswith("Path:"):
-            return ROOT / line.split("Path:", 1)[1].strip()
+        if "BACKUP_SUCCESS" in line:
+            return ROOT / line.split("path=", 1)[1].split()[0]
     raise RuntimeError(f"Could not find backup path in output:\n{result.stdout}\n{result.stderr}")
 
 
-def _run_restore(backup_path: Path) -> None:
+def _run_restore(backup_path: Path, encryption_key: Path) -> None:
     env = os.environ.copy()
     env["PG_DB"] = TEST_DB
     env["PG_USER"] = PG_USER
+    env["BACKUP_ENCRYPTION_KEY_FILE"] = str(encryption_key)
+    env["RESTORE_TARGET_DIR"] = str(backup_path / "clean-room")
+    env["RESTORE_REPORT"] = str(backup_path / "restore.report.json")
+    env["RESTORE_SUCCESS_MARKER"] = str(backup_path / f"restore.{_restore_serial()}.success")
     _run(["bash", str(SCRIPTS / "restore.sh"), str(backup_path)], env=env)
+
+
+_RESTORE_COUNT = 0
+
+
+def _restore_serial() -> int:
+    global _RESTORE_COUNT
+    _RESTORE_COUNT += 1
+    return _RESTORE_COUNT
+
+
+_RESTORE_KEY: Path | None = None
+
+
+def _restore_key() -> Path:
+    assert _RESTORE_KEY is not None, "restore key not set by fixture"
+    return _RESTORE_KEY
 
 
 # ── Test fixture ─────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module")
-def backup_dir() -> Path:
+def backup_dir(tmp_path_factory) -> Path:
     """Set up test DB, seed data, back up, and yield the backup path.
 
     Teardown drops the test database and removes the backup directory.
     """
+    global _RESTORE_KEY
+    tmp = tmp_path_factory.mktemp("backup-restore")
+    encryption_key = tmp / "backup.key"
+    encryption_key.write_text("test-backup-key-material")
+    _RESTORE_KEY = encryption_key
+    metadata_dir = tmp / "metadata"
+    _write_metadata_dir(metadata_dir)
     _create_test_db()
     _run_migrations()
     _seed_test_data()
     _upload_minio_test_file()
-    bdir = _run_backup()
+    bdir = _run_backup(encryption_key, metadata_dir)
     yield bdir
     _drop_test_db()
     _delete_minio_test_file()
@@ -252,11 +379,12 @@ def backup_dir() -> Path:
 # ── Tests ────────────────────────────────────────────────────────────────────
 
 def test_backup_creates_artifacts(backup_dir: Path) -> None:
-    """backup.sh produces db.sql.gz, minio/, and manifest.txt."""
-    assert (backup_dir / "db.sql.gz").exists(), "db.sql.gz missing"
-    assert (backup_dir / "db.sql.gz").stat().st_size > 0, "db.sql.gz is empty"
-    assert (backup_dir / "manifest.txt").exists(), "manifest.txt missing"
-    assert (backup_dir / "minio").is_dir(), "minio/ directory missing"
+    """backup.sh produces backup.enc, manifest.json, and manifest.sha256."""
+    assert (backup_dir / "backup.enc").exists(), "backup.enc missing"
+    assert (backup_dir / "backup.enc").stat().st_size > 0, "backup.enc is empty"
+    assert (backup_dir / "manifest.json").exists(), "manifest.json missing"
+    assert (backup_dir / "manifest.sha256").exists(), "manifest.sha256 missing"
+    assert (backup_dir / "backup.success").exists(), "backup.success marker missing"
 
 
 def test_restore_preserves_row_counts(backup_dir: Path) -> None:
@@ -279,7 +407,7 @@ def test_restore_preserves_row_counts(backup_dir: Path) -> None:
     assert not _minio_test_file_exists(), "MinIO test file not deleted"
 
     # Restore from backup
-    _run_restore(backup_dir)
+    _run_restore(backup_dir, _restore_key())
 
     after = _get_row_counts()
     assert after == before, f"row count mismatch: before={before}, after={after}"
@@ -295,7 +423,7 @@ def test_restore_preserves_observation_fields(backup_dir: Path) -> None:
         with conn.cursor() as cur:
             cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
         conn.commit()
-    _run_restore(backup_dir)
+    _run_restore(backup_dir, _restore_key())
 
     after = _get_sample_observation()
     assert after == before, f"observation mismatch:\nbefore={before}\nafter={after}"
@@ -305,5 +433,5 @@ def test_restore_preserves_minio_files(backup_dir: Path) -> None:
     """MinIO test file is restored after delete + restore."""
     _delete_minio_test_file()
     assert not _minio_test_file_exists()
-    _run_restore(backup_dir)
+    _run_restore(backup_dir, _restore_key())
     assert _minio_test_file_exists(), "MinIO test file not restored"

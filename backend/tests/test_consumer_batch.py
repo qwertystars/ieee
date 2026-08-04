@@ -13,10 +13,13 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
+import app.streaming.consumer as consumer_module
 from app.db import SessionLocal
+from app.lib.idempotency import IdempotencyKey
 from app.lib.ulid import generate_ulid
+from app.models.events import RawEventRecord
 from app.models.observation import Observation
 from app.streaming.consumer import ConsumerManager
 
@@ -163,7 +166,7 @@ def test_duplicate_observation_ids_skipped(_clear_batch_env: None) -> None:
     dup_id = generate_ulid()
     p1 = _payload(0)
     p1["observation_id"] = dup_id
-    p2 = _payload(1)
+    p2 = dict(p1)
     p2["observation_id"] = dup_id
     p3 = _payload(2)
 
@@ -203,3 +206,88 @@ def test_flush_interval_configurable_via_env(
     monkeypatch.setenv("CONSUMER_FLUSH_INTERVAL_S", "2.5")
     cm = ConsumerManager(bootstrap_servers="localhost:9092")
     assert cm._flush_interval_s == 2.5
+
+
+def test_offsets_wait_for_contiguous_durable_completion() -> None:
+    cm = ConsumerManager(bootstrap_servers="localhost:9092")
+
+    class CommitRecorder:
+        def __init__(self) -> None:
+            self.calls: list[dict] = []
+
+        async def commit(self, offsets: dict) -> None:
+            self.calls.append(offsets)
+
+    recorder = CommitRecorder()
+    cm._consumer = recorder
+    first = ("observations.normalized", 2, 10)
+    second = ("observations.normalized", 2, 11)
+    cm._register_offset(first)
+    cm._register_offset(second)
+    cm._mark_offset_complete(second)
+
+    async def _run() -> None:
+        await cm._commit_ready_offsets()
+
+    asyncio.run(_run())
+    assert recorder.calls == []
+
+    cm._mark_offset_complete(first)
+    asyncio.run(_run())
+    assert len(recorder.calls) == 1
+    committed = next(iter(recorder.calls[0].values()))
+    assert committed == 12
+
+
+def test_partial_buffer_has_no_offset_ready_before_flush() -> None:
+    cm = ConsumerManager(bootstrap_servers="localhost:9092")
+
+    async def _run() -> None:
+        await cm._process(_payload(99), ("observations.normalized", 0, 7))
+
+    asyncio.run(_run())
+    assert cm._ready_offsets == {}
+
+
+def test_failed_fusion_remains_pending_for_retry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = _payload(101)
+    calls = 0
+
+    def fusion_once_then_succeed(
+        observation_ids: list[str], payloads: list[dict]
+    ) -> None:
+        nonlocal calls
+        del observation_ids, payloads
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("fusion unavailable")
+
+    monkeypatch.setattr(
+        consumer_module, "run_post_commit_fusion", fusion_once_then_succeed
+    )
+    cm = ConsumerManager(bootstrap_servers="localhost:9092")
+    cm._buffer.append(payload)
+    cm._buffer_offsets.append(None)
+    try:
+        with pytest.raises(RuntimeError, match="fusion unavailable"):
+            asyncio.run(cm._flush_batch())
+        assert cm._pending_fusion
+        asyncio.run(cm._flush_batch())
+        assert cm._pending_fusion == []
+    finally:
+        db = SessionLocal()
+        db.execute(
+            delete(Observation).where(
+                Observation.observation_id == payload["observation_id"]
+            )
+        )
+        db.execute(
+            delete(RawEventRecord).where(RawEventRecord.source_id == payload["source_id"])
+        )
+        db.execute(
+            delete(IdempotencyKey).where(IdempotencyKey.source == payload["source_id"])
+        )
+        db.commit()
+        db.close()

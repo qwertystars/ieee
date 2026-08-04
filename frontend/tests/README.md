@@ -38,7 +38,13 @@ npm run build         # vite build
 ```bash
 cd frontend
 npx playwright test   # runs all specs in tests/
+npm run test:a11y      # axe 4.10.2 proxy checks for keyboard and state semantics
 ```
+
+`tests/a11y.spec.ts` is a deterministic scripted proxy for critical labels,
+focus reachability, rationale help, and stale/offline/conflict/error regions.
+It is not participant usability evidence and cannot retire the external
+operator-study prerequisite.
 
 ### Prerequisites
 
@@ -74,3 +80,8 @@ Demo credentials: `admin@demo.disaster` / `demo1234`
 `tests/action-card.spec.ts` and `tests/map.spec.ts` are component-level
 Playwright specs that use `page.setContent()` with mocked React — they do
 not require a backend.
+
+Conflict recovery is covered by `tests/outbox-recovery.spec.ts`: a scripted
+409 keeps the item visible as a manual-resolution conflict rather than
+claiming synchronization success. Authenticated API responses remain excluded
+from Cache Storage.

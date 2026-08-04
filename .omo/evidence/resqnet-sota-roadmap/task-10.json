@@ -1,0 +1,30 @@
+{
+  "task_id": "10",
+  "command": "make backup-restore-verify RPO_TARGET_S=60 RTO_TARGET_S=900",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "tests/fixtures/backup-restore",
+    "ephemeral fixture encryption key",
+    "RPO_TARGET_S=60",
+    "RTO_TARGET_S=900"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-02T21:09:38Z",
+  "finished_at": "2026-08-02T21:09:39Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "rpo_target_seconds": 60,
+    "rpo_measured_seconds": 1,
+    "rto_target_seconds": 900,
+    "rto_measured_seconds": 1,
+    "clean_room": true,
+    "coverage_checks": 9,
+    "integrity_match": true
+  },
+  "hashes": {
+    "archive_sha256": "dddbdfc770fc5fec5f14f418693c23462a466c5bc4ed6747fcb1a54ef785b370"
+  },
+  "failure_assertion": "The corrupt backup fixture exits nonzero and emits no restore success marker; the clean-room fixture meets the declared RPO/RTO targets.",
+  "cleanup": "Temporary backup, key, clean-room, and offsite mirror directories were removed by EXIT trap."
+}

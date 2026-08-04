@@ -1,0 +1,26 @@
+schema_version: resqnet.cap-profile.v1
+standard: OASIS Common Alerting Protocol
+cap_version: "1.2"
+ipaws_profile: FEMA IPAWS CAP Profile
+ipaws_profile_version: "1.0"
+source_url: https://docs.oasis-open.org/emergency/cap/v1.2/ipaws-profile/v1.0/cap-v1.2-ipaws-profile-v1.0.html
+default_crs: EPSG:4326
+unit_system: UCUM
+bindings:
+  http: HTTPS+JSON
+  mqtt: "3.1.1"
+update_cancel:
+  reuse_identifier: true
+  reference_fields:
+    - sender
+    - identifier
+    - sent
+  sent_order: strictly_after_reference
+  missing_or_stale_reference: FAIL
+high_consequence:
+  signature: Ed25519
+  approvals:
+    - emergency_manager
+    - responder_coordinator
+  freshness_ms: 300000
+  clock_skew_ms: 30000

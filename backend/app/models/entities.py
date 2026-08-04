@@ -5,7 +5,7 @@ timestamps. Entities with a spatial footprint use a GeoAlchemy2 Geometry
 column (srid=4326). GiST indexes are created in the Alembic migration.
 """
 
-from sqlalchemy import BigInteger, String
+from sqlalchemy import BigInteger, Index, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from geoalchemy2 import Geometry
@@ -168,12 +168,21 @@ class OperationalTask(_EntityMixin, Base):
     """A task assigned to responders (point location)."""
 
     __tablename__ = "operational_tasks"
+    __table_args__ = (
+        UniqueConstraint(
+            "org_id", "incident_id", "source_alert_id",
+            name="uq_operational_task_alert",
+        ),
+        Index("ix_operational_tasks_decision", "org_id", "decision_id"),
+    )
 
     title: Mapped[str] = mapped_column(String)
     status: Mapped[str | None] = mapped_column(String, nullable=True)
     priority: Mapped[str | None] = mapped_column(String, nullable=True)
     assigned_team_id: Mapped[str | None] = mapped_column(String, nullable=True)
     required_capability: Mapped[str | None] = mapped_column(String, nullable=True)
+    source_alert_id: Mapped[str | None] = mapped_column(String(26), nullable=True)
+    decision_id: Mapped[str | None] = mapped_column(String(26), nullable=True)
     assignment_history: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

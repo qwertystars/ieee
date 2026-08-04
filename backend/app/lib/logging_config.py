@@ -19,6 +19,8 @@ from contextvars import ContextVar
 from datetime import UTC, datetime
 from typing import Any
 
+from app.lib.audit_privacy import redact_text
+
 # ── Context vars — set by middleware, read by the JSON formatter ────────────
 
 _request_id: ContextVar[str | None] = ContextVar("request_id", default=None)
@@ -33,6 +35,7 @@ _REDACTED_KEYS = frozenset({
     "access_token", "refresh_token", "authorization",
     "jwt", "jwt_secret", "minio_secret_key", "minio_access_key",
     "bearer", "credential", "private_key",
+    "email", "phone", "address", "contact", "dob", "ssn", "medical_info",
 })
 
 _REDACTED = "***REDACTED***"
@@ -95,13 +98,13 @@ class JsonFormatter(logging.Formatter):
         safe_error_context: str | None = None
         if record.exc_info and record.exc_info[1] is not None:
             exc = record.exc_info[1]
-            safe_error_context = f"{type(exc).__name__}: {exc}"
+            safe_error_context = redact_text(f"{type(exc).__name__}: {exc}")
 
         payload: dict[str, Any] = {
             "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
-            "message": record.getMessage(),
+            "message": redact_text(record.getMessage()),
             "request_id": _request_id.get(),
             "trace_id": _trace_id.get(),
             "org_id": _org_id.get(),

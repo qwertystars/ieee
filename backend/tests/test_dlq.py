@@ -17,6 +17,7 @@ import asyncio
 import pytest
 from sqlalchemy.exc import IntegrityError
 
+import app.streaming.consumer as consumer_module
 from app.streaming.consumer import DLQ_TOPIC, ConsumerManager
 
 
@@ -69,7 +70,39 @@ def test_send_to_dlq_no_producer_is_noop() -> None:
     assert cm._dlq_producer is None
 
     # Should not raise.
-    asyncio.run(cm._send_to_dlq({"observation_id": "bad"}, "test error"))
+    assert asyncio.run(cm._send_to_dlq({"observation_id": "bad"}, "test error")) is False
+
+
+def test_dlq_producer_serializes_string_keys(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeConsumer:
+        def __init__(self, *topics: str, **kwargs: object) -> None:
+            del topics, kwargs
+
+        async def start(self) -> None:
+            return None
+
+        async def stop(self) -> None:
+            return None
+
+    class FakeProducer:
+        def __init__(self, **kwargs: object) -> None:
+            captured.update(kwargs)
+
+        async def start(self) -> None:
+            return None
+
+        async def stop(self) -> None:
+            return None
+
+    monkeypatch.setattr(consumer_module, "AIOKafkaConsumer", FakeConsumer)
+    monkeypatch.setattr(consumer_module, "AIOKafkaProducer", FakeProducer)
+    cm = ConsumerManager(bootstrap_servers="localhost:9092")
+    asyncio.run(cm.start(["observations.normalized"]))
+    assert callable(captured["key_serializer"])
+    assert captured["key_serializer"]("external-id") == b"external-id"
+    asyncio.run(cm.stop())
 
 
 def test_retry_with_backoff_raises_on_permanent() -> None:

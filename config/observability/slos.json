@@ -1,0 +1,97 @@
+{
+  "policy_version": "task-11-v1",
+  "window": "UTC calendar month unless a rolling window is stated",
+  "error_budget": 0.001,
+  "burn_rate_windows": ["1h", "6h"],
+  "burn_rate_multipliers": [14.4, 6.0],
+  "slis": {
+    "availability": {
+      "formula": "successful_authorized_requests / eligible_requests",
+      "denominator": "authenticated non-health requests received by every instance",
+      "source_of_truth": "slo_successful_requests_total and slo_eligible_requests_total unioned by request_id",
+      "window": "UTC calendar month",
+      "threshold": 0.999,
+      "burn_rate_alert": {"windows": ["1h", "6h"], "multipliers": [14.4, 6.0]},
+      "cardinality_limit": "method x route_template x status_class",
+      "retention": "13 months",
+      "privacy_rule": "no org, actor, email, token, IP, or raw request data"
+    },
+    "acknowledged_event_loss": {
+      "formula": "acknowledged_absent_from_ledger / acknowledged",
+      "denominator": "durable API or broker acknowledgements",
+      "source_of_truth": "raw event ledger joined to acknowledgement and audit records",
+      "window": "UTC calendar month and per incident",
+      "threshold": 0.0,
+      "burn_rate_alert": {"windows": ["5m", "1h"], "multipliers": [1.0, 1.0]},
+      "cardinality_limit": "event_state x queue",
+      "retention": "13 months counters plus immutable ledger policy",
+      "privacy_rule": "payloads and identifiers stay out of telemetry"
+    },
+    "ingest_rate": {
+      "formula": "processed_events / elapsed_seconds",
+      "denominator": "elapsed UTC seconds with an active ingest window",
+      "source_of_truth": "worker processed event counter and broker receipt timestamps",
+      "window": "5 minute rolling window and 1 hour report",
+      "threshold": 100.0,
+      "burn_rate_alert": {"windows": ["15m", "1h"], "multipliers": [1.0, 1.0]},
+      "cardinality_limit": "queue x outcome",
+      "retention": "90 days",
+      "privacy_rule": "no source, device, tenant, location, or payload labels"
+    },
+    "api_read_latency": {
+      "formula": "nearest_rank(request_latency_seconds, 0.95)",
+      "denominator": "all GET requests including failures, excluding health and metrics",
+      "source_of_truth": "http_request_duration_seconds histogram",
+      "window": "5 minute rolling window",
+      "threshold": 0.5,
+      "burn_rate_alert": {"windows": ["15m", "1h"], "multipliers": [14.4, 6.0]},
+      "cardinality_limit": "route_template x method",
+      "retention": "90 days",
+      "privacy_rule": "route templates only; no query string or body"
+    },
+    "dashboard_latency": {
+      "formula": "nearest_rank(request_latency_seconds, 0.95)",
+      "denominator": "authenticated dashboard read requests including failures",
+      "source_of_truth": "http_request_duration_seconds histogram with request_class=dashboard",
+      "window": "5 minute rolling window",
+      "threshold": 2.0,
+      "burn_rate_alert": {"windows": ["15m", "1h"], "multipliers": [14.4, 6.0]},
+      "cardinality_limit": "dashboard route template",
+      "retention": "90 days",
+      "privacy_rule": "no user, incident, coordinate, or response-body labels"
+    },
+    "saturation": {
+      "formula": "resource_used / resource_capacity",
+      "denominator": "declared CPU, memory, database connection, and worker capacity",
+      "source_of_truth": "process and database pool gauges plus worker capacity",
+      "window": "5 minute rolling maximum",
+      "threshold": {"cpu": 0.7, "memory": 0.75, "db_connections": 0.8},
+      "burn_rate_alert": {"windows": ["15m", "1h"], "multipliers": [1.0, 1.0]},
+      "cardinality_limit": "resource allowlist",
+      "retention": "90 days",
+      "privacy_rule": "resource names only"
+    },
+    "queue_age": {
+      "formula": "nearest_rank(now_ms - enqueue_time_ms, 0.95)",
+      "denominator": "messages present in each durable queue",
+      "source_of_truth": "broker enqueue and worker receipt timestamps",
+      "window": "5 minute rolling window",
+      "threshold": 60.0,
+      "burn_rate_alert": {"windows": ["5m", "15m"], "multipliers": [1.0, 1.0]},
+      "cardinality_limit": "queue allowlist",
+      "retention": "90 days",
+      "privacy_rule": "message ids, keys, tenant ids, and payloads are never labels"
+    },
+    "dependency_health": {
+      "formula": "reachable_dependency_checks / configured_dependency_checks",
+      "denominator": "dependencies with a declared endpoint and executed probe",
+      "source_of_truth": "dependency_health gauge and deep health result",
+      "window": "current state plus 5 minute history",
+      "threshold": "all required dependencies reachable; unknown is not healthy",
+      "burn_rate_alert": {"windows": ["5m", "15m"], "multipliers": [1.0, 1.0]},
+      "cardinality_limit": "dependency and state allowlists",
+      "retention": "90 days",
+      "privacy_rule": "no endpoint URLs, credentials, connection strings, or exception bodies"
+    }
+  }
+}

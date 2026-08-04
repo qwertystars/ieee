@@ -59,13 +59,13 @@ def _get_incident(db: Session, org_id: str, incident_id: str) -> Incident:
     return inc
 
 
-def _build_actor(user: User, incident_id: str) -> Actor:
+def _build_actor(user: User) -> Actor:
     """Build an ABAC Actor from the authenticated user."""
     return Actor(
         user_id=user.id,
         role=user.role,
         org_id=user.org_id,
-        incident_assignments=(incident_id,),
+        incident_assignments=(),
         jurisdiction="all" if user.role in ELEVATED_ROLES else "zone_default",
     )
 
@@ -106,7 +106,7 @@ def access_check(
     org_id = request.state.org_id or ""
     _get_incident(db, org_id, incident_id)
 
-    actor = _build_actor(user, incident_id)
+    actor = _build_actor(user)
     subject = _build_subject(resource, org_id, incident_id)
     # Override sensitivity from query param if provided.
     subject = Subject(
@@ -123,8 +123,8 @@ def access_check(
         emergency_mode=False,
     )
 
-    engine = ABACEngine()
-    override = engine.get_override(user.id)
+    engine = ABACEngine(db=db)
+    override = engine.get_override(user.id, user.org_id)
     allowed = engine.can(actor, action, subject, context)
 
     # Build reasoning for the decision.

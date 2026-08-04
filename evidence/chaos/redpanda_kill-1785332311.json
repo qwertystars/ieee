@@ -1,0 +1,13 @@
+{
+  "scenario": "redpanda_kill",
+  "load_successes": 48,
+  "load_failures": 0,
+  "observation_post_during_outage": 201,
+  "deep_health_during_outage": {
+    "database": true,
+    "redis": true,
+    "redpanda": false,
+    "minio": true
+  },
+  "recovery_time_s": 6.835
+}

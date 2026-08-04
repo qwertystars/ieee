@@ -1,0 +1,63 @@
+{
+  "schema_version": "resqnet.field-trial-report.v1",
+  "status": "DEFERRED_EXTERNAL",
+  "claim_class": "field_external",
+  "machine_pass_satisfies_field_gate": false,
+  "required_report_fields": [
+    "agency_authorization",
+    "ethics_irb",
+    "training",
+    "insurance_safety_review",
+    "device_inventory",
+    "consent",
+    "stop_authority",
+    "sample_hazard_minimums",
+    "blinding",
+    "missing_data_rules",
+    "hash"
+  ],
+  "agency_authorization": null,
+  "ethics_irb": null,
+  "training": null,
+  "insurance_safety_review": null,
+  "device_inventory": null,
+  "consent": null,
+  "stop_authority": null,
+  "sample_hazard_minimums": {
+    "minimum_incidents": 100,
+    "minimum_hazard_types": 3,
+    "observed_incidents": null,
+    "observed_hazard_types": null
+  },
+  "blinding": null,
+  "missing_data_rules": null,
+  "prerequisite_linkage": {
+    "source": "evidence/sota/prerequisites.json",
+    "ids": [
+      "dataset.sensor.regional-trial",
+      "dataset.operator.human-factors",
+      "hardware.secure-boot",
+      "sensor.physical-calibration",
+      "hardware.environmental-limits",
+      "security.real-key-custody"
+    ],
+    "required_record_fields": [
+      "id",
+      "owner",
+      "authority",
+      "status",
+      "evidence_type",
+      "evidence_hash",
+      "hash_algorithm",
+      "source_url",
+      "recorded_at",
+      "expires_at",
+      "depends_on",
+      "deferred_reason",
+      "claim_classes"
+    ]
+  },
+  "deferred_reason": "No agency authorization, ethics or IRB approval, trained participants, insurance or safety review, device inventory, consent, stop authority, field sample, blinding, or missing-data evidence is available.",
+  "hash_algorithm": "SHA-256",
+  "hash": "7c838c4d311a865054425393d3ec9b3e30af4d5e7fa59b8cf3ba981384474ef9"
+}

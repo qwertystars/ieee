@@ -52,18 +52,19 @@ a non-trivial output assertion (outputs must not be all-zero, confirming
 real trained weights are loaded).
 
 **Calibration status:**
-- **SAR flood mapping**: Conformal calibration active. Coverage 0.9412 at
-  alpha=0.1 (90% nominal), within the [0.85, 0.95] target band. Calibration
-  data: 55 chips from Sen1Floods11 (5 SAR-derived features → water_fraction).
-  Interval width 0.6235. Brier score 0.2621, ECE 0.1262.
+- **SAR flood mapping**: No ONNX-output calibration artifact is available.
+  The historical feature-level LinearRegression/MAPIE result is not an ONNX
+  calibration and cannot support a safety-output claim. The model abstains
+  until a hashed pixel-output artifact is registered.
 - **Building damage**: No calibration dataset available. xBD is
   registration-gated at xView2.org. The model is validated (real weights,
-  real accuracy metrics) but not calibrated. `calibration: null` in the
-  manifest. Conformal prediction intervals are not available for this model.
+  real accuracy metrics) but not calibrated. The manifest records
+  `calibration.status=DEFERRED_EXTERNAL`. Conformal prediction intervals are
+  not available for this model.
 - **Incident NLP**: No public calibration dataset identified. The model is
   validated (real weights, real inference verified) but not calibrated.
-  `calibration: null` in the manifest. Conformal prediction intervals are
-  not available for this model.
+  The manifest records `calibration.status=DEFERRED_EXTERNAL`. Conformal
+  prediction intervals are not available for this model.
 
 **Degraded behavior:** When ONNX files are removed or the runtime is
 unavailable, ML inference endpoints return a `model_unavailable` response:
@@ -148,12 +149,12 @@ non-trivial output assertion confirming the models produce non-zero outputs
   values. Manifest records `accuracy_metrics: {}` (empty, not fabricated).
 
 **Calibration status:**
-- SAR: Conformal calibration active (coverage 0.9412, see ONNX Models
-  section above).
+- SAR: ONNX-output calibration is unavailable; the historical feature proxy is
+  not calibration evidence and the safety output abstains.
 - Building damage and incident NLP: No calibration data available.
-  `calibration: null` in both manifests. The models are validated but
-  not calibrated. Conformal prediction intervals are not available for
-  these two models.
+  Both manifests record `calibration.status=DEFERRED_EXTERNAL`. The models are
+  validated but not calibrated. Conformal prediction intervals are not
+  available for these two models.
 
 **Degraded behavior:** ML route handlers (`scenarios.py`, `sensing.py`)
 check the manifests before running inference. When ONNX weight files are
@@ -332,23 +333,20 @@ HuggingFace repositories and exported to ONNX format via
 for model sources, accuracy metrics, and licensing details.
 
 **Calibration data status:**
-- `sar-flood-mapping`: Real-data conformal calibration is **active** using
-  the Sen1Floods11 dataset (CC BY 4.0). 55 hand-labeled Sentinel-1 SAR chips
-  across 11 flood events were downloaded from the public GCS bucket and
-  converted to calibration features (mean VV, mean VH, VV-VH difference,
-  std VV, std VH → water fraction). Conformal coverage on the held-out
-  prediction set is 0.9412, within the target [0.85, 0.95] band for
-  alpha=0.1. The calibration data is stored under
-  `backend/data/calibration/sen1floods11/` (gitignored, not committed).
-  See `docs/MODEL_DATA_LICENSING.md` for dataset licensing details.
+- `sar-flood-mapping`: No ONNX-output calibration artifact is available in
+  this workspace. A historical feature-level proxy is explicitly excluded
+  from ONNX calibration claims. The route is abstain-only until a model-output
+  artifact with an immutable version and SHA-256 is registered. See
+  `backend/data/models/manifests.json` for the contract.
 - `building-damage`: No calibration dataset available. xBD is
   registration-gated at xView2.org. The model is validated (real weights,
-  real accuracy metrics) but not calibrated. `calibration: null` in the
-  manifest. Conformal prediction intervals are not available for this model.
+  real accuracy metrics) but not calibrated. The manifest records
+  `calibration.status=DEFERRED_EXTERNAL`. Conformal prediction intervals are
+  not available for this model.
 - `incident-nlp`: No public dataset identified for NLP calibration. The
   model is validated (real weights, real inference verified) but not
-  calibrated. `calibration: null` in the manifest. Conformal prediction
-  intervals are not available for this model.
+  calibrated. The manifest records `calibration.status=DEFERRED_EXTERNAL`.
+  Conformal prediction intervals are not available for this model.
 - UNOSAT and Copernicus EMS are documented as supplementary sources but
   are registration-gated and not downloaded.
 
@@ -364,13 +362,12 @@ all dataset licenses, acquisition methods, and registration gates. It
 handles failures gracefully — if a dataset is unavailable, it logs the
 blocker and continues with accessible datasets.
 
-**Partial retirement (2026-07-29).** The SAR flood mapping model is
-now a real pre-trained ONNX file (`sar-flood-mapping-v2.0.0.onnx`,
-94 MB, IoU 0.67) with conformal calibration active (coverage 0.9412
-on the Sen1Floods11 held-out set). The model is validated, signed,
-and reports `available` through the capabilities endpoint. This
-partially retires disclaimer #5 for the SAR model: real trained
-weights and real calibration are in place.
+**Task 16 correction (2026-08-03).** The SAR flood mapping model is a real
+pre-trained ONNX artifact, but its historical feature-level calibration is not
+an ONNX-output calibration. The manifest therefore records calibration as
+`DEFERRED_EXTERNAL`, and the safety route abstains until a hashed model-output
+artifact is available. This correction prevents a proxy metric from being
+reported as model-specific calibration.
 
 The disclaimer remains in force for the building damage and incident
 NLP models. Both are validated (real ONNX weights, real inference
@@ -455,3 +452,58 @@ revocation cache and hybrid policy are covered by backend tests.
 This disclaimer is new and tracks the auth hardening work. It does
 not block deployment. It documents the fail-open trade-off so that
 operators are aware of the behavior during a Redis outage.
+
+## Backup, Restore, and Disaster Recovery
+
+The Task 10 backup envelope is the machine-verifiable recovery contract. It
+uses AES-256-CBC with PBKDF2-HMAC-SHA256, requires an externally supplied key
+file, records SHA-256 hashes for the encrypted archive and every payload file,
+keeps the latest 30 successful backups, and declares a 60-second schedule. The
+encrypted archive and its manifest can be copied to an external object store;
+the committed local verifier uses a temporary mirror only and is not proof of
+production offsite durability.
+
+The manifest coverage is explicit: PostgreSQL rows and raw events,
+evaluation jobs, queue offsets, model manifests, hash-chained audit rows and
+heads, object metadata and bytes, and signing-key escrow metadata. Restore
+order is database, queue offsets, model manifests, audit chain, objects, and
+signing-key escrow metadata. A restore validates the manifest checksum,
+encrypted archive checksum/decryption, payload hashes, row counts, offsets,
+model-to-object digests, audit predecessor/hash/head continuity, object size
+and digest, and the escrow policy before emitting `restore.success`.
+
+### Operator Runbook
+
+1. Provision `BACKUP_ENCRYPTION_KEY_FILE` from the approved external secret
+   manager. Never put this key, a private signing key, or credentials in the
+   repository, database dump, object archive, or logs.
+2. Capture queue offsets for consumer group `observations-consumer` and the
+   broker identity, export current model manifests and object metadata, export
+   audit rows plus `audit_chain_heads`, and provide a signing-key escrow
+   reference with `live_keys_external=true` and `private_keys_in_backup=false`.
+3. Run `BACKUP_METADATA_DIR=/path/to/capture make backup` under the external
+   scheduler at least every 60 seconds. Set `BACKUP_OFFSITE_DIR` only for a
+   verified encrypted mirror; otherwise the manifest remains
+   `DEFERRED_EXTERNAL`.
+4. For a clean-room test, run
+   `make backup-restore-verify RPO_TARGET_S=60 RTO_TARGET_S=900`. Inspect the
+   manifest, restore report, archive digest, row/hash checks, measured RPO/RTO,
+   and the absence of failure markers. Do not use a destructive local round
+   trip as production DR evidence.
+5. During an incident, verify the archive and manifest before making any
+   database change, restore into an isolated database/object namespace, replay
+   the captured queue offsets only after database and audit verification, and
+   recover live signing keys from external custody before enabling commands.
+   Any checksum, metadata, dependency-readiness, audit, object, RPO, or RTO
+   failure is a nonzero fail-fast result with no success marker.
+
+### DEFERRED_EXTERNAL Recovery Conditions
+
+`DEFERRED_EXTERNAL` remains the honest status until there is evidence from the
+production environment for all of the following: secret-manager key custody
+and rotation, an independent offsite object-store copy with retention and
+access-control proof, broker offset capture/replay, live signing-key escrow and
+recovery, and measured production RPO <=60 seconds and RTO <=900 seconds.
+The repository fixture proves envelope integrity and clean-room verification
+only; it does not claim live signing-key recovery, offsite durability, or
+30-day production retention evidence.

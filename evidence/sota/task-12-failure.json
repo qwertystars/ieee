@@ -1,0 +1,79 @@
+{
+  "cleanup": "No services or production data were modified; deterministic migration fixture state was discarded.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "scripts/run_production_parity.sh --mode fixture --scenario migration-interrupt-rollback --instances 2 --operators 50 --ingest-rate 100 --duration 3600 --report /root/srijan/ieee/evidence/sota/task-12-failure.json",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 1,
+  "failure_assertion": "Interrupted migration must fail closed, reject unsafe rollback, and preserve zero acknowledged-event reconciliation loss.",
+  "finished_at": "2026-08-02T22:10:07Z",
+  "hashes": {
+    "config/production-parity.json": "c202c30e9198fe56d30186b47ed628ffe7b3570dcf4905394f503c751ce5d8b7",
+    "deploy/production-parity/haproxy.cfg": "f009b1350f14d4a32f88c78b0997d67336447afa99e908314027a95189ee60fe",
+    "docker-compose.production-parity.yml": "b240e01ac0f83866dfbb3e76a49e33ed773032cb97a47530b5ce324ef082b463",
+    "docs/PRODUCTION_PARITY_RUNBOOK.md": "2a778c94020b77da0d3751d6ddfcc0e2c9ea837ad057c69f3c0eca2e52c91a1d",
+    "scripts/run_production_parity.sh": "01f8f3168e06608713b9ebbc293504726a0f2865a91181fa8d88ffcd0daea5cf"
+  },
+  "inputs": [
+    "config/production-parity.json",
+    "docker-compose.production-parity.yml",
+    "deploy/production-parity/haproxy.cfg",
+    "docs/PRODUCTION_PARITY_RUNBOOK.md",
+    "scripts/run_production_parity.sh"
+  ],
+  "metrics": {
+    "availability": 0.0,
+    "declared_duration_seconds": 3600,
+    "execution_mode": "contract-fixture",
+    "failure_budget": {
+      "allowed": 0.001,
+      "observed": 0.0005,
+      "remaining": 0.0005
+    },
+    "latency": {
+      "api_read": {
+        "p50": 0.2,
+        "p95": 0.4,
+        "p99": 0.8
+      },
+      "dashboard": {
+        "p50": 0.4,
+        "p95": 1.2,
+        "p99": 2.4
+      }
+    },
+    "load_shape": {
+      "ingest_events_per_second": 100,
+      "instances": 2,
+      "operators": 50
+    },
+    "migration_interrupted": true,
+    "observed_duration_seconds": 0,
+    "queue_backpressure": {
+      "max_buffer": 100,
+      "rejected_without_ack": true
+    },
+    "reconciliation": {
+      "acknowledged": 200,
+      "acknowledged_event_loss": 0,
+      "backend_hashes": [
+        "sha256:fixture-reconciliation",
+        "sha256:fixture-reconciliation"
+      ],
+      "duplicate_effects": 0,
+      "hashes_identical": true,
+      "ledger_effects": 200
+    },
+    "release_status": "UNSAFE_RELEASE",
+    "requested_duration_seconds": 3600,
+    "rollback": "application_image_only_schema_preserved",
+    "saturation": {
+      "cpu": 0.62,
+      "database_connections": 0.7,
+      "memory": 0.68,
+      "queue_age_p95_seconds": 18
+    }
+  },
+  "started_at": "2026-08-02T22:10:07Z",
+  "status": "FAIL",
+  "task_id": "12"
+}

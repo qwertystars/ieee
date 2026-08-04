@@ -1,0 +1,8 @@
+{
+  "scenario": "backend_restart",
+  "load_successes": 141,
+  "load_failures": 190,
+  "observation_post_after_restart": 0,
+  "websocket_reconnect": false,
+  "recovery_time_s": null
+}

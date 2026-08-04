@@ -1,0 +1,196 @@
+name: resqnet-production-parity
+
+x-backend: &backend
+  image: ${RESQNET_BACKEND_IMAGE:?RESQNET_BACKEND_IMAGE must be an attested immutable digest}
+  restart: unless-stopped
+  environment: &backend_environment
+    PYTHONPATH: /app
+    DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be injected by the secret manager}
+    REDIS_URL: ${REDIS_URL:?REDIS_URL must be injected by the secret manager}
+    REDPANDA_BOOTSTRAP_SERVERS: redpanda:9092
+    TOPIC_PARTITIONS: "6"
+    TOPIC_REPLICAS: "3"
+    MINIO_ENDPOINT: minio:9000
+    MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY must be injected by the secret manager}
+    MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?MINIO_SECRET_KEY must be injected by the secret manager}
+    JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be injected by the secret manager}
+    CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS must be explicit HTTPS origins}
+    ENVIRONMENT: production
+    UVICORN_RELOAD: "false"
+    SOURCE_MOUNTS_ENABLED: "false"
+    MOCK_BINDINGS_ENABLED: "false"
+    EXPOSE_INTERNAL_PORTS: "false"
+    WORKER_CONCURRENCY: "6"
+  secrets:
+    - jwt_secret
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    redpanda:
+      condition: service_healthy
+    minio:
+      condition: service_healthy
+  command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+  healthcheck:
+    test: ["CMD-SHELL", "curl -fsS http://localhost:8000/healthz/deep >/dev/null"]
+    interval: 5s
+    timeout: 5s
+    retries: 12
+    start_period: 60s
+  deploy:
+    resources:
+      limits:
+        cpus: "2"
+        memory: 4G
+      reservations:
+        cpus: "1"
+        memory: 2G
+
+services:
+  db:
+    image: ${RESQNET_DB_IMAGE:?RESQNET_DB_IMAGE must be an attested immutable digest}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be injected}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be injected}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB must be injected}
+    command: ["postgres", "-c", "shared_preload_libraries=timescaledb,age"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 8G
+
+  redis:
+    image: ${RESQNET_REDIS_IMAGE:?RESQNET_REDIS_IMAGE must be an attested immutable digest}
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  redpanda:
+    image: ${RESQNET_REDPANDA_IMAGE:?RESQNET_REDPANDA_IMAGE must be an attested immutable digest}
+    command:
+      - redpanda
+      - start
+      - --mode
+      - dev-container
+      - --smp
+      - "2"
+      - --memory
+      - 2G
+      - --kafka-addr
+      - internal://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - internal://redpanda:9092
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "info"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  minio:
+    image: ${RESQNET_MINIO_IMAGE:?RESQNET_MINIO_IMAGE must be an attested immutable digest}
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY must be injected}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?MINIO_SECRET_KEY must be injected}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  migrate:
+    image: ${RESQNET_BACKEND_IMAGE:?RESQNET_BACKEND_IMAGE must be an attested immutable digest}
+    restart: "no"
+    environment: *backend_environment
+    secrets:
+      - jwt_secret
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+
+  backend_a:
+    <<: *backend
+
+  backend_b:
+    <<: *backend
+
+  worker:
+    image: ${RESQNET_WORKER_IMAGE:?RESQNET_WORKER_IMAGE must be an attested immutable digest}
+    restart: unless-stopped
+    environment: *backend_environment
+    secrets:
+      - jwt_secret
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    command: ["python", "-m", "app.worker.main"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8001/metrics >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+
+  proxy:
+    image: ${RESQNET_HAPROXY_IMAGE:?RESQNET_HAPROXY_IMAGE must be an attested immutable digest}
+    ports:
+      - "8443:8443"
+    configs:
+      - source: haproxy_cfg
+        target: /usr/local/etc/haproxy/haproxy.cfg
+    secrets:
+      - tls_bundle
+    depends_on:
+      backend_a:
+        condition: service_healthy
+      backend_b:
+        condition: service_healthy
+    command: ["haproxy", "-W", "-db", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+    healthcheck:
+      test: ["CMD", "haproxy", "-c", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+configs:
+  haproxy_cfg:
+    file: ./deploy/production-parity/haproxy.cfg
+
+secrets:
+  jwt_secret:
+    environment: JWT_SECRET
+  tls_bundle:
+    file: ${TLS_BUNDLE_FILE:?TLS_BUNDLE_FILE must reference externally managed PEM material}
+
+volumes:
+  pgdata:
+  redis_data:
+  minio_data:

@@ -1,7 +1,7 @@
 # ResQNet-SAGE Backend — Python 3.11 + FastAPI
 # GDAL system packages required for the `gdal` and `rasterio` Python packages.
 
-FROM python:3.11-slim-bookworm
+FROM python:3.11.9-slim-bookworm
 
 # System packages: GDAL + build tools + curl (for healthcheck)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -35,4 +35,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

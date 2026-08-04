@@ -21,7 +21,11 @@ import logging
 import httpx
 from sqlalchemy.orm import Session
 
-from app.lib.idempotency import check_and_record
+from app.lib.idempotency import (
+    check_and_record,
+    record_published_raw_event,
+    stable_ingestion_claim,
+)
 from app.lib.time import from_iso, now_ms
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
@@ -143,6 +147,7 @@ class UnipileClient:
             "valid_until": None,
             "received_at": now_ms(),
             "source_id": source_id,
+            "external_id": message_id,
             "source_type": SourceType.citizen_report.value,
             "collection_method": "unipile_webhook",
             "source_reliability": 0.5,
@@ -194,12 +199,26 @@ class UnipileClient:
             logger.warning("Unipile webhook: message has no id")
             return 0
 
-        if not check_and_record(db, "unipile", message_id):
+        obs = self.map_to_observation(message, org_id, incident_id)
+        if not check_and_record(
+            db,
+            "unipile",
+            message_id,
+            org_id=org_id,
+            incident_id=incident_id,
+            payload=stable_ingestion_claim(obs),
+            commit=False,
+        ):
             logger.debug("Unipile webhook: duplicate message %s", message_id)
             return 0
 
-        obs = self.map_to_observation(message, org_id, incident_id)
-        await producer.send("observations.raw", obs)
+        try:
+            await producer.send("observations.raw", obs)
+            record_published_raw_event(db, obs)
+            db.commit()
+        except (OSError, RuntimeError, TimeoutError):
+            db.rollback()
+            raise
         logger.info("Unipile: published message %s", message_id)
         return 1
 

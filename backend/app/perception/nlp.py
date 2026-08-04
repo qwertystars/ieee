@@ -51,6 +51,29 @@ def _keyword_match(keyword: str, text: str) -> bool:
     return re.search(pattern, text) is not None
 
 
+def prepare_text_for_model(text: str) -> str:
+    """Redact boundary PII before text reaches the model tokenizer."""
+    spans: list[PIISpan] = []
+    for regex, pii_type, token in (
+        (PHONE_RE, PIIType.phone, "[PHONE]"),
+        (EMAIL_RE, PIIType.email, "[EMAIL]"),
+        (AADHAAR_RE, PIIType.aadhaar, "[AADHAAR]"),
+        (NAME_RE, PIIType.person_name, "[NAME]"),
+    ):
+        for match in regex.finditer(text):
+            spans.append(PIISpan(
+                start=match.start(),
+                end=match.end(),
+                text=match.group(),
+                type=pii_type,
+                redacted=token,
+            ))
+    chars = list(text)
+    for span in sorted(spans, key=lambda item: item.start, reverse=True):
+        chars[span.start:span.end] = list(span.redacted)
+    return "".join(chars)
+
+
 class CitizenReportProcessor:
     """Multilingual NLP pipeline. ``asr_fn`` and ``embed_fn`` are injectable."""
 
@@ -277,4 +300,4 @@ class CitizenReportProcessor:
         return names
 
 
-__all__ = ["CitizenReportProcessor"]
+__all__ = ["CitizenReportProcessor", "prepare_text_for_model"]

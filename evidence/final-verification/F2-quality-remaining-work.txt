@@ -1,0 +1,172 @@
+================================================================
+F2 — Code Quality Review — Remaining Work Branch
+Branch: codex/resqnet-remaining-work
+Date: 2026-07-29
+================================================================
+
+GATE SUMMARY
+------------
+  1. Ruff (backend)      ........ PASS  (All checks passed!)
+  2. Mypy (backend)      ........ PASS  (Success: no issues found in 171 source files)
+  3. ESLint (frontend)   ........ PASS  (0 errors, 0 warnings)
+  4. TSC (frontend)      ........ PASS  (0 errors)
+
+VERDICT: APPROVE — All 4 quality gates pass.
+
+================================================================
+GATE 1: make lint (ruff, backend)
+================================================================
+Command:  cd /root/srijan/ieee && make lint
+Result:   PASS — All checks passed!
+
+Initial run found 5 errors (all auto-fixable):
+  - backend/app/api/routes/alerts.py:8       I001  import block unsorted (long
+    single-line import needed wrapping into multi-line form)
+  - backend/app/api/routes/observations.py:33 F401 unused import SessionLocal
+  - backend/tests/failure/test_chaos.py:225  I001  import block unsorted (missing
+    blank line between asyncio and websockets)
+  - backend/tests/test_auth_hardening.py:24  F401 unused import create_access_token
+  - backend/tests/test_consumer_batch.py:14  F401 unused import os
+
+Fix: `ruff check --fix backend/` — 5 fixed, 0 remaining.
+All 5 were auto-fixed by ruff (import sorting + unused import removal).
+No manual code changes needed for ruff.
+
+Raw output (post-fix):
+  === Running ruff ===
+  All checks passed!
+  EXIT_CODE=0
+
+================================================================
+GATE 2: make typecheck (mypy, backend)
+================================================================
+Command:  cd /root/srijan/ieee && make typecheck
+Result:   PASS — Success: no issues found in 171 source files
+
+Initial run found 28 errors in 17 files. Two root causes:
+
+ROOT CAUSE A — Makefile config discovery (26 import errors):
+  `make typecheck` ran `mypy "$(BACKEND_DIR)/app/"` from the repo root
+  WITHOUT `--config-file`. Mypy searches for config from CWD upward, not
+  from the target path. Since `mypy.ini` lives in `backend/` and CWD is
+  the repo root, mypy did not find `backend/mypy.ini`. The config has
+  `ignore_missing_imports = True` (global backstop) plus per-module
+  overrides for aiokafka, rasterio, onnxruntime, pgmpy, sklearn, mapie,
+  scipy, shapely, jose, cdsetool, whisper, opentelemetry, geoalchemy2.
+  Without the config, all 26 third-party import-stub errors resurfaced.
+
+  Fix: Added `--config-file "$(BACKEND_DIR)/mypy.ini"` to both mypy
+  invocations in the Makefile typecheck target (system mypy + venv mypy
+  fallback). This is NOT adding new ignores — the ignores already exist
+  in mypy.ini. The fix makes the command find the existing config.
+
+ROOT CAUSE B — Real type errors in consumer.py (2 arg-type errors):
+  backend/app/streaming/consumer.py:163
+    error: Argument 3 to "check_and_record" has incompatible type
+    "Any | None"; expected "str"  [arg-type]
+  backend/app/streaming/consumer.py:170
+    error: Argument 1 to "append" of "list" has incompatible type
+    "Any | None"; expected "str"  [arg-type]
+
+  `payload.get("observation_id")` returns `Any | None`, but
+  `check_and_record(db, source, external_id: str)` expects `str` and
+  `observation_ids: list[str]` expects `str` on append.
+
+  Fix: Added a None guard after the `.get()` call:
+    if observation_id is None:
+        logger.warning("Payload missing observation_id, skipping")
+        continue
+  This narrows the type from `Any | None` to `Any` (compatible with
+  `str`), and correctly skips malformed payloads without an
+  observation_id. The guard is placed before `check_and_record` and
+  `observation_ids.append`, resolving both errors.
+
+  Test impact: `pytest tests/test_consumer_batch.py -q` → 7/7 passed.
+  The None guard does not affect existing test payloads (all include
+  observation_id).
+
+Raw output (post-fix):
+  === Running mypy ===
+  Success: no issues found in 171 source files
+  EXIT_CODE=0
+
+================================================================
+GATE 3: npx eslint src/ --max-warnings 0 (frontend)
+================================================================
+Command:  cd /root/srijan/ieee/frontend && npx eslint src/ --max-warnings 0
+Result:   PASS — 0 errors, 0 warnings (clean exit, no output)
+
+No changes were required. ESLint was already passing on this branch.
+T42 previously verified this command passes with 0 warnings.
+
+Raw output:
+  (no output — clean exit)
+  EXIT_CODE=0
+
+================================================================
+GATE 4: npm run typecheck (frontend, tsc)
+================================================================
+Command:  cd /root/srijan/ieee/frontend && npm run typecheck
+Result:   PASS — 0 errors (tsc --noEmit clean exit)
+
+No changes were required. TSC was already passing on this branch.
+T42 previously verified this command passes with 0 errors.
+
+Raw output:
+  > resqnet-sage-frontend@0.1.0 typecheck
+  > tsc --noEmit
+
+  EXIT_CODE=0
+
+================================================================
+CHANGES MADE
+================================================================
+
+7 files modified (excluding pre-existing uncommitted state files):
+
+  Makefile                                    |  4 +-  (add --config-file to mypy)
+  backend/app/api/routes/alerts.py            |  9 +-  (ruff auto-fix: import sort)
+  backend/app/api/routes/observations.py      |  1 -  (ruff auto-fix: unused import)
+  backend/app/streaming/consumer.py           |  3 +  (None guard for observation_id)
+  backend/tests/failure/test_chaos.py         |  1 +  (ruff auto-fix: import sort)
+  backend/tests/test_auth_hardening.py        |  2 +-  (ruff auto-fix: unused import)
+  backend/tests/test_consumer_batch.py        |  1 -  (ruff auto-fix: unused import)
+
+Breakdown:
+  - 4 ruff auto-fixes (unused imports removed, import blocks sorted)
+  - 1 manual fix (consumer.py None guard — 3 lines added)
+  - 1 Makefile fix (--config-file flag — 2 lines changed)
+
+No lint rules downgraded. No ignores added. No test assertions weakened.
+
+================================================================
+VERIFICATION COMMANDS (re-runnable)
+================================================================
+
+  cd /root/srijan/ieee && make lint
+  # -> All checks passed!
+
+  cd /root/srijan/ieee && make typecheck
+  # -> Success: no issues found in 171 source files
+
+  cd /root/srijan/ieee/frontend && npx eslint src/ --max-warnings 0
+  # -> (clean exit, 0 errors, 0 warnings)
+
+  cd /root/srijan/ieee/frontend && npm run typecheck
+  # -> tsc --noEmit (clean exit, 0 errors)
+
+================================================================
+VERDICT: APPROVE
+================================================================
+
+All 4 quality gates pass with zero errors and zero warnings.
+Backend: ruff clean (171 source files), mypy clean (171 source files).
+Frontend: eslint clean (0 warnings), tsc clean (0 errors).
+
+The 5 ruff errors and 2 mypy arg-type errors were introduced by the
+remaining-work branch (T1-T42 commits). The 26 mypy import-stub errors
+were a pre-existing Makefile config-discovery issue (mypy could not
+find backend/mypy.ini when invoked from the repo root). All issues
+fixed with minimal changes: 4 ruff auto-fixes, 1 None guard (3 lines),
+1 Makefile --config-file flag (2 lines).
+================================================================

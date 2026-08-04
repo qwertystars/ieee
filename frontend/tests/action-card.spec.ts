@@ -11,23 +11,29 @@ const componentSource = readFileSync(
   resolve(__dirname, '../src/components/ActionCard.tsx'),
   'utf-8'
 )
+const controlsSource = readFileSync(
+  resolve(__dirname, '../src/components/ActionCardControls.tsx'),
+  'utf-8'
+)
 
 // Transpile TypeScript → JavaScript (strips types, converts JSX to React.createElement)
 // Use module: 'esnext' so imports/exports stay as ES syntax (strip-able by regex).
 // 'none' emits CommonJS (exports.X / require) which breaks in the browser.
-const transpiled = transpileModule(componentSource, {
+const transpileOptions = {
   compilerOptions: { jsx: 'react', module: 'esnext', target: 'ES2020' },
-})
+}
+const transpiledControls = transpileModule(controlsSource, transpileOptions)
+const transpiled = transpileModule(componentSource, transpileOptions)
 
 // Strip imports/exports so the code runs as plain browser globals
-const browserCode = transpiled.outputText
+const browserCode = `${transpiledControls.outputText}\n${transpiled.outputText}`
   .replace(/import\s+[^;]+from\s+['"][^'"]+['"];?\s*\n?/g, '')
   .replace(/export\s+default\s+\w+;?\s*\n?/g, '')
   .replace(/export\s+/g, '')
   .replace(/<\/script>/g, '<\\/script>')
 
 const HTML = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <script src="https://unpkg.com/react@18/umd/react.development.js"><\/script>
@@ -66,7 +72,8 @@ const HTML = `<!DOCTYPE html>
       onEvidenceClick: (obsId) => { window.__evidenceClicked = obsId; },
       onApprove: (id) => { window.__approveCalled = id; },
       onDismiss: (id) => { window.__dismissCalled = id; },
-      onModify: (id) => { window.__modifyCalled = id; },
+       onModify: (id) => { window.__modifyCalled = id; },
+       onDispatchRequest: (id) => { window.__dispatchRequested = id; },
     }));
   <\/script>
 </body>
@@ -155,5 +162,31 @@ test.describe('ActionCard — SOTA spec §10.1', () => {
     await expect(page.getByTestId('action-card')).toHaveAttribute('data-status', 'dismissed')
     const called = await page.evaluate(() => (window as any).__dismissCalled)
     expect(called).toBe('action-001')
+  })
+
+  test('dispatch request stays pending until backend dual approval', async ({ page }) => {
+    await page.setContent(HTML)
+    await page.waitForSelector('[data-testid="action-card"]', { timeout: 15_000 })
+
+    await page.getByTestId('dispatch-button').click()
+
+    await expect(page.getByTestId('action-card')).toHaveAttribute('data-status', 'dispatch_pending')
+    await expect(page.getByTestId('dispatch-pending')).toContainText('Awaiting dual approval')
+    const requested = await page.evaluate(() => (window as any).__dispatchRequested)
+    expect(requested).toBe('action-001')
+  })
+
+  test('critical action controls are keyboard reachable', async ({ page }) => {
+    await page.setContent(HTML)
+    await page.waitForSelector('[data-testid="action-card"]', { timeout: 15_000 })
+
+    for (const name of ['Approve action:', 'Dismiss action:', 'Modify action:', 'Request dispatch:']) {
+      const control = page.getByRole('button', { name: new RegExp(name) })
+      await control.focus()
+      await expect(control).toBeFocused()
+    }
+
+    await page.getByRole('button', { name: /Request dispatch:/ }).press('Enter')
+    await expect(page.getByTestId('dispatch-pending')).toContainText('No task created')
   })
 })

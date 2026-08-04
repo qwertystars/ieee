@@ -7,13 +7,21 @@ import {
   addToOutbox,
   clearSynced,
   getConflictAudit,
+  getAllOutboxItems,
+  getOutboxAudit,
+  getOutboxKeyStatus,
   getPendingCount,
   getPendingItems,
   inferPriority,
   markConflict,
   markFailed,
+  markAcked,
+  markSending,
   markSynced,
+  recoverSendingItems,
   recordConflictAudit,
+  revokeOutboxKey,
+  rotateOutboxKey,
   type OutboxItem,
 } from './outbox'
 
@@ -58,9 +66,10 @@ async function clearStores() {
         delReq.onblocked = () => resolve()
         return
       }
-      const tx = db.transaction(['pending', 'audit'], 'readwrite')
+      const tx = db.transaction(['pending', 'audit', 'meta'], 'readwrite')
       tx.objectStore('pending').clear()
       tx.objectStore('audit').clear()
+      tx.objectStore('meta').clear()
       tx.oncomplete = () => { db.close(); resolve() }
       tx.onerror = () => { db.close(); reject(tx.error) }
     }
@@ -79,7 +88,9 @@ describe('addToOutbox', () => {
     expect(item.idempotency_key).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/)
     expect(item.id).not.toBe(item.idempotency_key)
     expect(item.content_hash).toMatch(/^[0-9a-f]{64}$/)
-    expect(item.status).toBe('pending')
+    expect(item.status).toBe('queued')
+    expect(item.device_sequence).toBeGreaterThan(0)
+    expect(item.body).toEqual({ status: 'done' })
     expect(item.attempts).toBe(0)
     expect(item.conflict_resolution).toBeNull()
 
@@ -113,22 +124,21 @@ describe('getPendingItems — priority ordering', () => {
   })
 })
 
-describe('markSynced', () => {
-  it('moves an item to synced status, excluding it from the pending count', async () => {
+describe('acknowledgements', () => {
+  it('moves an item to acked status, excluding it from the pending count', async () => {
     const item = await addToOutbox('/api/x', 'POST', { a: 1 }, 1)
     await markSynced(item.id)
     expect(await getPendingCount()).toBe(0)
   })
 
-  it('records last_write_wins conflict resolution when provided', async () => {
+  it('encrypts and returns the server acknowledgement', async () => {
     const item = await addToOutbox('/api/x', 'POST', { a: 1 }, 1)
-    await markSynced(item.id, { policy: 'last_write_wins', data: { server: 'wins' } })
+    await markAcked(item.id, { server: 'wins' })
 
-    const remaining = await readAllPending()
+    const remaining = await getAllOutboxItems()
     expect(remaining).toHaveLength(1)
-    expect(remaining[0].status).toBe('synced')
-    expect(remaining[0].conflict_resolution).toBe('last_write_wins')
-    expect(remaining[0].conflict_data).toEqual({ server: 'wins' })
+    expect(remaining[0].status).toBe('acked')
+    expect(remaining[0].server_ack).toEqual({ server: 'wins' })
   })
 })
 
@@ -162,9 +172,9 @@ describe('markConflict', () => {
     const item = await addToOutbox('/api/x', 'POST', { a: 1 }, 1)
     await markConflict(item.id, { server_value: 42, client_value: 41 })
 
-    expect(await getPendingCount()).toBe(0)
+    expect(await getPendingCount()).toBe(1)
 
-    const remaining = await readAllPending()
+    const remaining = await getAllOutboxItems()
     expect(remaining).toHaveLength(1)
     expect(remaining[0].status).toBe('conflict')
     expect(remaining[0].conflict_resolution).toBe('manual')
@@ -183,21 +193,19 @@ describe('clearSynced', () => {
     const remaining = await readAllPending()
     expect(remaining).toHaveLength(1)
     expect(remaining[0].id).toBe(b.id)
-    expect(remaining[0].status).toBe('pending')
+    expect(remaining[0].status).toBe('queued')
   })
 
-  it('preserves synced items that have a conflict resolution (audit trail)', async () => {
+  it('removes acknowledged items while retaining append-only audit entries', async () => {
     const plain = await addToOutbox('/api/x', 'POST', { a: 1 }, 1)
     const withConflict = await addToOutbox('/api/y', 'POST', { b: 2 }, 1)
     await markSynced(plain.id)
-    await markSynced(withConflict.id, { policy: 'last_write_wins', data: { s: 1 } })
+    await markAcked(withConflict.id, { s: 1 })
 
     await clearSynced()
 
     const remaining = await readAllPending()
-    expect(remaining).toHaveLength(1)
-    expect(remaining[0].id).toBe(withConflict.id)
-    expect(remaining[0].conflict_resolution).toBe('last_write_wins')
+    expect(remaining).toHaveLength(0)
   })
 })
 
@@ -207,7 +215,7 @@ describe('recordConflictAudit + getConflictAudit', () => {
       item_id: 'item-1',
       url: '/api/x',
       method: 'POST',
-      policy: 'last_write_wins',
+      policy: 'manual',
       conflict_data: { server: 42 },
     })
     await recordConflictAudit({
@@ -222,7 +230,7 @@ describe('recordConflictAudit + getConflictAudit', () => {
     expect(audit).toHaveLength(2)
     expect(audit[0].item_id).toBe('item-1')
     expect(audit[1].item_id).toBe('item-2')
-    expect(audit[0].policy).toBe('last_write_wins')
+    expect(audit[0].policy).toBe('manual')
     expect(audit[1].policy).toBe('manual')
     expect(audit[0].id).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/)
     expect(audit[0].ts).toBeGreaterThan(0)
@@ -255,7 +263,7 @@ describe('inferPriority', () => {
 })
 
 describe('getPendingCount', () => {
-  it('counts pending, syncing, and failed items but excludes synced and conflict', async () => {
+    it('counts queued, sending, failed, and conflict items but excludes acked', async () => {
     const a = await addToOutbox('/api/a', 'POST', {}, 1)
     const b = await addToOutbox('/api/b', 'POST', {}, 1)
     const c = await addToOutbox('/api/c', 'POST', {}, 1)
@@ -265,7 +273,7 @@ describe('getPendingCount', () => {
     await markFailed(b.id, 'err')
     await markConflict(c.id, { x: 1 })
 
-    expect(await getPendingCount()).toBe(2)
+    expect(await getPendingCount()).toBe(3)
   })
 })
 
@@ -278,5 +286,80 @@ describe('ULID monotonicity', () => {
     const sorted = [...ids].sort()
     expect(ids).toEqual(sorted)
     expect(new Set(ids).size).toBe(20)
+  })
+})
+
+describe('recovery and key lifecycle', () => {
+  it('recovers a durable sending item to visible failed state after restart', async () => {
+    const item = await addToOutbox('/api/recovery', 'POST', { value: 1 }, 1)
+    await markSending(item.id)
+    expect(await recoverSendingItems()).toBe(1)
+    const recovered = (await getAllOutboxItems())[0]
+    expect(recovered.status).toBe('failed')
+    expect(recovered.error).toBe('recovered_after_restart')
+  })
+
+  it('rotates the encryption key without losing queued data', async () => {
+    await addToOutbox('/api/rotate', 'POST', { sensitive: true }, 1)
+    await rotateOutboxKey()
+    expect(await getOutboxKeyStatus()).toBe('active')
+    expect((await getAllOutboxItems())[0].body).toEqual({ sensitive: true })
+  })
+
+  it('fails closed after local key revocation', async () => {
+    await addToOutbox('/api/revoke', 'POST', { sensitive: true }, 1)
+    await revokeOutboxKey()
+    expect(await getOutboxKeyStatus()).toBe('revoked')
+    await expect(addToOutbox('/api/revoke', 'POST', { next: true }, 1)).rejects.toThrow('encryption key revoked')
+  })
+
+  it('records every durable lifecycle transition in append-only audit state', async () => {
+    const item = await addToOutbox('/api/audit', 'POST', { value: 1 }, 1)
+    await markSending(item.id)
+    await markAcked(item.id, { accepted: true })
+    const transitions = (await getOutboxAudit()).filter(entry => entry.item_id === item.id && entry.kind === 'transition')
+    expect(transitions.map(entry => entry.to)).toEqual(['queued', 'sending', 'acked'])
+  })
+
+  it('allocates unique monotonic device sequences for concurrent enqueue calls', async () => {
+    const items = await Promise.all(
+      Array.from({ length: 8 }, (_, index) => addToOutbox('/api/sequence', 'POST', { index }, 1)),
+    )
+
+    expect(new Set(items.map(item => item.device_sequence)).size).toBe(8)
+    expect(items.map(item => item.device_sequence).sort((a, b) => a - b)).toEqual(
+      Array.from({ length: 8 }, (_, index) => index + 1),
+    )
+  })
+
+  it('does not return expired items for replay', async () => {
+    const item = await addToOutbox('/api/expired', 'POST', { safety: true }, 1)
+    const request = indexedDB.open(DB_NAME)
+    await new Promise<void>((resolve, reject) => {
+      request.onerror = () => reject(request.error)
+      request.onsuccess = () => {
+        const db = request.result
+        const tx = db.transaction('pending', 'readwrite')
+        const get = tx.objectStore('pending').get(item.id)
+        get.onsuccess = () => {
+          const stored = get.result as OutboxItem
+          tx.objectStore('pending').put({ ...stored, created_at: Date.now() - 25 * 60 * 60 * 1000 })
+        }
+        tx.oncomplete = () => { db.close(); resolve() }
+        tx.onerror = () => reject(tx.error)
+      }
+    })
+
+    const pending = await getPendingItems()
+    expect(pending).toHaveLength(0)
+    expect((await getAllOutboxItems())[0].error).toBe('queue_expired')
+  })
+
+  it('revokes retired keys as well as the active key', async () => {
+    await addToOutbox('/api/key', 'POST', { value: 1 }, 1)
+    await rotateOutboxKey()
+    await revokeOutboxKey()
+
+    expect(await getOutboxKeyStatus()).toBe('revoked')
   })
 })

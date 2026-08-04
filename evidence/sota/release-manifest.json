@@ -1,0 +1,210 @@
+{
+  "claim_classes": {
+    "field": {
+      "bounded_claim": "No field-readiness or physical-trial claim; agency, IRB, training, hardware, and physical calibration remain external.",
+      "prerequisite_ids": [
+        "dataset.sensor.regional-trial",
+        "dataset.operator.human-factors",
+        "hardware.secure-boot",
+        "sensor.physical-calibration",
+        "hardware.environmental-limits",
+        "security.real-key-custody"
+      ],
+      "status": "DEFERRED_EXTERNAL"
+    },
+    "production": {
+      "bounded_claim": "No production-readiness claim; custody, security, DR, validation, and telemetry evidence remain external.",
+      "prerequisite_ids": [
+        "dataset.flood.sen1floods11",
+        "dataset.nlp.incident-evaluation",
+        "hardware.secure-boot",
+        "sensor.physical-calibration",
+        "hardware.environmental-limits",
+        "security.real-key-custody"
+      ],
+      "status": "DEFERRED_EXTERNAL"
+    },
+    "research": {
+      "bounded_claim": "Deterministic contract and fixture replay only; no SOTA metric or superiority claim is published.",
+      "package": {
+        "attestation_policy": {
+          "algorithm": "Ed25519",
+          "local_gate_hashes_are_not_signatures": true,
+          "signed_external_attestation_required_for_claim_promotion": true,
+          "signed_external_attestation_status": "DEFERRED_EXTERNAL"
+        },
+        "clean_room": {
+          "command": "backend/.venv/bin/python scripts/reproduce_sota_report.py --manifest evidence/sota/release-manifest.json --clean-room --report evidence/sota/task-19-happy.json",
+          "instructions": [
+            "Use a clean checkout at the declared revision.",
+            "Install backend/requirements.lock without network access after dependency artifacts are approved.",
+            "Use Python 3.11 on Linux x86_64 with at least two CPU cores; no GPU is required.",
+            "Run the exact command and preserve stdout, exit code, and generated report.",
+            "Do not download gated datasets or models and do not promote fixture metrics to external claims."
+          ]
+        },
+        "commands": [
+          "backend/.venv/bin/python scripts/validate_dataset_registry.py --manifest data/datasets/registry.json --prerequisites evidence/sota/prerequisites.json --require-license --require-hashes --require-split-metadata --require-claim-classes",
+          "backend/.venv/bin/python scripts/run_benchmark.py --manifest data/datasets/benchmark-v1.json --check-leakage --report evidence/sota/task-14-happy.json",
+          "backend/.venv/bin/python scripts/evaluate_calibration.py --manifest data/datasets/benchmark-v1.json --models backend/data/models/manifests.json --report evidence/sota/task-16-happy.json --enforce-no-test-tuning",
+          "backend/.venv/bin/python scripts/run_benchmark.py --manifest data/datasets/benchmark-v1.json --baselines config/published-baselines-v1.json --seeds 1,2,3,4,5 --report evidence/sota/task-17-happy.json",
+          "backend/.venv/bin/python scripts/run_robustness_suite.py --manifest data/datasets/benchmark-v1.json --report evidence/sota/task-18-happy.json",
+          "backend/.venv/bin/python scripts/reproduce_sota_report.py --manifest tests/fixtures/tampered-release-manifest.json --verify"
+        ],
+        "file_hashes": {
+          "code": {
+            "scripts/evaluate_calibration.py": "a16897e9db29ac23ced56bcf98d10fcd68d8744f8b30f61513147c80aa030702",
+            "scripts/reproduce_sota_contract.py": "3ab68543e44726eae034b7d35d46debfa7094b93f4edea375e9c74e25a4284fe",
+            "scripts/reproduce_sota_report.py": "f9ba4c90921aa7aa030d5a1bf0d0fef8c3c4747466d9ef4ccfabb0651de7dff6",
+            "scripts/robustness_contract.py": "fd3002fa6a292cc537b663ab831bac59f2e950f05136e706387eb0c06b346546",
+            "scripts/run_benchmark.py": "aeadd42100bbdc1fdd49794190acb808af0f48370e36cd1ade0b551d5337a56d",
+            "scripts/run_robustness_suite.py": "81872e6f8513d260924cdc962746245b6d0711e6d9c0a1ad48a3765043824e76",
+            "scripts/validate_dataset_registry.py": "93d8385694b439eef110a6fd834bb652ec0c4c6c9737522d126b1fca01db4fba"
+          },
+          "data": {
+            "config/published-baselines-v1.json": "ef216b6a8932c359fe6e9e7254d654c3cb56c4936953950f15a9e25c7942e133",
+            "data/datasets/benchmark-v1.json": "c5925502793ec4e6d92d5ad60185264362486064b3ad91a0ae9e0d4f078268f8",
+            "data/datasets/registry.json": "939a281e988d0d0b322485a7cc006ea252b1dc742910c135bb4af08a74dae0db",
+            "evidence/sota/prerequisites.json": "6cb552992f67188c9b150770b0d8dfd63da6afcf92d95befaff4da937dd24f4f",
+            "tests/fixtures/robustness-policy-v1.json": "86bd95be90477897d506f951a93369c0799aff71c5b8ec06d465fc0ad5ebec6f",
+            "tests/fixtures/stale-conflicting-sensors.json": "f0fd03512521dc55d0f2294bb5c72c1ef51cd7852754b21ab07013aa310cd1d7"
+          },
+          "environment": {
+            "backend/requirements.lock": "08d106c301801866e9c29c23e6c0fca7e1f45ed23c63d7c1b15c958fff03cfb7",
+            "backend/requirements.txt": "a69298cfd739f3ad4882a32a7e9560aecb0b45087e7929843b295f55d41b32e6",
+            "frontend/package-lock.json": "9aa38277f0dff01f5e6ed17a2fba466afb5253e26260ca6fe253329e7b576379"
+          },
+          "evidence": {
+            "evidence/sota/task-14-happy.json": "46f3b9b3f8d368faf3bd4993d9cf33f8c8f2e40dd313333ab4169ff1c1d8adda",
+            "evidence/sota/task-16-happy.json": "d057a92904194cce3bb6a0b08344c9346ce19adf0f164955ce7d38f9e9f54124",
+            "evidence/sota/task-17-happy.json": "19dea643afc6a4e87925755ee378b862c8f6e7337b6bb87f1eeb6a6eef5234ca",
+            "evidence/sota/task-18-happy.json": "364b89f4f6d54e283cf90e585bc8e2147fd67bdf9c4266082b9c7f9b8a6ea6a0"
+          },
+          "model": {
+            "backend/data/models/building-damage-v2.0.0.onnx": "5b3a4bc419f09d6e2dcc9e15481558cc9b59d8610976a4a0585c3135bc65bd1f",
+            "backend/data/models/incident-nlp-tokenizer/tokenizer.json": "d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66",
+            "backend/data/models/incident-nlp-v2.0.0.onnx": "038e4fa15021d0da8ec9c5e02ceed9de37d05cd4cd9a6eb73b0a9824999a81a7",
+            "backend/data/models/manifests.json": "d52d530b766eb3117adae37a5c64806e1ceaeb6b4f234225be7957f3e541f6c8",
+            "backend/data/models/sar-flood-mapping-v2.0.0.onnx": "ee35b360436e6987beabade928b71bf56baf49e507a993ea6c6ac99f02649bdd"
+          }
+        },
+        "format_version": "resqnet.sota-reproducibility.v1",
+        "gate_sources": [
+          ".omo/evidence/resqnet-sota-roadmap/task-13.json",
+          ".omo/evidence/resqnet-sota-roadmap/task-14.json",
+          ".omo/evidence/resqnet-sota-roadmap/task-15.json",
+          ".omo/evidence/resqnet-sota-roadmap/task-16.json",
+          ".omo/evidence/resqnet-sota-roadmap/task-17.json",
+          ".omo/evidence/resqnet-sota-roadmap/task-18.json"
+        ],
+        "hardware_constraints": {
+          "architecture": "x86_64",
+          "gpu": "not required",
+          "minimum_cpu_cores": 2,
+          "os": "Linux"
+        },
+        "integrity": {
+          "manifest_sha256": "b95ed7b597ebe4e6c4b6b2f8063c0488d95f244b916f6a6ae4d6e98e0facde84"
+        },
+        "invalidation_inputs": [
+          "manifest fields or expiry",
+          "code, data, model, environment, or gate-attestation bytes",
+          "prerequisite status, evidence hash, expiry, or claim mapping",
+          "runtime or hardware constraints",
+          "metric metadata or split metadata"
+        ],
+        "metric_fingerprint": "4adcc6ab3ec2962494b4f7bf531bdc0d684db3d9800413c7e3d7db2b546a87b7",
+        "metric_metadata": {
+          "bootstrap": {
+            "confidence_level": 0.95,
+            "correction": "Holm",
+            "resamples": 10000,
+            "seeds": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "unit": "incident"
+          },
+          "calibration": {
+            "conformal_coverage": [
+              0.85,
+              0.95
+            ],
+            "ece_max": 0.05,
+            "minimum_examples_per_group": 200
+          },
+          "primary_metrics": [
+            "flood_miou",
+            "damage_combined_f1",
+            "nlp_macro_f1"
+          ],
+          "sota_rule": "candidate lower confidence bound >= pinned baseline + 0.02",
+          "status": "DEFERRED_EXTERNAL",
+          "synthetic_fixture_metrics": "validation-only"
+        },
+        "nondeterminism_policy": {
+          "external_artifacts": "never substituted by fixtures",
+          "floating_point": "compare published numeric metrics within declared tolerances",
+          "gpu": "not required; CPU execution only",
+          "network_access": "forbidden",
+          "random_seed": 2025
+        },
+        "prerequisite_source": "evidence/sota/prerequisites.json",
+        "runtime_constraints": {
+          "dependency_lock": "backend/requirements.lock",
+          "python_major_minor": "3.11",
+          "timezone": "UTC"
+        },
+        "split_metadata": {
+          "assignment_seed": 2025,
+          "calibration_examples_per_group": 200,
+          "h3_resolution": 8,
+          "spatial_buffer_km": 10,
+          "temporal_cutoff": "2024-01-01T00:00:00Z",
+          "unit": "incident"
+        },
+        "tolerances": {
+          "candidate_baseline_delta": 0.02,
+          "conformal_coverage_max": 0.95,
+          "conformal_coverage_min": 0.85,
+          "ece_max": 0.05,
+          "severe_error_max": 0.05,
+          "subgroup_gap_max": 0.1
+        }
+      },
+      "prerequisite_ids": [
+        "dataset.flood.sen1floods11",
+        "dataset.flood.floodnet",
+        "dataset.damage.xbd",
+        "dataset.nlp.incident-evaluation"
+      ],
+      "status": "DEFERRED_EXTERNAL"
+    },
+    "shadow": {
+      "bounded_claim": "No shadow-readiness claim; operator, agency, licensed baseline, and 30-day evidence remain external.",
+      "prerequisite_ids": [
+        "dataset.baseline.shadow-operational",
+        "dataset.flood.sen1floods11",
+        "dataset.sensor.regional-trial",
+        "dataset.operator.human-factors"
+      ],
+      "status": "DEFERRED_EXTERNAL"
+    }
+  },
+  "expires_at": "2027-08-03T00:00:00Z",
+  "gate_attestations": [
+    "34b5d0446b38bb7055c3931337e31c12518a3bf0eecbf7081c0bab2d304dbe84",
+    "281cc2966017dc61953cc3fae8c433fc1ae3536462af6ed8844889a980839caf",
+    "59b37a6977a25a6cdd5aef3be9ecf6b65375286ca848a9026d74bc8842115e3c",
+    "d5257ac4977bc4ec9e5e9193a6f547399de6a8e36ae13b74a5dfe205df627ba1",
+    "eb3f962164da92810f73693ddb41002dd8fcc092a2b389cacd933dfa5cd3a266",
+    "9f1143c26ccfdc6f002b38f48d25cbe147fca2b79c3e0153150949c469813661"
+  ],
+  "prerequisite_hashes": [
+    "6cb552992f67188c9b150770b0d8dfd63da6afcf92d95befaff4da937dd24f4f"
+  ],
+  "revision": "64d62f899a461ea8aebe7bfb566fee2aba478837"
+}

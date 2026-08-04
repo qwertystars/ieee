@@ -1,0 +1,103 @@
+{
+  "claim_class": "shadow_machine",
+  "cleanup": "No API route, database row, queue message, resource commitment, public warning, network egress, external dataset, operator, or agency system was invoked or modified.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "scripts/run_shadow_replay.py --fixture tests/fixtures/shadow-incident.ndjson --baseline config/shadow-baseline-v1.json --min-incidents 100 --min-window-days 30 --report evidence/sota/task-23-happy.json",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 0,
+  "external_limitations": [
+    "Synthetic fixture is validation-only; operator feedback, trusted external baseline data, and 30-day field evidence remain DEFERRED_EXTERNAL."
+  ],
+  "failure_assertion": "all shadow thresholds and no-actuation assertions passed",
+  "finished_at": "2026-08-03T03:06:30.400460Z",
+  "hashes": {
+    "config/shadow-baseline-v1.json": "0d8335e7e37159e2532fb9599dc33fdf35b500cd4203ce2212529746b15dff3b",
+    "evidence/sota/prerequisites.json": "61bbd9bca7f9f456df36021300e4dee630dddddd2d6d322b471929cd6c50963e",
+    "scripts/run_shadow_replay.py": "788d3f5521ea82d2558ed901a5c5fd609aa46e4c434fb77165965c97bfcf7bc2",
+    "scripts/shadow_replay_contract.py": "c68f34b30cbd54151ad86d8ade44286f7abd2e50fe6384c31dd318ced824ae34",
+    "tests/fixtures/shadow-incident.ndjson": "fe82e0bf59a88c80b3797a40d2e857148d01058818215c4978a2230ca7ae0389"
+  },
+  "inputs": [
+    "tests/fixtures/shadow-incident.ndjson",
+    "config/shadow-baseline-v1.json",
+    "evidence/sota/prerequisites.json",
+    "scripts/run_shadow_replay.py",
+    "scripts/shadow_replay_contract.py"
+  ],
+  "metrics": {
+    "actuation": {
+      "attempts": 0,
+      "route": "eval.shadow_replay",
+      "service_account_scope": "shadow:replay",
+      "side_effects": {
+        "dispatch": 0,
+        "network_egress": 0,
+        "public_warning": 0,
+        "resource_commitment": 0,
+        "task_mutation": 0
+      }
+    },
+    "alert_precision": 0.961538,
+    "authenticated_context": {
+      "audience": "resqnet-service",
+      "authenticated": true,
+      "mode": "shadow",
+      "org_id": "shadow-lab",
+      "principal_type": "service",
+      "scope": "shadow:replay",
+      "subject": "shadow-replay-service"
+    },
+    "availability": 1.0,
+    "baseline_version": "trusted-baseline-v1",
+    "blinding": {
+      "baseline_used_during_replay": false,
+      "comparison_after_replay": true
+    },
+    "calibration": {
+      "ece": 0.0316,
+      "method": "fixed_10_bin_ece"
+    },
+    "disagreement": {
+      "attributed_count": 2,
+      "attribution_rate": 1.0,
+      "count": 2
+    },
+    "end_to_end_latency_p95_ms": 900.0,
+    "external_shadow_claim": "DEFERRED_EXTERNAL",
+    "false_alert_burden": 0.02,
+    "false_alert_rate": 0.02,
+    "feedback": {
+      "external_operator_comparison": "DEFERRED_EXTERNAL",
+      "missing_count": 100,
+      "missing_handling": "excluded_from_operator_metrics_never_imputed"
+    },
+    "findings": [],
+    "incident_outcomes": {
+      "ground_truth_negative": 50,
+      "ground_truth_positive": 50
+    },
+    "override": {
+      "attributed_count": 1,
+      "count": 1
+    },
+    "p95_end_to_end_latency_ms": 900.0,
+    "population": {
+      "kind": "synthetic_validation_fixture",
+      "minimum_incidents": 100,
+      "minimum_window_days": 30,
+      "population_id": "synthetic-shadow-v1",
+      "real_data": false,
+      "source": "tests/fixtures/shadow-incident.ndjson"
+    },
+    "provenance": {
+      "chain_head": "ffbe4031000db823e4e52f7c1714758c7afdf42da9aa61bb93866f7a8eb9dece",
+      "hash_algorithm": "SHA-256",
+      "immutable_records_verified": true
+    },
+    "sample_count": 100,
+    "window_days": 30
+  },
+  "started_at": "2026-08-03T03:06:30.393327Z",
+  "status": "PASS",
+  "task_id": "23"
+}

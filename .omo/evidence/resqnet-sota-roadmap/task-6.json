@@ -1,0 +1,92 @@
+{
+  "task_id": "6",
+  "command": "cd backend && .venv/bin/python ../scripts/replay_event_log.py --fixture tests/fixtures/replay-v1.ndjson --seeds 1,2,3 --float-tolerance 1e-6 --expect-identical-decision-hashes; cd backend && .venv/bin/python ../scripts/replay_event_log.py --fixture tests/fixtures/replay-conflicts.ndjson --expect-declared-merge-or-abstain; cd backend && .venv/bin/python -m pytest tests/test_fusion_replay.py tests/test_confidence_vector.py tests/test_world_state.py tests/test_hypotheses.py tests/test_contradictions.py tests/test_simulator_determinism.py -q",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "backend/tests/fixtures/replay-v1.ndjson",
+    "backend/tests/fixtures/replay-conflicts.ndjson",
+    "scripts/replay_event_log.py",
+    "backend/app/fusion/lineage.py",
+    "backend/app/fusion/kernel.py",
+    "backend/app/fusion/state.py",
+    "backend/app/fusion/replay.py",
+    "backend/app/fusion/persistence.py",
+    "backend/app/models/fusion_replay.py",
+    "backend/alembic/versions/0008_deterministic_fusion_replay.py",
+    "backend/alembic/versions/0010_replay_lineage_tolerance.py",
+    "backend/tests/test_fusion_replay.py"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-03T06:39:00Z",
+  "finished_at": "2026-08-03T06:47:09Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "happy_replay": {
+      "status": "PASS",
+      "seed_count": 3,
+      "float_tolerance": 1e-06,
+      "identical_decision_hashes": true,
+      "float_equivalent": true,
+      "decision_hash": "sha256:5099377d5cb768ff7dfdb29166adb95b9c18da6602350b562e5508de621e4384",
+      "output_hash": "sha256:f21dd59588481511305d7967388009d17ef0bcd1b388cce8e80493316b759cfb",
+      "lineage_hash": "sha256:b0ceb3403a762dab54619f11aacb17a8e5cabb462db7df4d3175ce41be56890d",
+      "input_hash": "sha256:08e55bb51e76d3e56f5a55f13c6faa9652f23fd79865c1994d029eef0fb0b0d2"
+    },
+    "conflict_replay": {
+      "status": "PASS",
+      "declared_conflicts": true,
+      "resolution": "abstain",
+      "decision_hash": "sha256:fcf838574efbd6edacc2a0316c0616df2a827c4c6ebd4d7877b262bd00f485a2",
+      "error_count": 0
+    },
+    "serial_postgresql_tests": {
+      "status": "PASS",
+      "passed": 35,
+      "failed": 0,
+      "warnings": "2 pre-existing dependency deprecation/future warnings"
+    },
+    "focused_replay_tests": {
+      "status": "PASS",
+      "passed": 9,
+      "failed": 0
+    },
+    "migration": {
+      "status": "PASS",
+      "revision": "0010 (head)",
+      "command": "PYTHONPATH=. .venv/bin/alembic upgrade head"
+    },
+    "static_checks": {
+      "compile": "PASS",
+      "ruff": "PASS",
+      "diff_check": "PASS"
+    },
+    "determinism_coverage": [
+      "input/database order independence",
+      "UTC timezone normalization",
+      "seed-independent categorical decision hashes",
+      "1e-6 float decision identity",
+      "mixed-scope and duplicate-identity fail-closed errors"
+    ],
+    "external_boundaries": [
+      "No production traffic, external model, or agency replay evidence is claimed.",
+      "Persistence evidence is local PostgreSQL migration-backed evidence; distributed production database ordering is not claimed."
+    ]
+  },
+  "hashes": {
+    "replay_v1_fixture_sha256": "0da569401d798715bdcc8f16d21d18454ae48ad5936c7cbc0c5d68f378378e7f",
+    "replay_conflicts_fixture_sha256": "2712302dca9901d25c6722c6310c237dcccdc0b1cea3994b5e27b96fadae04e6",
+    "replay_script_sha256": "f3732c5e3bc4824d46957ac2e5e33c7c8d21ceabc6dc2936413fbc00e454500f",
+    "lineage_sha256": "e2fddfdfb3eaecb030b676015df0024cadd287c2131af3175993a25ef2a26ca2",
+    "kernel_sha256": "12db41d0f765bd54e5a7ca0b97414d9775bc8932f7f7911d49e17c3fc68b2b19",
+    "state_sha256": "75a144f302d8adc25db9005b32c51c1da208d5c0eff22c08a8eebc1484114e71",
+    "replay_sha256": "7f483f08268d0dcc6e576065bd48a39290b72edb8ba536d92ff98b5535558b28",
+    "persistence_sha256": "6c03389eff3d4875b3fee2ba41a8779008e87f2e86e28ef17a37795482b1f656",
+    "model_sha256": "0b3c9c8adbfcbd24782d9a84303b11f28bdfe5871bc654ce51e47b30452b65f1",
+    "migration_0008_sha256": "50334251976633afbd273293d466315ab2d0f2a933b39cd975651cbf2cfe2bc0",
+    "migration_0010_sha256": "ce7ae484985b9ee859bb6457d9c14fa168b9fd83e811deb4eafd14d1c64ad4bf",
+    "replay_tests_sha256": "9a047920752dde68ccced65c6457cc6dae7515d0fead78f8536022e8e09d49ad"
+  },
+  "failure_assertion": "Malformed mappings and duplicate or mixed-scope canonical inputs produce structured replay errors and no unsafe output; contradictory hypotheses emit explicit abstain conflicts; changed lineage hashes are distinct and persisted without overwriting prior runs.",
+  "cleanup": "Fixture replay is read-only. Migration-backed tests clean replay rows in teardown. No production or external dataset claims are made."
+}

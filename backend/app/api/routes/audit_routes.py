@@ -16,8 +16,10 @@ from sqlalchemy.orm import Session
 
 from app.audit.provenance import ProvenanceChain
 from app.audit.provenance_types import REQUIRED_FIELDS
-from app.deps import get_current_user, get_db
+from app.audit.reconstruction import reconstruct_incident
+from app.deps import get_current_user, get_db, require_roles
 from app.lib.audit import verify_chain
+from app.lib.audit_privacy import sanitize_audit_value
 from app.models.events import Event
 from app.models.user import User
 
@@ -51,8 +53,10 @@ def list_audit_logs(
             {
                 "id": e.id, "ts": e.ts, "actor": e.actor,
                 "action": e.action, "entity": e.entity,
-                "before": e.before, "after": e.after,
+                "before": sanitize_audit_value(e.before),
+                "after": sanitize_audit_value(e.after),
                 "prev_hash": e.prev_hash, "hash": e.hash,
+                "provenance": sanitize_audit_value(e.provenance),
             }
             for e in rows
         ],
@@ -99,3 +103,17 @@ def verify_audit_chain(
     if result is True:
         return {"valid": True}
     return {"valid": False, "first_broken_index": result}
+
+
+@router.get("/incidents/{incident_id}/audit-reconstruction")
+def reconstruct_incident_audit(
+    incident_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("admin", "emergency_manager")),
+) -> dict[str, Any]:
+    """Return a PII-safe incident timeline with chain integrity metadata."""
+    del user
+    org_id = request.state.org_id or ""
+    reconstruction = reconstruct_incident(db, org_id, incident_id)
+    return dict(reconstruction)

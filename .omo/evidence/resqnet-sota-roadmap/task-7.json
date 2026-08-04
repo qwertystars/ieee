@@ -1,0 +1,98 @@
+{
+  "task_id": "7",
+  "command": "cd backend && .venv/bin/python ../scripts/verify_multi_instance_state.py --instances 2 --scenario revoke-and-fanout --revocation-deadline-s 60; cd backend && .venv/bin/python ../scripts/verify_multi_instance_state.py --instances 2 --scenario redis-partition --expect-protected-deny --expect-stream-close-code 4401; cd backend && .venv/bin/python -m pytest tests/test_abac.py tests/test_auth_hardening.py tests/test_low_connectivity.py tests/test_realtime.py tests/test_websocket_fallback.py tests/test_task7_coordination.py tests/test_sota_optimizer_routes.py tests/test_sota_routes.py -q; cd backend && .venv/bin/ruff check app/deps.py app/auth/abac.py app/realtime/manager.py app/realtime/routes.py app/api/routes/eval.py app/api/routes/alerts.py app/api/routes/alert_commands.py app/api/routes/observations.py app/api/routes/hypotheses.py app/api/routes/tasks.py app/eval/jobs.py tests/test_task7_coordination.py ../scripts/verify_multi_instance_state.py",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "backend/app/auth/abac.py",
+    "backend/app/auth/jwt.py",
+    "backend/app/deps.py",
+    "backend/app/realtime/routes.py",
+    "backend/app/realtime/fanout.py",
+    "backend/app/realtime/manager.py",
+    "backend/app/api/routes/eval.py",
+    "backend/app/api/routes/privacy.py",
+    "backend/app/api/routes/alerts.py",
+    "backend/app/api/routes/alert_commands.py",
+    "backend/app/api/routes/observations.py",
+    "backend/app/api/routes/hypotheses.py",
+    "backend/app/api/routes/tasks.py",
+    "backend/app/eval/jobs.py",
+    "backend/app/models/coordination.py",
+    "backend/alembic/versions/0009_distributed_coordination_state.py",
+    "scripts/verify_multi_instance_state.py",
+    "backend/tests/test_task7_coordination.py"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-03T07:00:00Z",
+  "finished_at": "2026-08-03T07:15:00Z",
+  "exit_code": 2,
+  "status": "DEFERRED_EXTERNAL",
+  "metrics": {
+    "happy_revoke_and_fanout": {
+      "status": "DEFERRED_EXTERNAL",
+      "exit_code": 2,
+      "instances": 2,
+      "reason": "host Redis is unavailable; the verifier emitted DEFERRED_EXTERNAL before starting the happy path"
+    },
+    "redis_partition": {
+      "status": "PASS",
+      "exit_code": 0,
+      "instances": 2,
+      "protected_status": 401,
+      "stream_close_code": 4401,
+      "authorization": "fail-closed"
+    },
+    "stale_replica": {
+      "status": "DEFERRED_EXTERNAL",
+      "exit_code": 2,
+      "reason": "requires a reachable shared Redis endpoint; durable stale-cache coverage is present in focused tests"
+    },
+    "evaluation_401_reproduction": {
+      "status": "PASS",
+      "protected_status": 401,
+      "root_cause": "Redis freshness unavailable; PostgreSQL migration and route registration were not the cause",
+      "fail_open": false
+    },
+    "focused_coordination_pytest": {
+      "status": "PASS",
+      "exit_code": 0,
+      "passed": 39,
+      "failed": 0,
+      "skipped": 0
+    },
+    "mandated_focused_pytest": {
+      "status": "DEFERRED_EXTERNAL",
+      "exit_code": 1,
+      "passed": 66,
+      "failed": 51,
+      "errors": 3,
+      "reason": "Redis-dependent auth/refresh and degradation fixtures cannot run without host Redis; no auth failure was reclassified as PASS"
+    },
+    "py_compile": {
+      "status": "PASS",
+      "exit_code": 0
+    },
+    "ruff": {
+      "status": "PASS",
+      "exit_code": 0
+    },
+    "alembic_check": {
+      "status": "FAIL",
+      "pre_existing": true,
+      "reason": "legacy model/migration drift remains outside Todo 7; migration upgrade reaches current head"
+    }
+  },
+  "hashes": {
+    "backend_app_deps_sha256": "ef3309c1ff6ae318c09fb07ebf38080c910c8a95d37ff0f0d6db2b079e4b24ee",
+    "backend_abac_sha256": "9c97e2e7490f61e0d08c8704725835163fb12131ad81cb13fc47af3a2c049271",
+    "backend_realtime_manager_sha256": "9508a5237c2ccb4070be1bcba1586673263e9ae9310b8189d8dacf756d1d9eb0",
+    "backend_realtime_routes_sha256": "177e335dac1cc0cca6bceebc435c3c9c37215c397e44d670ebaeaffc5b48d2fc",
+    "backend_eval_route_sha256": "5dcf4c917914df43c99d9d499e37844524b066cd9b7c4ed8fa112480e015185a",
+    "backend_privacy_route_sha256": "df07ef063d859c17aeee11b160cfcbe8b620f416279d3e71346f92517f65d6bb",
+    "backend_eval_jobs_sha256": "1c9e465538c0790348be5d2aa2ed77a684f2d5c3a748e954236fb5392d5f1df0",
+    "verify_multi_instance_state_sha256": "d67f21a41cabc44178475c0a1cb896f44bdb62f88b235f1e2ab9eecab5ab231d",
+    "task7_tests_sha256": "370a6dac325fd0329347f77b92f0a5bc746ccb5c0d619d9f246f3aa4d1090708"
+  },
+  "failure_assertion": "Redis partition denies protected HTTP authorization with 401 and closes protected streams with 4401; durable revocation remains authoritative over a stale Redis value; unscoped realtime envelopes are not published or delivered; evaluation claims are row-locked; unavailable shared Redis is reported as DEFERRED_EXTERNAL rather than fabricated horizontal-scale PASS.",
+  "cleanup": "The verifier terminates every spawned backend process in finally blocks and on startup failure. No production data was intentionally changed; test coordination rows are cleaned by focused fixtures. Host Redis was not installed or fabricated, and no external prerequisite was upgraded to PASS."
+}

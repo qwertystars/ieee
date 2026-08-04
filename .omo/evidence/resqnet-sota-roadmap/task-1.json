@@ -1,0 +1,43 @@
+{
+  "task_id": "1",
+  "command": "cd backend && .venv/bin/python -m pytest tests/test_realtime.py tests/test_websocket_fallback.py tests/test_tenant_isolation.py -q; cd backend && .venv/bin/python ../scripts/verify_realtime_security.py --revocation-deadline-s 60 --expect-close-code 4401 --expect-zero-protected-fields",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "backend/app/realtime/manager.py",
+    "backend/app/deps.py",
+    "backend/app/auth/abac.py",
+    "backend/tests/test_websocket_fallback.py",
+    "backend/tests/test_tenant_isolation.py",
+    "backend/tests/test_realtime.py",
+    "scripts/verify_realtime_security.py"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-01T07:09:36Z",
+  "finished_at": "2026-08-01T07:23:50Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "targeted_tests": "26 passed",
+    "malformed_policy_regressions": "4 passed",
+    "realtime_unit_tests": "6 passed",
+    "auth_hardening_tests": "14 passed",
+    "abac_tests": "15 passed",
+    "revocation_elapsed_seconds": 0.003,
+    "stream_close_code": 4401,
+    "redis_outage_polling_status": 401,
+    "wrong_incident_polling_status": 403,
+    "protected_payload": null,
+    "py_compile": "pass"
+  },
+  "hashes": {
+    "backend/app/realtime/manager.py": "b58da0e23ec3c8e730f20a05741c103e89d0e644fa9c606465795450efefdcec",
+    "backend/app/deps.py": "922b75a8b8022889e264e7a38f5f1f4f4057d42aacd8d46287ae6f70a709d0fe",
+    "backend/app/auth/abac.py": "a114785c0f6a85aa4e5599d6fa37c7fa170f0da6eaeee3682f577421debe1954",
+    "backend/tests/test_websocket_fallback.py": "4d717213745fb46373dc3aa050f6a4c843af0b1db4a9b519cace57f6ae6d8eb1",
+    "backend/tests/test_tenant_isolation.py": "806c15e8f3da66d5fb39fb931bc586f13c8d75409c5ea7f09a359342c7aac854",
+    "backend/tests/test_realtime.py": "bcdeb28fa26e22018135e92ab239dda1055c4bc20200bff6444e1424db1179ef",
+    "scripts/verify_realtime_security.py": "b23173c3a2ea458a10495f352450c993a1325c85a3bf02a2f86357dcaf30f320"
+  },
+  "failure_assertion": "Missing, malformed, revoked, cross-org, wrong-incident, sensitive, and Redis-unverifiable realtime/polling access must not return protected data; malformed access_policy values must be dropped without exceptions; denied WebSocket streams must close with 4401.",
+  "cleanup": "Verification deleted its temporary incident when newly created and cleared the process-local revocation cache; no repository files or unrelated dirty-worktree artifacts were removed."
+}

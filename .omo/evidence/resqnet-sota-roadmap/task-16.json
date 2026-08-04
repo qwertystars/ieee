@@ -1,0 +1,44 @@
+{
+  "task_id": "16",
+  "command": "scripts/evaluate_calibration.py --manifest data/datasets/benchmark-v1.json --models backend/data/models/manifests.json --report .omo/evidence/resqnet-sota-roadmap/task-16.json --enforce-no-test-tuning",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "data/datasets/benchmark-v1.json",
+    "scripts/evaluate_calibration.py",
+    "scripts/calibration_contract.py",
+    "scripts/calibration_contract_validation.py",
+    "backend/data/models/manifests.json"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-03T00:39:28.348578Z",
+  "finished_at": "2026-08-03T00:39:28.348578Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "all_safety_outputs_abstain_when_unavailable": true,
+    "calibration_data_status": "DEFERRED_EXTERNAL",
+    "external_calibration_pending": 3,
+    "final_test_tuning_forbidden": true,
+    "model_count": 3,
+    "named_output_types": ["conformal_interval", "damage_probability", "ensemble_disagreement", "nlp_probability", "risk_coverage", "sar_segmentation_confidence"],
+    "untouched_test_partition": "test",
+    "external_limitations": [
+      "No gated dataset or model calibration artifact was downloaded.",
+      "DEFERRED_EXTERNAL model contracts remain abstain-only until their artifact, version, and hash are registered."
+    ],
+    "model_gate_summary": {
+      "building-damage": "DEFERRED_EXTERNAL -> abstain",
+      "incident-nlp": "DEFERRED_EXTERNAL -> abstain",
+      "sar-flood-mapping": "DEFERRED_EXTERNAL -> abstain"
+    }
+  },
+  "hashes": {
+    "backend/data/models/manifests.json": "d52d530b766eb3117adae37a5c64806e1ceaeb6b4f234225be7957f3e541f6c8",
+    "data/datasets/benchmark-v1.json": "c5925502793ec4e6d92d5ad60185264362486064b3ad91a0ae9e0d4f078268f8",
+    "scripts/calibration_contract.py": "3af21e26dc3d9a523f20ca3d0e6b82c8ee3f1b1f66c5e9dafcd9eb05b696de38",
+    "scripts/calibration_contract_validation.py": "9c3ce50e7e0b0339af787faae9422425967033fc4c677dfbdd712d3610af5aa6",
+    "scripts/evaluate_calibration.py": "a16897e9db29ac23ced56bcf98d10fcd68d8744f8b30f61513147c80aa030702"
+  },
+  "failure_assertion": "Calibration contracts and thresholds pass structurally, while all three unavailable external calibration artifacts remain DEFERRED_EXTERNAL and safety outputs abstain.",
+  "cleanup": "No gated dataset or model calibration artifact was downloaded; no production claim was promoted."
+}

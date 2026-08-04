@@ -10,10 +10,13 @@ const DEMO_EMAIL = 'admin@demo.disaster'
 const DEMO_PASSWORD = 'demo1234'
 
 async function login(page: Page) {
+  const response = await page.request.post(`${process.env.BACKEND_URL ?? 'http://localhost:8000'}/api/auth/login`, { form: { username: DEMO_EMAIL, password: DEMO_PASSWORD } })
+  expect(response.ok()).toBeTruthy()
+  const token = (await response.json() as { access_token: string }).access_token
   await page.goto('/login')
-  await page.getByLabel('Email address').fill(DEMO_EMAIL)
-  await page.getByLabel('Password').fill(DEMO_PASSWORD)
-  await page.getByLabel('Sign in').click()
+  await page.evaluate(value => localStorage.setItem('resqnet.jwt', value), token)
+  await page.reload()
+  await page.goto('/dashboard')
   await page.waitForURL('**/dashboard', { timeout: 15_000 })
 }
 
@@ -69,6 +72,48 @@ test.describe('Full responder flow', () => {
     await expect(page.locator('[data-testid="approve-button"]')).toBeVisible({ timeout: 15_000 })
   })
 
+  test('approval request carries a non-empty rationale', async ({ page }) => {
+    const approvalBodies: string[] = []
+    await page.route('**/api/incidents/*/alerts/*/approve', async route => {
+      approvalBodies.push(route.request().postData() ?? '')
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+    })
+    await page.getByRole('link', { name: 'Planning' }).click()
+    await page.waitForURL('**/planning', { timeout: 10_000 })
+    const card = page.locator('[data-testid="alert-card"]').first()
+    await expect(card.getByTestId('approve-button')).toBeVisible({ timeout: 15_000 })
+    await card.getByTestId('approve-button').click()
+    await expect.poll(() => approvalBodies.length).toBeGreaterThan(0)
+    const body = JSON.parse(approvalBodies[0] ?? '{}') as { review_rationale?: unknown }
+    expect(typeof body.review_rationale).toBe('string')
+    expect(body.review_rationale).not.toBe('')
+  })
+
+  test('alert loading failure is visible and not silent', async ({ page }) => {
+    await page.route('**/api/incidents/*/alerts', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'Alert feed unavailable' }) }))
+    await page.getByRole('link', { name: 'Planning' }).click()
+    await page.waitForURL('**/planning', { timeout: 10_000 })
+    await expect(page.getByRole('alert', { name: /failed to load alerts/i })).toBeVisible({ timeout: 15_000 })
+  })
+
+  test('high-consequence dispatch stays pending without claiming task creation', async ({ page }) => {
+    const dispatchRequests: string[] = []
+    page.on('request', request => {
+      if (request.url().includes('/dispatch')) dispatchRequests.push(request.url())
+    })
+    await page.getByRole('link', { name: 'Planning' }).click()
+    await page.waitForURL('**/planning', { timeout: 10_000 })
+    await expect(page.locator('[data-testid="alert-card"]')).toBeVisible({ timeout: 15_000 })
+    const card = page.locator('[data-testid="alert-card"]').first()
+    await expect(card.getByTestId('dispatch-button')).toBeVisible({ timeout: 15_000 })
+
+    await card.getByTestId('dispatch-button').click()
+
+    await expect(card.getByTestId('dispatch-pending')).toContainText('Awaiting dual approval')
+    await expect(card.getByTestId('dispatch-pending')).toContainText('No task created')
+    expect(dispatchRequests).toHaveLength(0)
+  })
+
   test('field responder view shows assigned tasks', async ({ page }) => {
     await page.getByRole('link', { name: 'Field' }).click()
     await page.waitForURL('**/field', { timeout: 10_000 })
@@ -87,7 +132,8 @@ test.describe('Full responder flow', () => {
     await page.context().setOffline(true)
     const taskSelect = page.locator('select[aria-label^="Update status for task"]').first()
     if (await taskSelect.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await taskSelect.selectOption('in_progress')
+      const nextStatus = (await taskSelect.inputValue()) === 'completed' ? 'blocked' : 'completed'
+      await taskSelect.selectOption(nextStatus)
 
       // Pending badge should appear when mutation is queued in outbox.
       await expect(page.locator('[data-testid="pending-badge"]')).toBeVisible({ timeout: 15_000 })

@@ -1,0 +1,65 @@
+{
+  "profile": "full",
+  "date": "2026-07-29",
+  "soak_duration_s": 3599.77,
+  "configured_soak_duration_s": 3600,
+  "concurrent_operators": 50,
+  "phases": {
+    "operator": {
+      "phase": "operator",
+      "duration_s": 3599.76,
+      "total_requests": 85917,
+      "total_failures": 146,
+      "success_rate": 0.998301,
+      "p95_dashboard_s": 0.0696,
+      "p95_api_read_ms": 40.96,
+      "ingest_posts": 0,
+      "ingest_failures": 0,
+      "ingest_rate_per_s": 0.0
+    },
+    "ingest": {
+      "phase": "ingest",
+      "duration_s": 3599.77,
+      "total_requests": 59632,
+      "total_failures": 933,
+      "success_rate": 0.984354,
+      "p95_dashboard_s": 0.0,
+      "p95_api_read_ms": 0.0,
+      "ingest_posts": 58599,
+      "ingest_failures": 933,
+      "ingest_rate_per_s": 162.79
+    }
+  },
+  "slo_targets": {
+    "concurrent_operators": 50,
+    "ingest_rate_per_s": 100.0,
+    "dashboard_p95_s": 2.0,
+    "api_read_p95_ms": 500.0,
+    "success_rate": 0.99,
+    "failover_s": 30.0
+  },
+  "slo_results": {
+    "concurrent_operators": 50,
+    "ingest_rate_per_s": 162.79,
+    "dashboard_p95_s": 0.0696,
+    "api_read_p95_ms": 40.96,
+    "success_rate": 0.992587,
+    "failover_s": 23.788
+  },
+  "slo_met": {
+    "concurrent_operators": true,
+    "ingest_rate": true,
+    "dashboard_p95": true,
+    "api_read_p95": true,
+    "success_rate": true,
+    "failover": true
+  },
+  "ingest": {
+    "posts_attempted": 59532,
+    "posts_succeeded": 58599,
+    "posts_failed": 933,
+    "rate_per_s": 162.79
+  },
+  "failover_source": "evidence/chaos/*.json (measured recovery_time_s)",
+  "failover_note": "Chaos tests measure actual recovery_time_s from service kill to first successful post-failover health check. See evidence/chaos/*.json for per-service measurements."
+}

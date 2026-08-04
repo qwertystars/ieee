@@ -1,0 +1,775 @@
+{
+  "cleanup": "No external datasets downloaded; offline validation only.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "scripts/run_benchmark.py --manifest data/datasets/benchmark-v1.json --baselines config/published-baselines-v1.json --seeds 1,2,3,4,5 --report .omo/evidence/resqnet-sota-roadmap/task-17.json",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 0,
+  "failure_assertion": "all benchmark and published-baseline invariants passed",
+  "finished_at": "2026-08-03T01:09:01.892731Z",
+  "hashes": {
+    "config/published-baselines-v1.json": "ef216b6a8932c359fe6e9e7254d654c3cb56c4936953950f15a9e25c7942e133",
+    "data/datasets/benchmark-v1.json": "c5925502793ec4e6d92d5ad60185264362486064b3ad91a0ae9e0d4f078268f8",
+    "scripts/benchmark_contract.py": "895f8fab23f6348f03ef7350bc9e470894cbac618b50476b8d439d0af21832d6",
+    "scripts/benchmark_leakage.py": "eca4581d9fcdeb24cdc03123cf00bed98e74810e631e492e21f8b64ec2df5224",
+    "scripts/benchmark_manifest_input.py": "6dcde3e5876db72438ab5c592790b85b1b648f2f305dc89b1e3af16204f4caad",
+    "scripts/benchmark_manifest_splits.py": "81854bc54f3e07c117788c56528a60154c9e4b3d71c9531c1e09c26ca9c9596b",
+    "scripts/benchmark_statistics.py": "4b9871c03a637be1e3a5d4603c16a9a5d5ffc0ec7b92c4d6880abdb63d626db7",
+    "scripts/published_baseline_checks.py": "5848aa7791ef2b4184f103dd7734225586c7267351aa1de8abdd90e750f1dffd",
+    "scripts/published_baseline_contract.py": "6a2427cf56ee1e2e6b0b9fe4ab8aa6fd5559b0285897f77c25dd49008e433dac",
+    "scripts/published_baseline_rows.py": "83c133d501a130799ad1c8d4594e516237c80c0be28c5dff20493db30f61b194",
+    "scripts/published_baseline_types.py": "928129deff09f22eb426b77531e095e49874ae39abbd916a347d4b3d08cd5c0e",
+    "scripts/published_benchmark.py": "4105c256fa618b3b424ef09295d4f13478866696b7429fd0cc1c17c84b598ca4",
+    "scripts/run_baseline.py": "d1f0d8bf5383374362cb04948343349ae6861404fee024e105da5dcb207e5653",
+    "scripts/run_benchmark.py": "aeadd42100bbdc1fdd49794190acb808af0f48370e36cd1ade0b551d5337a56d"
+  },
+  "inputs": [
+    "data/datasets/benchmark-v1.json",
+    "scripts/run_benchmark.py",
+    "scripts/benchmark_contract.py",
+    "scripts/benchmark_leakage.py",
+    "config/published-baselines-v1.json",
+    "scripts/published_benchmark.py",
+    "scripts/benchmark_statistics.py",
+    "scripts/published_baseline_contract.py",
+    "scripts/published_baseline_checks.py",
+    "scripts/published_baseline_types.py",
+    "scripts/published_baseline_rows.py",
+    "scripts/run_baseline.py",
+    "scripts/benchmark_manifest_input.py",
+    "scripts/benchmark_manifest_splits.py"
+  ],
+  "metrics": {
+    "computed_split_hashes": {
+      "calibration": "b4f9c0e03c1fc6c7aede452989b801527e57f105be5f97422d7319d9edcbb761",
+      "test": "4bdd33b52e49799bdb065ef99decbf9123ff1c8f4609dcfc02db8584936525e3",
+      "train": "db0e835c6c9566964f1288ed1d0743dc60d2765c25030a3a6cccd49d5a1dc172"
+    },
+    "external_datasets_pending": 3,
+    "final_test_hash_verified": true,
+    "published_baselines": {
+      "ablation_coverage": true,
+      "ablation_plan": [
+        "no_calibrated_uncertainty",
+        "no_provenance",
+        "no_active_sensing",
+        "no_robust_optimization",
+        "no_infrastructure_dependencies",
+        "no_telecom_silence",
+        "no_fairness_constraints",
+        "no_edge_operation",
+        "no_human_counterfactual"
+      ],
+      "ablation_results": {
+        "no_active_sensing": {
+          "confidence_interval": {
+            "lower": null,
+            "upper": null
+          },
+          "holm_adjusted_p_value": null,
+          "source": "external_artifact_not_executed",
+          "status": "DEFERRED_EXTERNAL"
+        },
+        "no_calibrated_uncertainty": {
+          "confidence_interval": {
+            "lower": null,
+            "upper": null
+          },
+          "holm_adjusted_p_value": null,
+          "source": "external_artifact_not_executed",
+          "status": "DEFERRED_EXTERNAL"
+        },
+        "no_edge_operation": {
+          "confidence_interval": {
+            "lower": null,
+            "upper": null
+          },
+          "holm_adjusted_p_value": null,
+          "source": "external_artifact_not_executed",
+          "status": "DEFERRED_EXTERNAL"
+        },
+        "no_fairness_constraints": {
+          "confidence_interval": {
+            "lower": null,
+            "upper": null
+          },
+          "holm_adjusted_p_value": null,
+          "source": "external_artifact_not_executed",
+          "status": "DEFERRED_EXTERNAL"
+        },
+        "no_human_counterfactual": {
+          "confidence_interval": {
+            "lower": null,
+            "upper": null
+          },
+          "holm_adjusted_p_value": null,
+          "source": "external_artifact_not_executed",
+          "status": "DEFERRED_EXTERNAL"
+        },
+        "no_infrastructure_dependencies": {
+          "confidence_interval": {
+            "lower": null,
+            "upper": null
+          },
+          "holm_adjusted_p_value": null,
+          "source": "external_artifact_not_executed",
+          "status": "DEFERRED_EXTERNAL"
+        },
+        "no_provenance": {
+          "confidence_interval": {
+            "lower": null,
+            "upper": null
+          },
+          "holm_adjusted_p_value": null,
+          "source": "external_artifact_not_executed",
+          "status": "DEFERRED_EXTERNAL"
+        },
+        "no_robust_optimization": {
+          "confidence_interval": {
+            "lower": null,
+            "upper": null
+          },
+          "holm_adjusted_p_value": null,
+          "source": "external_artifact_not_executed",
+          "status": "DEFERRED_EXTERNAL"
+        },
+        "no_telecom_silence": {
+          "confidence_interval": {
+            "lower": null,
+            "upper": null
+          },
+          "holm_adjusted_p_value": null,
+          "source": "external_artifact_not_executed",
+          "status": "DEFERRED_EXTERNAL"
+        }
+      },
+      "modality_variants_covered": true,
+      "published_registry": {
+        "baseline_count": 4,
+        "commands_validated": true,
+        "external_baselines_pending": 4,
+        "missing_baselines": [],
+        "registered_baseline_tasks": [
+          "floodnet",
+          "incident-nlp",
+          "sen1floods11",
+          "xview2"
+        ],
+        "required_baseline_tasks": [
+          "sen1floods11",
+          "floodnet",
+          "xview2",
+          "incident-nlp"
+        ],
+        "synthetic_metric_aliases_rejected": true
+      },
+      "published_tasks": {
+        "floodnet": {
+          "baseline_id": "floodnet-deeplabv3plus-published-v1",
+          "external_limitation": "license_and_published_weights_not_verified_in_workspace",
+          "metrics": {
+            "background_iou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "event_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "event_miou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "flood_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "flood_miou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "flood_precision": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "flood_recall": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "water_iou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            }
+          },
+          "per_class": {
+            "background_iou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "water_iou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            }
+          },
+          "per_event": {
+            "event_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "event_miou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            }
+          },
+          "primary_metric": "flood_miou",
+          "status": "DEFERRED_EXTERNAL",
+          "superiority": {
+            "ci_lower_bound_rule": "candidate_lower_bound >= baseline + 0.02",
+            "passed": false,
+            "status": "DEFERRED_EXTERNAL"
+          },
+          "variants": [
+            {
+              "kind": "modality_only",
+              "modalities": [
+                "rgb"
+              ],
+              "variant_id": "floodnet-rgb-only"
+            },
+            {
+              "kind": "fusion",
+              "modalities": [
+                "rgb",
+                "context"
+              ],
+              "variant_id": "floodnet-rgb-context-fusion"
+            }
+          ]
+        },
+        "incident-nlp": {
+          "baseline_id": "incident-nlp-majority-crisispulse-v1",
+          "external_limitation": "no_licensed_labeled_incident_evaluation_corpus_available",
+          "metrics": {
+            "disaster_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "event_macro_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "nlp_macro_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "nlp_micro_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "nlp_precision": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "nlp_recall": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "non_disaster_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            }
+          },
+          "per_class": {
+            "disaster_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "non_disaster_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            }
+          },
+          "per_event": {
+            "event_macro_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            }
+          },
+          "primary_metric": "nlp_macro_f1",
+          "status": "DEFERRED_EXTERNAL",
+          "superiority": {
+            "ci_lower_bound_rule": "candidate_lower_bound >= baseline + 0.02",
+            "passed": false,
+            "status": "DEFERRED_EXTERNAL"
+          },
+          "variants": [
+            {
+              "kind": "modality_only",
+              "modalities": [
+                "text"
+              ],
+              "variant_id": "incident-text-only"
+            },
+            {
+              "kind": "fusion",
+              "modalities": [
+                "text",
+                "context"
+              ],
+              "variant_id": "incident-text-context-fusion"
+            }
+          ]
+        },
+        "sen1floods11": {
+          "baseline_id": "sen1floods11-unet-published-v1",
+          "external_limitation": "published_weights_and_dataset_artifact_not_available_in_workspace",
+          "metrics": {
+            "event_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "event_miou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "flood_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "flood_iou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "flood_miou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "flood_precision": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "flood_recall": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "not_flood_iou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            }
+          },
+          "per_class": {
+            "flood_iou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "not_flood_iou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            }
+          },
+          "per_event": {
+            "event_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "event_miou": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            }
+          },
+          "primary_metric": "flood_miou",
+          "status": "DEFERRED_EXTERNAL",
+          "superiority": {
+            "ci_lower_bound_rule": "candidate_lower_bound >= baseline + 0.02",
+            "passed": false,
+            "status": "DEFERRED_EXTERNAL"
+          },
+          "variants": [
+            {
+              "kind": "modality_only",
+              "modalities": [
+                "sar"
+              ],
+              "variant_id": "sen1-sar-only"
+            },
+            {
+              "kind": "fusion",
+              "modalities": [
+                "sar",
+                "context"
+              ],
+              "variant_id": "sen1-sar-context-fusion"
+            }
+          ]
+        },
+        "xview2": {
+          "baseline_id": "xview2-published-v1",
+          "external_limitation": "xview2_registration_gated_artifact_not_available_in_workspace",
+          "metrics": {
+            "damage_combined_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "damage_macro_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "damage_precision": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "damage_recall": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "destroyed_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "event_damage_combined_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "major_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "minor_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "no_damage_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            }
+          },
+          "per_class": {
+            "destroyed_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "major_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "minor_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            },
+            "no_damage_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            }
+          },
+          "per_event": {
+            "event_damage_combined_f1": {
+              "confidence_interval": {
+                "lower": null,
+                "upper": null
+              },
+              "source": "external_artifact_not_executed",
+              "status": "DEFERRED_EXTERNAL",
+              "value": null
+            }
+          },
+          "primary_metric": "damage_combined_f1",
+          "status": "DEFERRED_EXTERNAL",
+          "superiority": {
+            "ci_lower_bound_rule": "candidate_lower_bound >= baseline + 0.02",
+            "passed": false,
+            "status": "DEFERRED_EXTERNAL"
+          },
+          "variants": [
+            {
+              "kind": "modality_only",
+              "modalities": [
+                "pre_disaster"
+              ],
+              "variant_id": "xbd-pre-only"
+            },
+            {
+              "kind": "modality_only",
+              "modalities": [
+                "post_disaster"
+              ],
+              "variant_id": "xbd-post-only"
+            },
+            {
+              "kind": "fusion",
+              "modalities": [
+                "pre_disaster",
+                "post_disaster"
+              ],
+              "variant_id": "xbd-pre-post-fusion"
+            }
+          ]
+        }
+      },
+      "real_external_metrics_published": false,
+      "research_claim_status": "DEFERRED_EXTERNAL",
+      "statistics": {
+        "bootstrap_resamples": 10000,
+        "bootstrap_unit": "incident",
+        "confidence_level": 0.95,
+        "final_test_tuning": false,
+        "holm_adjusted_p_values": {},
+        "holm_correction": "holm",
+        "seed_count": 5,
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "superiority_threshold": 0.02
+      },
+      "synthetic_fixture_claim": "validation-only"
+    },
+    "real_data_execution": "DEFERRED_EXTERNAL",
+    "records": 9,
+    "split_counts": {
+      "calibration": 3,
+      "test": 3,
+      "train": 3
+    },
+    "synthetic_fixture_claim": "validation-only"
+  },
+  "started_at": "2026-08-03T01:09:01.892731Z",
+  "status": "PASS",
+  "task_id": "17"
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": "resqnet.tabletop-report.v1",
+  "status": "DEFERRED_EXTERNAL",
+  "claim_class": "participant_tabletop",
+  "machine_pass_satisfies_participant_gate": false,
+  "authorized_participants": null,
+  "agency_roles": null,
+  "scoring": null,
+  "unresolved_risk_severity": null,
+  "after_action_owners": null,
+  "retest_dates": null,
+  "prerequisite_linkage": {
+    "source": "evidence/sota/prerequisites.json",
+    "ids": [
+      "dataset.operator.human-factors",
+      "dataset.sensor.regional-trial"
+    ],
+    "required_record_fields": [
+      "id",
+      "owner",
+      "authority",
+      "status",
+      "evidence_type",
+      "evidence_hash",
+      "hash_algorithm",
+      "source_url",
+      "recorded_at",
+      "expires_at",
+      "depends_on",
+      "deferred_reason",
+      "claim_classes"
+    ]
+  },
+  "deferred_reason": "No authorized participants, agency roles, scores, risk owners, or retest dates are available.",
+  "hash_algorithm": "SHA-256",
+  "hash": "c075d5e8f4a61194709aab138271321f420f043e207ee89a027d1837a451b966"
+}

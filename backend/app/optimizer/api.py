@@ -7,12 +7,16 @@ and returns a task_id; GET /{task_id} polls for the result (within 30s).
 from __future__ import annotations
 
 import logging
-import uuid
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
+from app.db import SessionLocal
+from app.deps import get_db, require_roles
+from app.eval.jobs import EvaluationJobStore, job_response
+from app.models.user import User
 from app.optimizer.engine import EmergencyResponseOptimizer
 from app.optimizer.optimizer_types import (
     OptimizerInput,
@@ -27,10 +31,6 @@ from app.optimizer.optimizer_types import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/optimize", tags=["optimize"])
-
-# In-memory task store (demo; production would use Redis/DB).
-_task_store: dict[str, dict[str, Any]] = {}
-
 
 class OptimizeRequest(BaseModel):
     """JSON request body for POST /api/optimize."""
@@ -92,11 +92,12 @@ def _parse_request(req: OptimizeRequest) -> OptimizerInput:
     )
 
 
-def _run_optimize(task_id: str, inp: OptimizerInput) -> None:
+def _run_optimize(task_id: str, inp: OptimizerInput, org_id: str) -> None:
     """Background task: solve and store the result."""
+    db = SessionLocal()
     try:
         result = EmergencyResponseOptimizer(inp).solve()
-        _task_store[task_id] = {
+        EvaluationJobStore(db).complete(task_id, org_id, {
             "status": result.status,
             "result": {
                 "status": result.status,
@@ -112,28 +113,40 @@ def _run_optimize(task_id: str, inp: OptimizerInput) -> None:
                 "solve_time_seconds": result.solve_time_seconds,
                 "coverage": result.coverage,
             },
-        }
+        })
     except Exception as exc:
         logger.exception("Optimize task %s failed", task_id)
-        _task_store[task_id] = {"status": "error", "error": str(exc)}
+        EvaluationJobStore(db).fail(task_id, org_id, str(exc))
+    finally:
+        db.close()
 
 
 @router.post("")
-async def optimize(req: OptimizeRequest, background_tasks: BackgroundTasks) -> dict[str, Any]:
+async def optimize(
+    req: OptimizeRequest,
+    background_tasks: BackgroundTasks,
+    user: User = Depends(require_roles()),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
     """POST /api/optimize — start async solve, return task_id for polling."""
     inp = _parse_request(req)
-    task_id = str(uuid.uuid4())
-    _task_store[task_id] = {"status": "pending"}
-    background_tasks.add_task(_run_optimize, task_id, inp)
+    job = EvaluationJobStore(db).create(user.org_id, user.id, "optimizer", req.model_dump())
+    task_id = job.id
+    background_tasks.add_task(_run_optimize, task_id, inp, user.org_id)
     return {"task_id": task_id, "status": "pending"}
 
 
 @router.get("/{task_id}")
-async def get_optimize_result(task_id: str) -> dict[str, Any]:
+async def get_optimize_result(
+    task_id: str,
+    user: User = Depends(require_roles()),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
     """GET /api/optimize/{task_id} — poll for the result (within 30s)."""
-    if task_id not in _task_store:
+    job = EvaluationJobStore(db).get(task_id, user.org_id)
+    if job is None:
         raise HTTPException(status_code=404, detail="task not found")
-    return _task_store[task_id]
+    return job_response(job)
 
 
 __all__ = ["OptimizeRequest", "router"]

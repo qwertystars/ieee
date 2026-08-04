@@ -3,7 +3,7 @@
 Verifies that the platform degrades gracefully when Redis and Kafka/Redpanda
 are unavailable (the test environment has neither). The app must:
 1. Return None from get_redis() (not crash).
-2. Return False from is_token_revoked() (denylist disabled, not crash).
+2. Return True from is_token_revoked() when Redis cannot verify auth state.
 3. Start the FastAPI app without crashing (Kafka producer fails non-fatal).
 4. Serve API requests normally (auth, health, observations).
 
@@ -14,6 +14,7 @@ No mocking — we test the real degradation behavior against the real
 from __future__ import annotations
 
 import socket
+from unittest.mock import patch
 from urllib.parse import urlparse
 
 import pytest
@@ -78,15 +79,12 @@ def test_get_redis_returns_none_when_unavailable() -> None:
     )
 
 
-def test_is_token_revoked_returns_false_when_redis_down() -> None:
-    """is_token_revoked() returns False when Redis is unavailable.
-
-    The denylist is disabled — tokens are assumed valid (fail-open).
-    """
+def test_is_token_revoked_returns_true_when_redis_down() -> None:
     import app.deps as deps_module
     deps_module._redis_client = None
 
-    assert is_token_revoked("any.token.here") is False
+    with patch("app.deps.get_redis", return_value=None):
+        assert is_token_revoked("any.token.here") is True
 
 
 def test_app_starts_without_kafka() -> None:
@@ -112,8 +110,7 @@ def test_login_works_without_redis_or_kafka() -> None:
         assert "access_token" in resp.json()
 
 
-def test_protected_endpoint_works_without_redis() -> None:
-    """A protected endpoint (GET /api/auth/me) works without Redis."""
+def test_protected_endpoint_denies_without_redis() -> None:
     with TestClient(app) as client:
         login_resp = client.post(
             "/api/auth/login",
@@ -124,14 +121,12 @@ def test_protected_endpoint_works_without_redis() -> None:
         )
         token = login_resp.json()["access_token"]
 
-        resp = client.get(
-            "/api/auth/me",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["email"] == "admin@demo.disaster"
-        assert body["role"] == "admin"
+        with patch("app.deps.get_redis", return_value=None):
+            resp = client.get(
+                "/api/auth/me",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        assert resp.status_code == 401
 
 
 def test_producer_manager_fails_gracefully() -> None:

@@ -15,6 +15,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from app.db import Base
+from app.lib.observability_metrics import record_external_feed
 from app.lib.time import now_ms
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
@@ -89,9 +90,11 @@ class SourceManager:
             source.last_success_at = ts
             source.last_error = None
             source.status = SourceStatus.active
+            record_external_feed("federated", "active")
         else:
             source.last_error = error
             source.status = SourceStatus.error
+            record_external_feed("federated", "error")
         source.updated_at = ts
         self.db.commit()
 
@@ -186,11 +189,13 @@ class OutboxManager:
                 entry.status = "failed"
                 entry.error = "source not found"
                 entry.synced_at = now_ms()
+                record_external_feed("federated", "failed")
                 continue
             if source.ownership == Ownership.federated:
                 entry.status = "skipped"
                 entry.error = "federated source — not centralized"
                 entry.synced_at = now_ms()
+                record_external_feed("federated", "skipped")
                 continue
             # Idempotency: skip if observation already exists
             existing = self.db.get(Observation, entry.observation_id)
@@ -198,6 +203,7 @@ class OutboxManager:
                 entry.status = "synced"
                 entry.synced_at = now_ms()
                 synced += 1
+                record_external_feed("federated", "synced")
                 continue
             try:
                 obs = self._build_observation(entry.payload)
@@ -206,12 +212,14 @@ class OutboxManager:
                 entry.status = "synced"
                 entry.synced_at = now_ms()
                 synced += 1
+                record_external_feed("federated", "synced")
             except Exception as e:
                 self.db.rollback()
                 fresh = self.db.get(OutboxEntry, entry.id)
                 if fresh is not None:
                     fresh.status = "failed"
                     fresh.error = str(e)[:500]
+                record_external_feed("federated", "failed")
         self.db.commit()
         return synced
 

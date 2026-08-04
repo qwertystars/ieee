@@ -1,0 +1,1 @@
+{"broker":"redpanda:9092","consumer_group":"observations-consumer","topics":[{"topic":"observations.normalized","partition":0,"offset":42},{"topic":"observations.dlq","partition":0,"offset":3}]}

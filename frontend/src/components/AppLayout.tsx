@@ -14,7 +14,7 @@ const NAV_ITEMS = [
 
 export function AppLayout() {
   const { user, logout } = useAuth()
-  const { pendingCount, isOnline } = useOutbox()
+  const { pendingCount, failedCount, conflictCount, isOnline } = useOutbox()
   const navigate = useNavigate()
 
   async function handleLogout() {
@@ -68,7 +68,7 @@ export function AppLayout() {
             >
               {pendingCount} pending
             </span>
-          ) : (
+            ) : (
             <span
               role="status"
               data-testid="synced-badge"
@@ -76,6 +76,26 @@ export function AppLayout() {
               className="rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-medium text-white"
             >
               Synced
+            </span>
+            )}
+          {conflictCount > 0 && (
+            <span
+              role="status"
+              data-testid="conflict-badge"
+              aria-label={`${conflictCount} sync conflict${conflictCount === 1 ? '' : 's'} require manual resolution`}
+              className="rounded-full bg-red-700 px-2 py-0.5 text-[10px] font-medium text-white"
+            >
+              Conflict: manual resolution required
+            </span>
+          )}
+          {failedCount > 0 && (
+            <span
+              role="status"
+              data-testid="failed-badge"
+              aria-label={`${failedCount} offline change${failedCount === 1 ? '' : 's'} failed and require retry`}
+              className="rounded-full bg-red-900 px-2 py-0.5 text-[10px] font-medium text-red-200"
+            >
+              Sync failed: retry required
             </span>
           )}
           {user && (

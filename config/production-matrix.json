@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "environment": "production",
+  "precedence": [
+    "explicit CLI environment",
+    "process environment",
+    "env-file",
+    "matrix safe fixture",
+    "Settings defaults"
+  ],
+  "startup": {
+    "safe_exit_code": 0,
+    "unsafe_exit_code": 78,
+    "validation_phase": "before FastAPI lifespan yields or serves requests"
+  },
+  "verifier": {
+    "failure_exit_code": 1,
+    "diagnostic_policy": "setting names and violation IDs only; never values"
+  },
+  "safe_environment": {
+    "DATABASE_URL": "postgresql+psycopg://resqnet_app:secret-manager-value@db:5432/disaster",
+    "JWT_SECRET": "replace-with-a-secret-manager-value-at-least-32-characters",
+    "CORS_ORIGINS": "https://console.example.org",
+    "MINIO_ACCESS_KEY": "resqnet-app",
+    "MINIO_SECRET_KEY": "replace-with-a-secret-manager-value",
+    "RESQNET_DB_IMAGE": "attested-digest-required",
+    "RESQNET_BACKEND_IMAGE": "attested-digest-required",
+    "RESQNET_WORKER_IMAGE": "attested-digest-required",
+    "RESQNET_REDIS_IMAGE": "attested-digest-required",
+    "RESQNET_REDPANDA_IMAGE": "attested-digest-required",
+    "RESQNET_MINIO_IMAGE": "attested-digest-required",
+    "RESQNET_HAPROXY_IMAGE": "attested-digest-required",
+    "TLS_BUNDLE_FILE": "/run/secrets/tls_bundle.pem",
+    "REDIS_REVOCATION_REQUIRED": "true",
+    "REFRESH_TOKEN_ROTATION_REQUIRED": "true",
+    "ACCESS_TOKEN_EXPIRE_MINUTES": "15",
+    "REFRESH_TOKEN_EXPIRE_DAYS": "7",
+    "DEVICE_ACCESS_TOKEN_EXPIRE_MINUTES": "5",
+    "SERVICE_ACCESS_TOKEN_EXPIRE_MINUTES": "5",
+    "REFRESH_TOKEN_ROTATION_GRACE_SECONDS": "0",
+    "UVICORN_RELOAD": "false",
+    "SOURCE_MOUNTS_ENABLED": "false",
+    "MOCK_BINDINGS_ENABLED": "false",
+    "EXPOSE_INTERNAL_PORTS": "false"
+  },
+  "forbidden": [
+    {"id": "dev_secret", "setting": "JWT_SECRET", "reason": "development marker or fewer than 32 characters"},
+    {"id": "wildcard_cors", "setting": "CORS_ORIGINS", "reason": "wildcard origins are forbidden with protected credentials"},
+    {"id": "reload", "setting": "UVICORN_RELOAD", "reason": "reload is not production serving"},
+    {"id": "source_mounts", "setting": "SOURCE_MOUNTS_ENABLED", "reason": "host source mounts break immutable release images"},
+    {"id": "mock_bindings", "setting": "MOCK_BINDINGS_ENABLED", "reason": "mock dependencies cannot authorize production actions"},
+    {"id": "internal_ports", "setting": "EXPOSE_INTERNAL_PORTS", "reason": "database, cache, broker, object store, and metrics ports stay private"},
+    {"id": "default_database_credentials", "setting": "DATABASE_URL", "reason": "known development credentials are forbidden"},
+    {"id": "default_minio_credentials", "setting": "MINIO_SECRET_KEY", "reason": "known development credentials are forbidden"},
+    {"id": "revocation_fail_open", "setting": "REDIS_REVOCATION_REQUIRED", "reason": "protected actions deny when freshness is unavailable"},
+    {"id": "refresh_reuse", "setting": "REFRESH_TOKEN_ROTATION_REQUIRED", "reason": "refresh tokens rotate and replay quarantines the family"},
+    {"id": "long_access_ttl", "setting": "ACCESS_TOKEN_EXPIRE_MINUTES", "reason": "human access tokens are at most 15 minutes"}
+  ],
+  "compose": {
+    "file": "docker-compose.production-parity.yml",
+    "public_services": ["backend_a", "backend_b", "proxy"],
+    "private_services": ["db", "redis", "redpanda", "minio", "migrate", "worker"],
+    "required_environment": ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", "DATABASE_URL", "REDIS_URL", "JWT_SECRET", "CORS_ORIGINS", "MINIO_ACCESS_KEY", "MINIO_SECRET_KEY", "RESQNET_DB_IMAGE", "RESQNET_BACKEND_IMAGE", "RESQNET_WORKER_IMAGE", "RESQNET_REDIS_IMAGE", "RESQNET_REDPANDA_IMAGE", "RESQNET_MINIO_IMAGE", "RESQNET_HAPROXY_IMAGE", "TLS_BUNDLE_FILE"],
+    "forbidden_text": ["--reload", "${CORS_ORIGINS:-*}", "${ENVIRONMENT:-development}", "minio123", "GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin}", "./backend:/app", "./frontend:/app"],
+    "private_services_must_not_publish_ports": true,
+    "source_mounts_must_not_exist": true
+  },
+  "identity": {
+    "principal_types": ["human", "device", "service"],
+    "audiences": {"human": "resqnet-api", "device": "resqnet-device", "service": "resqnet-service", "refresh": "resqnet-refresh"},
+    "access_ttl_minutes": {"human": 15, "device": 5, "service": 5},
+    "refresh_ttl_days": 7,
+    "rotation_grace_seconds": 0,
+    "replay_policy": "atomic JTI consume then revoke the complete family",
+    "redis_outage_policy": "protected authentication, refresh, and authorization deny"
+  }
+}

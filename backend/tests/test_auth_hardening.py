@@ -43,16 +43,6 @@ def _seed_users() -> None:
     db.close()
 
 
-@pytest.fixture(autouse=True)
-def _clear_local_revocation_cache() -> None:
-    """Clear the in-memory revocation cache before and after each test (T38)."""
-    with deps_module._local_revoked_lock:
-        deps_module._local_revoked_tokens.clear()
-    yield
-    with deps_module._local_revoked_lock:
-        deps_module._local_revoked_tokens.clear()
-
-
 def _login(client: TestClient, email: str = ADMIN_EMAIL) -> dict[str, str]:
     """Login and return the full token response JSON."""
     resp = client.post(
@@ -92,6 +82,53 @@ def test_refresh_with_valid_token_returns_new_access_token() -> None:
     payload = decode_token(body["access_token"])
     assert payload["type"] == "access"
     assert payload["sub"] == ADMIN_EMAIL
+    assert body["refresh_token"]
+
+
+def test_refresh_rotates_and_replay_revokes_family() -> None:
+    """Given a rotated refresh token, When the old token replays, Then the family is denied."""
+    with TestClient(app) as client:
+        tokens = _login(client)
+        rotated = client.post(
+            "/api/auth/refresh",
+            json={"refresh_token": tokens["refresh_token"]},
+        )
+        assert rotated.status_code == 200
+        rotated_tokens = rotated.json()
+        assert rotated_tokens["refresh_token"] != tokens["refresh_token"]
+        replay = client.post(
+            "/api/auth/refresh",
+            json={"refresh_token": tokens["refresh_token"]},
+        )
+        descendant_reuse = client.post(
+            "/api/auth/refresh",
+            json={"refresh_token": rotated_tokens["refresh_token"]},
+        )
+    assert replay.status_code == 401
+    assert descendant_reuse.status_code == 401
+
+
+def test_refresh_token_cannot_authenticate_as_bearer() -> None:
+    """Given a refresh credential, When it calls a human API, Then it is rejected."""
+    with TestClient(app) as client:
+        tokens = _login(client)
+        response = client.get(
+            "/api/auth/me",
+            headers={"Authorization": f"Bearer {tokens['refresh_token']}"},
+        )
+    assert response.status_code == 401
+
+
+def test_refresh_denies_when_redis_is_unavailable() -> None:
+    """Given Redis is unavailable, When refresh runs, Then no new credential is issued."""
+    with TestClient(app) as client:
+        tokens = _login(client)
+        with patch.object(deps_module, "get_redis", return_value=None):
+            response = client.post(
+                "/api/auth/refresh",
+                json={"refresh_token": tokens["refresh_token"]},
+            )
+    assert response.status_code == 401
 
 
 def test_refresh_with_invalid_token_returns_401() -> None:
@@ -146,6 +183,28 @@ def test_existing_login_flow_still_works() -> None:
     assert body["email"] == ADMIN_EMAIL
 
 
+def test_revoking_one_access_token_does_not_revoke_later_login() -> None:
+    with TestClient(app) as client:
+        first = _login(client)["access_token"]
+        second = _login(client)["access_token"]
+        assert first != second
+        db = SessionLocal()
+        try:
+            revoke_token(first, 3600, db=db, org_id="org_demo")
+        finally:
+            db.close()
+        first_response = client.get(
+            "/api/auth/me",
+            headers={"Authorization": f"Bearer {first}"},
+        )
+        second_response = client.get(
+            "/api/auth/me",
+            headers={"Authorization": f"Bearer {second}"},
+        )
+    assert first_response.status_code == 401
+    assert second_response.status_code == 200
+
+
 # ---------------------------------------------------------------------------
 # T38: Local emergency revocation cache (Redis-outage resilience)
 # ---------------------------------------------------------------------------
@@ -159,28 +218,16 @@ def test_local_cache_rejects_revoked_token_when_redis_down() -> None:
         assert is_token_revoked("pre-revoked-token-T38") is True
 
 
-def test_local_cache_fail_open_for_new_token_when_redis_down() -> None:
-    """Given Redis is down, When is_token_revoked is called with a new
-    (non-revoked) token, Then it returns False (fail-open)."""
+def test_revocation_fails_closed_for_new_token_when_redis_down() -> None:
     revoke_token("pre-revoked-token-T38", 3600)
     with patch.object(deps_module, "get_redis", return_value=None):
-        assert is_token_revoked("new-token-not-revoked-T38") is False
+        assert is_token_revoked("new-token-not-revoked-T38") is True
 
 
-def test_local_cache_is_thread_safe() -> None:
-    """Given concurrent revoke_token calls from multiple threads, When the
-    local cache is accessed, Then no exceptions are raised and all tokens
-    are recorded as revoked."""
-    from concurrent.futures import ThreadPoolExecutor
-
-    tokens = [f"thread-token-T38-{i}" for i in range(20)]
-
+def test_revocation_does_not_create_local_authority() -> None:
     with patch.object(deps_module, "get_redis", return_value=None):
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            list(executor.map(lambda t: revoke_token(t, 3600), tokens))
-
-    for token in tokens:
-        assert is_token_revoked(token) is True
+        revoke_token("thread-token-T38", 3600)
+        assert is_token_revoked("thread-token-T38") is True
 
 
 # ---------------------------------------------------------------------------
@@ -227,9 +274,7 @@ def test_admin_change_allowed_when_redis_up_and_token_not_revoked() -> None:
     assert result is True
 
 
-def test_alert_approval_succeeds_when_redis_down_with_break_glass_audit() -> None:
-    """Given Redis is down, When alert approval is requested, Then it succeeds
-    (fail-open) and a break_glass_alert_approval audit entry is written."""
+def test_alert_approval_rejected_when_redis_down() -> None:
     db = SessionLocal()
     try:
         incident_id, alert_id = _create_incident_and_alert(db)
@@ -244,17 +289,7 @@ def test_alert_approval_succeeds_when_redis_down_with_break_glass_audit() -> Non
                 headers={"Authorization": f"Bearer {tokens['access_token']}"},
                 json={"review_rationale": "T39 break-glass test"},
             )
-    assert resp.status_code == 200, f"approval failed: {resp.text}"
-
-    db = SessionLocal()
-    try:
-        events = db.query(Event).filter(
-            Event.action == "break_glass_alert_approval",
-            Event.entity == alert_id,
-        ).all()
-        assert len(events) == 1, f"expected 1 break-glass audit, got {len(events)}"
-    finally:
-        db.close()
+    assert resp.status_code == 401, resp.text
 
 
 def test_alert_approval_succeeds_when_redis_up() -> None:

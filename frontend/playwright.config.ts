@@ -16,17 +16,19 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
-      testMatch: ['e2e.spec.ts', 'action-card.spec.ts'],
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
+      // Map freshness tiers are derived from seed data age (fresh < 5 min),
+      // so this suite must run first — immediately after e2e_up.sh seeds.
       name: 'chromium-authenticated',
       testMatch: ['map.spec.ts'],
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'tests/.auth/storageState.json',
       },
+    },
+    {
+      name: 'chromium',
+      testMatch: ['outbox-recovery.spec.ts', 'action-card.spec.ts', 'e2e.spec.ts', 'a11y.spec.ts'],
+      use: { ...devices['Desktop Chrome'], storageState: 'tests/.auth/storageState.json' },
     },
   ],
   webServer: {
@@ -35,7 +37,7 @@ export default defineConfig({
     // the process lifecycle (SIGTERM after tests).
     command: 'bash ../scripts/e2e_up.sh',
     url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 })

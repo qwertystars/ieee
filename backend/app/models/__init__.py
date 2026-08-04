@@ -25,8 +25,19 @@ class TimestampMixin:
 
 
 # Import models so Base.metadata is populated for Alembic autogenerate.
-from app.models.observation import Observation  # noqa: E402, F401
-from app.models.entities import (  # noqa: E402, F401
+from app.models.alert import (
+    Alert,
+    AlertDecision,
+    CommandApproval,
+    CommandSigningKey,
+)
+from app.models.coordination import (
+    CredentialState,
+    EmergencyOverrideRecord,
+    EvaluationJob,
+    QuarantineRecord,
+)
+from app.models.entities import (
     Bridge,
     Building,
     CellTower,
@@ -42,40 +53,57 @@ from app.models.entities import (  # noqa: E402, F401
     Vehicle,
     Zone,
 )
-from app.models.relationships import GraphEdge  # noqa: E402, F401
-from app.models.hypotheses import Hypothesis  # noqa: E402, F401
-from app.models.scenarios import Scenario  # noqa: E402, F401
-from app.models.events import Event  # noqa: E402, F401
-from app.models.user import User  # noqa: E402, F401
-from app.models.incident import Incident  # noqa: E402, F401
-from app.models.alert import Alert  # noqa: E402, F401
-from app.models.recommendation import Recommendation  # noqa: E402, F401
+from app.models.events import Event
+from app.models.fusion_replay import (
+    FusionReplayErrorRecord,
+    FusionReplayInputRecord,
+    FusionReplayOutputRecord,
+    FusionReplayRun,
+)
+from app.models.hypotheses import Hypothesis
+from app.models.incident import Incident
+from app.models.observation import Observation
+from app.models.recommendation import Recommendation
+from app.models.relationships import GraphEdge
+from app.models.scenarios import Scenario
+from app.models.user import User
 
 __all__ = [
+    "Alert",
+    "AlertDecision",
     "Base",
+    "Bridge",
+    "Building",
+    "CellTower",
+    "CommandApproval",
+    "CommandSigningKey",
+    "CredentialState",
+    "Decision",
+    "EmergencyOverrideRecord",
+    "EvaluationJob",
+    "Event",
+    "FusionReplayErrorRecord",
+    "FusionReplayInputRecord",
+    "FusionReplayOutputRecord",
+    "FusionReplayRun",
+    "GraphEdge",
+    "Hazard",
+    "Hospital",
+    "Hypothesis",
+    "Incident",
+    "Observation",
+    "OperationalTask",
+    "PowerSubstation",
+    "QuarantineRecord",
+    "Recommendation",
+    "Responder",
+    "RoadSegment",
+    "Scenario",
+    "Sensor",
+    "Shelter",
     "TenancyMixin",
     "TimestampMixin",
-    "Observation",
-    "Hazard",
-    "Zone",
-    "Building",
-    "RoadSegment",
-    "Bridge",
-    "PowerSubstation",
-    "CellTower",
-    "Hospital",
-    "Shelter",
-    "Responder",
-    "Vehicle",
-    "Sensor",
-    "OperationalTask",
-    "Decision",
-    "GraphEdge",
-    "Hypothesis",
-    "Scenario",
-    "Event",
     "User",
-    "Incident",
-    "Alert",
-    "Recommendation",
+    "Vehicle",
+    "Zone",
 ]

@@ -1,0 +1,73 @@
+{
+  "task_id": "23",
+  "command": "backend/.venv/bin/python scripts/run_shadow_replay.py --fixture tests/fixtures/shadow-incident.ndjson --baseline config/shadow-baseline-v1.json --min-incidents 100 --min-window-days 30 --report evidence/sota/task-23-happy.json; backend/.venv/bin/python scripts/run_shadow_replay.py --fixture tests/fixtures/shadow-actuation-attempt.ndjson --assert-no-actuation",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "scripts/run_shadow_replay.py",
+    "scripts/shadow_replay_contract.py",
+    "tests/test_shadow_replay.py",
+    "config/shadow-baseline-v1.json",
+    "tests/fixtures/shadow-incident.ndjson",
+    "tests/fixtures/shadow-actuation-attempt.ndjson",
+    "evidence/sota/prerequisites.json",
+    "evidence/sota/task-23-happy.json"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-03T03:03:47.035643Z",
+  "finished_at": "2026-08-03T03:03:47.041199Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "machine_gate_status": "PASS",
+    "claim_class": "shadow_machine",
+    "external_shadow_claim": "DEFERRED_EXTERNAL",
+    "sample_count": 100,
+    "window_days": 30,
+    "baseline_version": "trusted-baseline-v1",
+    "comparison_population": "synthetic-shadow-v1",
+    "blinding": "baseline_hidden_during_shadow_evaluation",
+    "false_alert_burden": 0.02,
+    "alert_precision": 0.961538,
+    "p95_end_to_end_latency_ms": 900.0,
+    "availability": 1.0,
+    "calibration_ece": 0.0316,
+    "override_count": 1,
+    "disagreement_count": 2,
+    "disagreement_attribution_rate": 1.0,
+    "missing_feedback_count": 100,
+    "missing_feedback_handling": "excluded_from_operator_metrics_never_impute",
+    "authenticated_context": {
+      "principal_type": "service",
+      "subject": "shadow-replay-service",
+      "audience": "resqnet-service",
+      "scope": "shadow:replay",
+      "mode": "shadow"
+    },
+    "actuation": {
+      "happy_attempts": 0,
+      "happy_side_effects": 0,
+      "failure_fixture_exit_code": 1,
+      "failure_assertion": "actuation attempt or side effect detected; shadow replay must fail"
+    },
+    "provenance": {
+      "immutable_records_verified": true,
+      "hash_algorithm": "SHA-256",
+      "chain_head": "ffbe4031000db823e4e52f7c1714758c7afdf42da9aa61bb93866f7a8eb9dece"
+    },
+    "external_limitations": [
+      "No operator feedback, trusted external baseline population, agency authorization, or real 30-day field evidence was fabricated or downloaded."
+    ]
+  },
+  "hashes": {
+    "scripts/run_shadow_replay.py": "788d3f5521ea82d2558ed901a5c5fd609aa46e4c434fb77165965c97bfcf7bc2",
+    "scripts/shadow_replay_contract.py": "c68f34b30cbd54151ad86d8ade44286f7abd2e50fe6384c31dd318ced824ae34",
+    "tests/test_shadow_replay.py": "c1b0a56e610c21f071a94b406eaf17a9d4c11afca82b80bf8ff13eaa1fde2d2f",
+    "config/shadow-baseline-v1.json": "0d8335e7e37159e2532fb9599dc33fdf35b500cd4203ce2212529746b15dff3b",
+    "tests/fixtures/shadow-incident.ndjson": "fe82e0bf59a88c80b3797a40d2e857148d01058818215c4978a2230ca7ae0389",
+    "tests/fixtures/shadow-actuation-attempt.ndjson": "fa09564942a39f0a3a27d4c6011f2d00daf008ecc00a425be4b6dda81f59a56c",
+    "evidence/sota/prerequisites.json": "61bbd9bca7f9f456df36021300e4dee630dddddd2d6d322b471929cd6c50963e",
+    "evidence/sota/task-23-happy.json": "0ad2af2eca9552ab086bf8b80430d19dbda6e7c38e1966ed80587cb0e21f180a"
+  },
+  "failure_assertion": "Machine-only replay passes fixed thresholds and the actuation fixture exits 1; no route, service-account, queue, network, task, resource, or public-warning side effect is permitted.",
+  "cleanup": "No API route, database row, queue message, external dataset, credential, operator, agency system, or production state was invoked or modified."
+}

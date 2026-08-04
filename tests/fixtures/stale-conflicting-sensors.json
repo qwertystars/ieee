@@ -1,0 +1,92 @@
+{
+  "schema_version": "resqnet.robustness-fixture.v1",
+  "fixture_id": "stale-conflicting-sensors-v1",
+  "claim_policy": "validation-only",
+  "privacy": {
+    "status": "PASS",
+    "raw_pii": false,
+    "storage": "fixture-only",
+    "export": "route states only"
+  },
+  "attack_budget": {
+    "adversarial_records": 0,
+    "total_records": 2,
+    "capability": "none"
+  },
+  "sensor_inputs": [
+    {
+      "sensor_id": "gauge-a",
+      "phenomenon": "water_level",
+      "value": 4.2,
+      "received_at_ms": 1704067200000,
+      "age_seconds": 1800,
+      "quality": "stale"
+    },
+    {
+      "sensor_id": "gauge-b",
+      "phenomenon": "water_level",
+      "value": 0.2,
+      "received_at_ms": 1704067201000,
+      "age_seconds": 1800,
+      "quality": "stale"
+    }
+  ],
+  "conflict": {
+    "detected": true,
+    "resolution": "abstain",
+    "human_resolution_required": true,
+    "truth_selected": false
+  },
+  "routes": [
+    {
+      "route": "flood_mapping",
+      "affected": true,
+      "status": "abstain",
+      "reason": "stale_conflicting_sensor_inputs",
+      "uncertainty_labeled": true,
+      "review_status": "draft",
+      "prediction_present": false,
+      "provenance": {"conflict": true, "freshness": "stale"}
+    },
+    {
+      "route": "damage",
+      "affected": true,
+      "status": "abstain",
+      "reason": "stale_conflicting_sensor_inputs",
+      "uncertainty_labeled": true,
+      "review_status": "draft",
+      "prediction_present": false,
+      "provenance": {"conflict": true, "freshness": "stale"}
+    },
+    {
+      "route": "nlp",
+      "affected": true,
+      "status": "abstain",
+      "reason": "stale_conflicting_sensor_inputs",
+      "uncertainty_labeled": true,
+      "review_status": "draft",
+      "prediction_present": false,
+      "provenance": {"conflict": true, "freshness": "stale"}
+    },
+    {
+      "route": "ensemble",
+      "affected": true,
+      "status": "abstain",
+      "reason": "stale_conflicting_sensor_inputs",
+      "uncertainty_labeled": true,
+      "review_status": "draft",
+      "prediction_present": false,
+      "provenance": {"conflict": true, "freshness": "stale"}
+    },
+    {
+      "route": "route_planner",
+      "affected": true,
+      "status": "abstain",
+      "reason": "stale_conflicting_sensor_inputs",
+      "uncertainty_labeled": true,
+      "review_status": "draft",
+      "prediction_present": false,
+      "provenance": {"conflict": true, "freshness": "stale"}
+    }
+  ]
+}

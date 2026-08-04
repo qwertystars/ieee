@@ -172,7 +172,7 @@ def test_sync(two_articles):
             # Patch check_and_record to always return True
             import app.ingestion.adapters.event_registry as mod
             original = mod.check_and_record
-            mod.check_and_record = lambda d, s, e: True
+            mod.check_and_record = lambda d, s, e, **kwargs: True
             try:
                 count = await adapter.sync(db, producer, "org_1", "inc_1")
                 assert count == 2

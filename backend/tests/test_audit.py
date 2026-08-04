@@ -9,7 +9,7 @@ from sqlalchemy import delete
 
 from app.db import SessionLocal
 from app.lib.audit import verify_chain, write_audit
-from app.models.events import Event
+from app.models.events import AuditChainHead, Event
 
 ORG_ID = "org_test_audit"
 INCIDENT_ID = "inc_test_audit"
@@ -21,11 +21,13 @@ def db():
     session = SessionLocal()
     # Pre-clean any leftover rows for this org.
     session.execute(delete(Event).where(Event.org_id == ORG_ID))
+    session.execute(delete(AuditChainHead).where(AuditChainHead.org_id == ORG_ID))
     session.commit()
     try:
         yield session
     finally:
         session.execute(delete(Event).where(Event.org_id == ORG_ID))
+        session.execute(delete(AuditChainHead).where(AuditChainHead.org_id == ORG_ID))
         session.commit()
         session.close()
 

@@ -1,0 +1,430 @@
+{
+  "cleanup": "No external datasets, models, or artifacts downloaded; deterministic validation-only execution.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "scripts/run_robustness_suite.py --manifest data/datasets/benchmark-v1.json --report evidence/sota/task-18-happy.json",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 0,
+  "failure_assertion": "all robustness families and route fallbacks passed",
+  "finished_at": "2026-08-03T01:34:45.489817Z",
+  "hashes": {
+    "/root/srijan/ieee/tests/fixtures/robustness-policy-v1.json": "86bd95be90477897d506f951a93369c0799aff71c5b8ec06d465fc0ad5ebec6f",
+    "backend/app/eval/failure_robustness.py": "0b48bbf3d0a6328cd6e2ee3d75b613e9013190c2d054c760264b2b4bd477c063",
+    "backend/app/eval/failures.py": "6ec2fbdf0eee362b0f1497feecdd9a08adc5c859e5d1c0c169ce4ed5058bc906",
+    "backend/app/eval/robustness_metrics.py": "541378960781ca37c1387ec491668a00399ef2be5d7f2c113e9323a0b324f66e",
+    "backend/app/eval/robustness_types.py": "bbdce88c7dcfb0d5fc0e35b7a7cdaec0cf023690d9566316d2f0de9bda492e62",
+    "backend/app/optimizer/fairness.py": "d97149b056aca6c23ddaa4b5a0458fe3e66eb9d373566d6d306ed3caa965dda5",
+    "backend/app/optimizer/fairness_metrics.py": "1616c774d7331b335c9f9b176c39ddb1c355547d280ed9b18cf592c368a13758",
+    "data/datasets/benchmark-v1.json": "c5925502793ec4e6d92d5ad60185264362486064b3ad91a0ae9e0d4f078268f8",
+    "scripts/robustness_contract.py": "fd3002fa6a292cc537b663ab831bac59f2e950f05136e706387eb0c06b346546",
+    "scripts/run_robustness_suite.py": "81872e6f8513d260924cdc962746245b6d0711e6d9c0a1ad48a3765043824e76"
+  },
+  "inputs": [
+    "data/datasets/benchmark-v1.json",
+    "scripts/run_robustness_suite.py",
+    "backend/app/eval/failures.py",
+    "backend/app/eval/failure_robustness.py",
+    "backend/app/eval/robustness_types.py",
+    "backend/app/eval/robustness_metrics.py",
+    "backend/app/optimizer/fairness_metrics.py",
+    "backend/app/optimizer/fairness.py",
+    "scripts/robustness_contract.py",
+    "/root/srijan/ieee/tests/fixtures/robustness-policy-v1.json"
+  ],
+  "metrics": {
+    "attack_budget": {
+      "capability": "untrusted content can alter text/severity claims but cannot alter provenance, tenant, review status, or route authorization",
+      "external_artifact_download": false,
+      "max_adversarial_records": 40,
+      "max_fraction": 0.1,
+      "privileged_access": false
+    },
+    "benchmark_metrics": {
+      "computed_split_hashes": {
+        "calibration": "b4f9c0e03c1fc6c7aede452989b801527e57f105be5f97422d7319d9edcbb761",
+        "test": "4bdd33b52e49799bdb065ef99decbf9123ff1c8f4609dcfc02db8584936525e3",
+        "train": "db0e835c6c9566964f1288ed1d0743dc60d2765c25030a3a6cccd49d5a1dc172"
+      },
+      "external_datasets_pending": 3,
+      "final_test_hash_verified": true,
+      "real_data_execution": "DEFERRED_EXTERNAL",
+      "records": 9,
+      "split_counts": {
+        "calibration": 3,
+        "test": 3,
+        "train": 3
+      },
+      "synthetic_fixture_claim": "validation-only"
+    },
+    "evaluation_source": "deterministic_validation_fixture",
+    "external_validation": {
+      "real_metrics_published": false,
+      "reason": "licensed region/hazard, sensor, weather, language, subgroup, and adjudicated harm data are unavailable",
+      "status": "DEFERRED_EXTERNAL"
+    },
+    "families": {
+      "adversarial_misinformation": {
+        "affected_count": 40,
+        "attack_count": 40,
+        "degradation": 0.0,
+        "fallback_rate": 1.0,
+        "false_alert_burden": 0.02439,
+        "harm_weighted_error": 0.003846,
+        "passed": true,
+        "recall": 1.0,
+        "release_blocking": true,
+        "risk_coverage": {
+          "observed": 0.8,
+          "requested": 0.8,
+          "risk": 0.0,
+          "selected_count": 320
+        },
+        "safe_fallback": "abstain",
+        "sample_count": 400,
+        "severe_error_rate": 0.0,
+        "subgroup_gap": 0.0,
+        "subgroup_metrics": {
+          "connected": 1.0,
+          "low_connectivity": 1.0
+        },
+        "thresholds": {
+          "degradation_max": 0.2,
+          "fallback_rate_min": 1.0,
+          "false_alert_burden_max": 0.05,
+          "risk_coverage_max": 0.1,
+          "severe_error_rate_max": 0.05,
+          "subgroup_gap_max": 0.1
+        }
+      },
+      "language_shift": {
+        "affected_count": 40,
+        "attack_count": 0,
+        "degradation": 0.0,
+        "fallback_rate": 1.0,
+        "false_alert_burden": 0.0,
+        "harm_weighted_error": 0.0,
+        "passed": true,
+        "recall": 1.0,
+        "release_blocking": true,
+        "risk_coverage": {
+          "observed": 0.8,
+          "requested": 0.8,
+          "risk": 0.0,
+          "selected_count": 320
+        },
+        "safe_fallback": "uncertainty",
+        "sample_count": 400,
+        "severe_error_rate": 0.0,
+        "subgroup_gap": 0.0,
+        "subgroup_metrics": {
+          "connected": 1.0,
+          "low_connectivity": 1.0
+        },
+        "thresholds": {
+          "degradation_max": 0.2,
+          "fallback_rate_min": 1.0,
+          "false_alert_burden_max": 0.05,
+          "risk_coverage_max": 0.1,
+          "severe_error_rate_max": 0.05,
+          "subgroup_gap_max": 0.1
+        }
+      },
+      "sensor_conflict": {
+        "affected_count": 80,
+        "attack_count": 0,
+        "degradation": 0.0,
+        "fallback_rate": 1.0,
+        "false_alert_burden": 0.0,
+        "harm_weighted_error": 0.0,
+        "passed": true,
+        "recall": 1.0,
+        "release_blocking": true,
+        "risk_coverage": {
+          "observed": 0.8,
+          "requested": 0.8,
+          "risk": 0.0,
+          "selected_count": 320
+        },
+        "safe_fallback": "abstain",
+        "sample_count": 400,
+        "severe_error_rate": 0.0,
+        "subgroup_gap": 0.0,
+        "subgroup_metrics": {
+          "connected": 1.0,
+          "low_connectivity": 1.0
+        },
+        "thresholds": {
+          "degradation_max": 0.2,
+          "fallback_rate_min": 1.0,
+          "false_alert_burden_max": 0.05,
+          "risk_coverage_max": 0.1,
+          "severe_error_rate_max": 0.05,
+          "subgroup_gap_max": 0.1
+        }
+      },
+      "sensor_delay": {
+        "affected_count": 40,
+        "attack_count": 0,
+        "degradation": 0.0,
+        "fallback_rate": 1.0,
+        "false_alert_burden": 0.0,
+        "harm_weighted_error": 0.0,
+        "passed": true,
+        "recall": 1.0,
+        "release_blocking": true,
+        "risk_coverage": {
+          "observed": 0.8,
+          "requested": 0.8,
+          "risk": 0.0,
+          "selected_count": 320
+        },
+        "safe_fallback": "abstain",
+        "sample_count": 400,
+        "severe_error_rate": 0.0,
+        "subgroup_gap": 0.0,
+        "subgroup_metrics": {
+          "connected": 1.0,
+          "low_connectivity": 1.0
+        },
+        "thresholds": {
+          "degradation_max": 0.2,
+          "fallback_rate_min": 1.0,
+          "false_alert_burden_max": 0.05,
+          "risk_coverage_max": 0.1,
+          "severe_error_rate_max": 0.05,
+          "subgroup_gap_max": 0.1
+        }
+      },
+      "sensor_duplication": {
+        "affected_count": 20,
+        "attack_count": 0,
+        "degradation": 0.0,
+        "fallback_rate": 1.0,
+        "false_alert_burden": 0.0,
+        "harm_weighted_error": 0.0,
+        "passed": true,
+        "recall": 1.0,
+        "release_blocking": true,
+        "risk_coverage": {
+          "observed": 0.8,
+          "requested": 0.8,
+          "risk": 0.0,
+          "selected_count": 320
+        },
+        "safe_fallback": "abstain",
+        "sample_count": 400,
+        "severe_error_rate": 0.0,
+        "subgroup_gap": 0.0,
+        "subgroup_metrics": {
+          "connected": 1.0,
+          "low_connectivity": 1.0
+        },
+        "thresholds": {
+          "degradation_max": 0.2,
+          "fallback_rate_min": 1.0,
+          "false_alert_burden_max": 0.05,
+          "risk_coverage_max": 0.1,
+          "severe_error_rate_max": 0.05,
+          "subgroup_gap_max": 0.1
+        }
+      },
+      "sensor_outage": {
+        "affected_count": 40,
+        "attack_count": 0,
+        "degradation": 0.0,
+        "fallback_rate": 1.0,
+        "false_alert_burden": 0.0,
+        "harm_weighted_error": 0.0,
+        "passed": true,
+        "recall": 1.0,
+        "release_blocking": true,
+        "risk_coverage": {
+          "observed": 0.8,
+          "requested": 0.8,
+          "risk": 0.0,
+          "selected_count": 320
+        },
+        "safe_fallback": "abstain",
+        "sample_count": 400,
+        "severe_error_rate": 0.0,
+        "subgroup_gap": 0.0,
+        "subgroup_metrics": {
+          "connected": 1.0,
+          "low_connectivity": 1.0
+        },
+        "thresholds": {
+          "degradation_max": 0.2,
+          "fallback_rate_min": 1.0,
+          "false_alert_burden_max": 0.05,
+          "risk_coverage_max": 0.1,
+          "severe_error_rate_max": 0.05,
+          "subgroup_gap_max": 0.1
+        }
+      },
+      "unseen_hazard_shift": {
+        "affected_count": 40,
+        "attack_count": 0,
+        "degradation": 0.05,
+        "fallback_rate": 1.0,
+        "false_alert_burden": 0.0,
+        "harm_weighted_error": 0.038462,
+        "passed": true,
+        "recall": 0.95,
+        "release_blocking": true,
+        "risk_coverage": {
+          "observed": 0.8,
+          "requested": 0.8,
+          "risk": 0.0,
+          "selected_count": 320
+        },
+        "safe_fallback": "uncertainty",
+        "sample_count": 400,
+        "severe_error_rate": 0.05,
+        "subgroup_gap": 0.1,
+        "subgroup_metrics": {
+          "connected": 1.0,
+          "low_connectivity": 0.9
+        },
+        "thresholds": {
+          "degradation_max": 0.2,
+          "fallback_rate_min": 1.0,
+          "false_alert_burden_max": 0.05,
+          "risk_coverage_max": 0.1,
+          "severe_error_rate_max": 0.05,
+          "subgroup_gap_max": 0.1
+        }
+      },
+      "unseen_region_shift": {
+        "affected_count": 40,
+        "attack_count": 0,
+        "degradation": 0.05,
+        "fallback_rate": 1.0,
+        "false_alert_burden": 0.0,
+        "harm_weighted_error": 0.038462,
+        "passed": true,
+        "recall": 0.95,
+        "release_blocking": true,
+        "risk_coverage": {
+          "observed": 0.8,
+          "requested": 0.8,
+          "risk": 0.0,
+          "selected_count": 320
+        },
+        "safe_fallback": "uncertainty",
+        "sample_count": 400,
+        "severe_error_rate": 0.05,
+        "subgroup_gap": 0.1,
+        "subgroup_metrics": {
+          "connected": 1.0,
+          "low_connectivity": 0.9
+        },
+        "thresholds": {
+          "degradation_max": 0.2,
+          "fallback_rate_min": 1.0,
+          "false_alert_burden_max": 0.05,
+          "risk_coverage_max": 0.1,
+          "severe_error_rate_max": 0.05,
+          "subgroup_gap_max": 0.1
+        }
+      },
+      "weather_quality": {
+        "affected_count": 40,
+        "attack_count": 0,
+        "degradation": 0.0,
+        "fallback_rate": 1.0,
+        "false_alert_burden": 0.0,
+        "harm_weighted_error": 0.0,
+        "passed": true,
+        "recall": 1.0,
+        "release_blocking": true,
+        "risk_coverage": {
+          "observed": 0.8,
+          "requested": 0.8,
+          "risk": 0.0,
+          "selected_count": 320
+        },
+        "safe_fallback": "abstain",
+        "sample_count": 400,
+        "severe_error_rate": 0.0,
+        "subgroup_gap": 0.0,
+        "subgroup_metrics": {
+          "connected": 1.0,
+          "low_connectivity": 1.0
+        },
+        "thresholds": {
+          "degradation_max": 0.2,
+          "fallback_rate_min": 1.0,
+          "false_alert_burden_max": 0.05,
+          "risk_coverage_max": 0.1,
+          "severe_error_rate_max": 0.05,
+          "subgroup_gap_max": 0.1
+        }
+      }
+    },
+    "findings": [],
+    "privacy": {
+      "attributes": "synthetic subgroup labels only",
+      "export": "aggregate metrics and route states only",
+      "raw_pii": false,
+      "status": "PASS",
+      "storage": "in-memory deterministic fixture"
+    },
+    "release_blocked_by_external_data": true,
+    "release_blocking_thresholds": {
+      "fallback_rate_min": 1.0,
+      "false_alert_burden_max": 0.05,
+      "max_degradation": 0.2,
+      "risk_coverage_max": 0.1,
+      "severe_error_rate_max": 0.05,
+      "subgroup_gap_max": 0.1
+    },
+    "route_fallbacks": {
+      "damage": [
+        "abstain",
+        "unavailable",
+        "uncertainty"
+      ],
+      "ensemble": [
+        "abstain",
+        "unavailable",
+        "uncertainty"
+      ],
+      "flood_mapping": [
+        "abstain",
+        "unavailable",
+        "uncertainty"
+      ],
+      "nlp": [
+        "abstain",
+        "unavailable",
+        "uncertainty"
+      ],
+      "route_planner": [
+        "abstain",
+        "uncertainty"
+      ]
+    },
+    "thresholds": {
+      "fallback_rate_min": 1.0,
+      "false_alert_burden_max": 0.05,
+      "max_degradation": 0.2,
+      "risk_coverage_max": 0.1,
+      "severe_error_rate_max": 0.05,
+      "subgroup_gap_max": 0.1
+    },
+    "verification_commands": {
+      "happy": {
+        "command": "backend/.venv/bin/python scripts/run_robustness_suite.py --manifest data/datasets/benchmark-v1.json --report evidence/sota/task-18-happy.json",
+        "exit_code": 0,
+        "stdout": "status=PASS"
+      },
+      "stale_conflicting_sensor_failure": {
+        "command": "backend/.venv/bin/python scripts/run_robustness_suite.py --fixture tests/fixtures/stale-conflicting-sensors.json --require-abstention",
+        "exit_code": 0,
+        "stdout": "status=PASS"
+      }
+    }
+  },
+  "started_at": "2026-08-03T01:34:45.489817Z",
+  "status": "PASS",
+  "task_id": "18"
+}

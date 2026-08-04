@@ -8,12 +8,12 @@ Test suite:
   1.  GET /api/incidents/{id}/scenarios — scenario ensemble with best/expected/worst
   2.  GET /api/incidents/{id}/world-state — DBN state distribution
   3.  GET /api/incidents/{id}/calibration — Brier/ECE/coverage metrics
-  4.  GET /api/incidents/{id}/flood-map — degrades to model_unavailable
-  5.  GET /api/incidents/{id}/flood-ensemble — degrades to model_unavailable
+   4.  GET /api/incidents/{id}/flood-map — degrades to unavailable
+   5.  GET /api/incidents/{id}/flood-ensemble — abstains without ensemble input
   6.  GET /api/incidents/{id}/sensing-actions — 12 actions including rescue ball
   7.  POST /api/incidents/{id}/sensing-actions/{action_id}/dispatch — pending task
-  8.  POST /api/incidents/{id}/damage-assessment — degrades to model_unavailable
-  9.  POST /api/incidents/{id}/nlp-report — degrades to model_unavailable
+   8.  POST /api/incidents/{id}/damage-assessment — degrades to unavailable
+   9.  POST /api/incidents/{id}/nlp-report — degrades to unavailable
   10. POST /api/eval/run — testbed evaluation with task_id
   11. GET /api/eval/results/{task_id} — retrieve eval results
   12. Rescue ball present in sensing actions catalog
@@ -21,12 +21,23 @@ Test suite:
 
 from __future__ import annotations
 
+import base64
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi.testclient import TestClient
 
+from app.auth.command_authorization import build_signature_bytes
 from app.auth.seed import seed_demo_users
 from app.db import SessionLocal
+from app.lib.time import now_ms
+from app.lib.ulid import generate_ulid
 from app.main import app
+from app.models.alert import Alert, AlertDecision, CommandApproval, CommandSigningKey
+from app.models.entities import OperationalTask
+from app.models.incident import Incident
+from app.models.user import User
 
 PASSWORD = "demo1234"
 ADMIN_EMAIL = "admin@demo.disaster"
@@ -160,7 +171,7 @@ def test_get_calibration_returns_metrics() -> None:
 
 
 def test_get_flood_map_degrades_gracefully(degrade_env: None) -> None:
-    """GET /flood-map returns model_unavailable when weights are missing."""
+    """GET /flood-map returns unavailable when weights are missing."""
     with TestClient(app) as client:
         token = _login(client, ADMIN_EMAIL)
         inc_id = _create_incident(client, token)
@@ -171,7 +182,7 @@ def test_get_flood_map_degrades_gracefully(degrade_env: None) -> None:
         )
         assert resp.status_code == 200, resp.text
         body = resp.json()
-        assert body["status"] == "model_unavailable"
+        assert body["status"] == "unavailable"
         assert body["feature"] == "flood_mapping"
 
 
@@ -179,7 +190,7 @@ def test_get_flood_map_degrades_gracefully(degrade_env: None) -> None:
 
 
 def test_get_flood_ensemble_degrades_gracefully() -> None:
-    """GET /flood-ensemble returns model_unavailable when weights are missing."""
+    """GET /flood-ensemble abstains when ensemble input is missing."""
     with TestClient(app) as client:
         token = _login(client, ADMIN_EMAIL)
         inc_id = _create_incident(client, token)
@@ -190,7 +201,7 @@ def test_get_flood_ensemble_degrades_gracefully() -> None:
         )
         assert resp.status_code == 200, resp.text
         body = resp.json()
-        assert body["status"] == "model_unavailable"
+        assert body["status"] == "abstain"
         assert body["feature"] == "ensemble"
 
 
@@ -292,7 +303,7 @@ def test_dispatch_rescue_ball() -> None:
 
 
 def test_damage_assessment_degrades_gracefully(degrade_env: None) -> None:
-    """POST /damage-assessment returns model_unavailable when weights are missing."""
+    """POST /damage-assessment returns unavailable when weights are missing."""
     with TestClient(app) as client:
         token = _login(client, ADMIN_EMAIL)
         inc_id = _create_incident(client, token)
@@ -304,7 +315,7 @@ def test_damage_assessment_degrades_gracefully(degrade_env: None) -> None:
         )
         assert resp.status_code == 200, resp.text
         body = resp.json()
-        assert body["status"] == "model_unavailable"
+        assert body["status"] == "unavailable"
         assert body["feature"] == "damage"
 
 
@@ -312,7 +323,7 @@ def test_damage_assessment_degrades_gracefully(degrade_env: None) -> None:
 
 
 def test_nlp_report_degrades_gracefully(degrade_env: None) -> None:
-    """POST /nlp-report returns model_unavailable when weights are missing."""
+    """POST /nlp-report returns unavailable when weights are missing."""
     with TestClient(app) as client:
         token = _login(client, ADMIN_EMAIL)
         inc_id = _create_incident(client, token)
@@ -324,7 +335,7 @@ def test_nlp_report_degrades_gracefully(degrade_env: None) -> None:
         )
         assert resp.status_code == 200, resp.text
         body = resp.json()
-        assert body["status"] == "model_unavailable"
+        assert body["status"] == "unavailable"
         assert body["feature"] == "nlp"
 
 
@@ -419,3 +430,568 @@ def test_eval_run_requires_admin_role() -> None:
             headers=_auth_header(token),
         )
         assert resp.status_code == 403
+
+
+def _create_alert_for_command(
+    db,
+    *,
+    org_id: str = "org_demo",
+    recommended_action: str | None = "Monitor river gauge",
+) -> tuple[str, str]:
+    ts = now_ms()
+    incident_id = generate_ulid()
+    alert_id = generate_ulid()
+    db.add(Incident(
+        id=incident_id,
+        org_id=org_id,
+        title="Command workflow test",
+        disaster_type="flood",
+        severity="high",
+        status="active",
+        start_time=ts,
+        created_at=ts,
+        updated_at=ts,
+    ))
+    db.flush()
+    db.add(Alert(
+        id=alert_id,
+        org_id=org_id,
+        incident_id=incident_id,
+        alert_type="public_warning" if recommended_action is None else "status_update",
+        title="Command workflow alert",
+        message="A command workflow test alert.",
+        severity="high",
+        recommended_action=recommended_action,
+        confidence_vector={"s": 0.8, "c": 0.8},
+        status="draft",
+        created_by="test",
+        created_at=ts,
+        updated_at=ts,
+    ))
+    db.commit()
+    return incident_id, alert_id
+
+
+def _install_command_key(email: str) -> tuple[str, Ed25519PrivateKey]:
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == email).one()
+        key_id = generate_ulid()
+        private_key = Ed25519PrivateKey.generate()
+        public_key = private_key.public_key().public_bytes_raw()
+        db.add(CommandSigningKey(
+            id=generate_ulid(),
+            org_id=user.org_id,
+            user_id=user.id,
+            key_id=key_id,
+            public_key=base64.b64encode(public_key).decode("ascii"),
+            active=True,
+            created_at=now_ms(),
+        ))
+        db.commit()
+        return key_id, private_key
+    finally:
+        db.close()
+
+
+def _signed_command(
+    *,
+    incident_id: str,
+    alert_id: str,
+    command_type: str,
+    rationale: str,
+    key_id: str,
+    user_id: str,
+    private_key: Ed25519PrivateKey,
+    signed_at_ms: int | None = None,
+    expires_at_ms: int | None = None,
+) -> dict[str, str | int]:
+    signed_at = signed_at_ms if signed_at_ms is not None else now_ms()
+    expires_at = expires_at_ms if expires_at_ms is not None else signed_at + 300_000
+    nonce = generate_ulid()
+    signature_payload = {
+        "incident_id": incident_id,
+        "alert_id": alert_id,
+        "command_type": command_type,
+        "rationale": rationale,
+    }
+    signature = private_key.sign(build_signature_bytes(
+        signature_payload,
+        nonce=nonce,
+        expires_at_ms=expires_at,
+    ))
+    return {
+        "user_id": user_id,
+        "key_id": key_id,
+        "nonce": nonce,
+        "signed_at_ms": signed_at,
+        "expires_at_ms": expires_at,
+        "signature": base64.b64encode(signature).decode("ascii"),
+    }
+
+
+def test_non_dispatch_alert_approval_persists_decision_without_task() -> None:
+    with TestClient(app) as client:
+        token = _login(client, "emergency_manager@demo.disaster")
+        db = SessionLocal()
+        try:
+            incident_id, alert_id = _create_alert_for_command(db)
+        finally:
+            db.close()
+
+        response = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/approve",
+            json={"review_rationale": "Monitor-only alert approved"},
+            headers=_auth_header(token),
+        )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["status"] == "approved"
+    db = SessionLocal()
+    try:
+        assert db.query(OperationalTask).filter(
+            OperationalTask.incident_id == incident_id,
+            OperationalTask.properties["alert_id"].as_string() == alert_id,
+        ).count() == 0
+    finally:
+        db.close()
+
+
+def test_dispatch_requires_two_signed_distinct_roles_and_is_idempotent() -> None:
+    with TestClient(app) as client:
+        manager_token = _login(client, "emergency_manager@demo.disaster")
+        coordinator_token = _login(client, "responder_coordinator@demo.disaster")
+        db = SessionLocal()
+        try:
+            incident_id, alert_id = _create_alert_for_command(
+                db, recommended_action="Dispatch rescue boat"
+            )
+            manager_id = db.query(User).filter(
+                User.email == "emergency_manager@demo.disaster"
+            ).one().id
+            coordinator_id = db.query(User).filter(
+                User.email == "responder_coordinator@demo.disaster"
+            ).one().id
+        finally:
+            db.close()
+        manager_key_id, manager_key = _install_command_key(
+            "emergency_manager@demo.disaster"
+        )
+        coordinator_key_id, coordinator_key = _install_command_key(
+            "responder_coordinator@demo.disaster"
+        )
+        rationale = "Dispatch is required to reach stranded residents."
+        manager_approval = _signed_command(
+            incident_id=incident_id,
+            alert_id=alert_id,
+            command_type="task_creation",
+            rationale=rationale,
+            key_id=manager_key_id,
+            user_id=manager_id,
+            private_key=manager_key,
+        )
+        coordinator_approval = _signed_command(
+            incident_id=incident_id,
+            alert_id=alert_id,
+            command_type="task_creation",
+            rationale=rationale,
+            key_id=coordinator_key_id,
+            user_id=coordinator_id,
+            private_key=coordinator_key,
+        )
+        body = {
+            "command_type": "task_creation",
+            "rationale": rationale,
+            "approval": manager_approval,
+        }
+        first = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+            json=body,
+            headers={**_auth_header(manager_token), "Idempotency-Key": generate_ulid()},
+        )
+        assert first.status_code == 202, first.text
+        assert first.json()["task_id"] is None
+
+        body["approval"] = coordinator_approval
+        second_key = generate_ulid()
+        second = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+            json=body,
+            headers={**_auth_header(coordinator_token), "Idempotency-Key": second_key},
+        )
+        assert second.status_code == 200, second.text
+        task_id = second.json()["task_id"]
+
+        retry = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+            json=body,
+            headers={**_auth_header(coordinator_token), "Idempotency-Key": second_key},
+        )
+        assert retry.status_code == 200, retry.text
+        assert retry.json()["task_id"] == task_id
+
+        conflict_body = {**body, "rationale": "A different command payload"}
+        conflict = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+            json=conflict_body,
+            headers={**_auth_header(coordinator_token), "Idempotency-Key": second_key},
+        )
+        assert conflict.status_code == 409
+
+    db = SessionLocal()
+    try:
+        assert db.query(OperationalTask).filter(
+            OperationalTask.incident_id == incident_id,
+            OperationalTask.source_alert_id == alert_id,
+        ).count() == 1
+    finally:
+        db.close()
+
+
+def test_dispatch_rejects_single_stale_and_wrong_role_approvals() -> None:
+    with TestClient(app) as client:
+        manager_token = _login(client, "emergency_manager@demo.disaster")
+        viewer_token = _login(client, VIEWER_EMAIL)
+        db = SessionLocal()
+        try:
+            incident_id, alert_id = _create_alert_for_command(
+                db, recommended_action="Commit evacuation resources"
+            )
+            manager_id = db.query(User).filter(
+                User.email == "emergency_manager@demo.disaster"
+            ).one().id
+            viewer_id = db.query(User).filter(User.email == VIEWER_EMAIL).one().id
+        finally:
+            db.close()
+        manager_key_id, manager_key = _install_command_key(
+            "emergency_manager@demo.disaster"
+        )
+        stale = _signed_command(
+            incident_id=incident_id,
+            alert_id=alert_id,
+            command_type="resource_commitment",
+            rationale="Stale authorization test",
+            key_id=manager_key_id,
+            user_id=manager_id,
+            private_key=manager_key,
+            signed_at_ms=now_ms() - 301_000,
+        )
+        stale_response = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+            json={
+                "command_type": "resource_commitment",
+                "rationale": "Stale authorization test",
+                "approval": stale,
+            },
+            headers={**_auth_header(manager_token), "Idempotency-Key": generate_ulid()},
+        )
+        assert stale_response.status_code == 422
+
+        wrong_key_id, wrong_key = _install_command_key(VIEWER_EMAIL)
+        wrong = _signed_command(
+            incident_id=incident_id,
+            alert_id=alert_id,
+            command_type="resource_commitment",
+            rationale="Wrong role test",
+            key_id=wrong_key_id,
+            user_id=viewer_id,
+            private_key=wrong_key,
+        )
+        wrong_response = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+            json={
+                "command_type": "resource_commitment",
+                "rationale": "Wrong role test",
+                "approval": wrong,
+            },
+            headers={"Authorization": f"Bearer {viewer_token}", "Idempotency-Key": generate_ulid()},
+        )
+        assert wrong_response.status_code == 403
+
+    db = SessionLocal()
+    try:
+        assert db.query(OperationalTask).filter(
+            OperationalTask.source_alert_id == alert_id,
+        ).count() == 0
+    finally:
+        db.close()
+
+
+def test_concurrent_distinct_approvals_create_one_task() -> None:
+    with TestClient(app) as client:
+        manager_token = _login(client, "emergency_manager@demo.disaster")
+        coordinator_token = _login(client, "responder_coordinator@demo.disaster")
+        db = SessionLocal()
+        try:
+            incident_id, alert_id = _create_alert_for_command(
+                db, recommended_action="Dispatch concurrent rescue task"
+            )
+            manager_id = db.query(User).filter(
+                User.email == "emergency_manager@demo.disaster"
+            ).one().id
+            coordinator_id = db.query(User).filter(
+                User.email == "responder_coordinator@demo.disaster"
+            ).one().id
+        finally:
+            db.close()
+        manager_key_id, manager_key = _install_command_key(
+            "emergency_manager@demo.disaster"
+        )
+        coordinator_key_id, coordinator_key = _install_command_key(
+            "responder_coordinator@demo.disaster"
+        )
+        rationale = "Concurrent approvals must converge on one task."
+        manager_approval = _signed_command(
+            incident_id=incident_id, alert_id=alert_id, command_type="task_creation",
+            rationale=rationale, key_id=manager_key_id, user_id=manager_id,
+            private_key=manager_key,
+        )
+        coordinator_approval = _signed_command(
+            incident_id=incident_id, alert_id=alert_id, command_type="task_creation",
+            rationale=rationale, key_id=coordinator_key_id, user_id=coordinator_id,
+            private_key=coordinator_key,
+        )
+
+        def submit(token: str, approval: dict[str, str | int]) -> int:
+            response = client.post(
+                f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+                json={"command_type": "task_creation", "rationale": rationale,
+                      "approval": approval},
+                headers={**_auth_header(token), "Idempotency-Key": generate_ulid()},
+            )
+            return response.status_code
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            statuses = list(executor.map(
+                submit,
+                (manager_token, coordinator_token),
+                (manager_approval, coordinator_approval),
+            ))
+        assert sorted(statuses) == [200, 202]
+
+    db = SessionLocal()
+    try:
+        assert db.query(OperationalTask).filter(
+            OperationalTask.source_alert_id == alert_id,
+        ).count() == 1
+    finally:
+        db.close()
+
+
+def test_command_transaction_rolls_back_before_audit_commit(monkeypatch: pytest.MonkeyPatch) -> None:
+    with TestClient(app) as client:
+        manager_token = _login(client, "emergency_manager@demo.disaster")
+        db = SessionLocal()
+        try:
+            incident_id, alert_id = _create_alert_for_command(
+                db, recommended_action="Rollback command"
+            )
+            manager_id = db.query(User).filter(
+                User.email == "emergency_manager@demo.disaster"
+            ).one().id
+        finally:
+            db.close()
+        key_id, private_key = _install_command_key("emergency_manager@demo.disaster")
+        rationale = "Audit failure must not leave an approval row."
+        approval = _signed_command(
+            incident_id=incident_id, alert_id=alert_id, command_type="task_creation",
+            rationale=rationale, key_id=key_id, user_id=manager_id,
+            private_key=private_key,
+        )
+
+        def fail_audit(*args: object, **kwargs: object) -> None:
+            raise RuntimeError("forced audit failure")
+
+        monkeypatch.setattr("app.api.routes.alert_commands.write_audit", fail_audit)
+        with pytest.raises(RuntimeError, match="forced audit failure"):
+            client.post(
+                f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+                json={"command_type": "task_creation", "rationale": rationale,
+                      "approval": approval},
+                headers={**_auth_header(manager_token), "Idempotency-Key": generate_ulid()},
+            )
+
+    db = SessionLocal()
+    try:
+        assert db.query(AlertDecision).filter(
+            AlertDecision.alert_id == alert_id,
+        ).count() == 0
+        assert db.query(OperationalTask).filter(
+            OperationalTask.source_alert_id == alert_id,
+        ).count() == 0
+    finally:
+        db.close()
+
+
+def test_dispatch_rejects_malformed_approval_and_cross_org_incident() -> None:
+    with TestClient(app) as client:
+        manager_token = _login(client, "emergency_manager@demo.disaster")
+        db = SessionLocal()
+        try:
+            incident_id, alert_id = _create_alert_for_command(db)
+        finally:
+            db.close()
+        malformed = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+            json={"command_type": "task_creation", "rationale": "bad payload", "approval": {}},
+            headers={**_auth_header(manager_token), "Idempotency-Key": generate_ulid()},
+        )
+        assert malformed.status_code == 422
+        cross_org = client.post(
+            f"/api/incidents/foreign-incident/alerts/{alert_id}/dispatch",
+            json={"command_type": "task_creation", "rationale": "cross org", "approval": {
+                "user_id": "foreign-user", "key_id": "foreign-key", "nonce": generate_ulid(),
+                "signed_at_ms": now_ms(), "expires_at_ms": now_ms() + 300_000,
+                "signature": "not-a-signature",
+            }},
+            headers={**_auth_header(manager_token), "Idempotency-Key": generate_ulid()},
+        )
+        assert cross_org.status_code == 404
+
+    db = SessionLocal()
+    try:
+        assert db.query(OperationalTask).filter(
+            OperationalTask.source_alert_id == alert_id,
+        ).count() == 0
+    finally:
+        db.close()
+
+
+def test_dispatch_rejects_invalid_signature_without_creating_decision() -> None:
+    with TestClient(app) as client:
+        manager_token = _login(client, "emergency_manager@demo.disaster")
+        db = SessionLocal()
+        try:
+            incident_id, alert_id = _create_alert_for_command(db)
+            manager_id = db.query(User).filter(
+                User.email == "emergency_manager@demo.disaster"
+            ).one().id
+        finally:
+            db.close()
+        key_id, private_key = _install_command_key("emergency_manager@demo.disaster")
+        approval = _signed_command(
+            incident_id=incident_id, alert_id=alert_id, command_type="task_creation",
+            rationale="Invalid signature test", key_id=key_id, user_id=manager_id,
+            private_key=private_key,
+        )
+        approval["signature"] = "not-a-valid-ed25519-signature"
+        response = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+            json={"command_type": "task_creation", "rationale": "Invalid signature test", "approval": approval},
+            headers={**_auth_header(manager_token), "Idempotency-Key": generate_ulid()},
+        )
+        assert response.status_code == 422
+
+    db = SessionLocal()
+    try:
+        assert db.query(AlertDecision).filter(AlertDecision.alert_id == alert_id).count() == 0
+    finally:
+        db.close()
+
+
+def test_dispatch_rejects_expired_signature_without_creating_decision() -> None:
+    with TestClient(app) as client:
+        manager_token = _login(client, "emergency_manager@demo.disaster")
+        db = SessionLocal()
+        try:
+            incident_id, alert_id = _create_alert_for_command(db)
+            manager_id = db.query(User).filter(
+                User.email == "emergency_manager@demo.disaster"
+            ).one().id
+        finally:
+            db.close()
+        key_id, private_key = _install_command_key("emergency_manager@demo.disaster")
+        signed_at = now_ms() - 100_000
+        approval = _signed_command(
+            incident_id=incident_id, alert_id=alert_id, command_type="task_creation",
+            rationale="Expired signature test", key_id=key_id, user_id=manager_id,
+            private_key=private_key, signed_at_ms=signed_at, expires_at_ms=now_ms() - 1,
+        )
+        response = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+            json={"command_type": "task_creation", "rationale": "Expired signature test", "approval": approval},
+            headers={**_auth_header(manager_token), "Idempotency-Key": generate_ulid()},
+        )
+        assert response.status_code == 422
+
+    db = SessionLocal()
+    try:
+        assert db.query(AlertDecision).filter(AlertDecision.alert_id == alert_id).count() == 0
+    finally:
+        db.close()
+
+
+def test_dispatch_rejects_revoked_signing_key_without_creating_decision() -> None:
+    with TestClient(app) as client:
+        manager_token = _login(client, "emergency_manager@demo.disaster")
+        db = SessionLocal()
+        try:
+            incident_id, alert_id = _create_alert_for_command(db)
+            manager_id = db.query(User).filter(
+                User.email == "emergency_manager@demo.disaster"
+            ).one().id
+        finally:
+            db.close()
+        key_id, private_key = _install_command_key("emergency_manager@demo.disaster")
+        db = SessionLocal()
+        try:
+            key = db.query(CommandSigningKey).filter(CommandSigningKey.key_id == key_id).one()
+            key.revoked_at = now_ms()
+            db.commit()
+        finally:
+            db.close()
+        approval = _signed_command(
+            incident_id=incident_id, alert_id=alert_id, command_type="task_creation",
+            rationale="Revoked key test", key_id=key_id, user_id=manager_id,
+            private_key=private_key,
+        )
+        response = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+            json={"command_type": "task_creation", "rationale": "Revoked key test", "approval": approval},
+            headers={**_auth_header(manager_token), "Idempotency-Key": generate_ulid()},
+        )
+        assert response.status_code == 403
+
+    db = SessionLocal()
+    try:
+        assert db.query(AlertDecision).filter(AlertDecision.alert_id == alert_id).count() == 0
+    finally:
+        db.close()
+
+
+def test_dispatch_rejects_replayed_nonce_without_creating_second_approval() -> None:
+    with TestClient(app) as client:
+        manager_token = _login(client, "emergency_manager@demo.disaster")
+        db = SessionLocal()
+        try:
+            incident_id, alert_id = _create_alert_for_command(db)
+            manager_id = db.query(User).filter(
+                User.email == "emergency_manager@demo.disaster"
+            ).one().id
+        finally:
+            db.close()
+        key_id, private_key = _install_command_key("emergency_manager@demo.disaster")
+        approval = _signed_command(
+            incident_id=incident_id, alert_id=alert_id, command_type="task_creation",
+            rationale="Replay nonce test", key_id=key_id, user_id=manager_id,
+            private_key=private_key,
+        )
+        body = {"command_type": "task_creation", "rationale": "Replay nonce test", "approval": approval}
+        first = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+            json=body,
+            headers={**_auth_header(manager_token), "Idempotency-Key": generate_ulid()},
+        )
+        assert first.status_code == 202
+        replay = client.post(
+            f"/api/incidents/{incident_id}/alerts/{alert_id}/dispatch",
+            json=body,
+            headers={**_auth_header(manager_token), "Idempotency-Key": generate_ulid()},
+        )
+        assert replay.status_code == 409
+
+    db = SessionLocal()
+    try:
+        assert db.query(CommandApproval).filter(CommandApproval.alert_id == alert_id).count() == 1
+    finally:
+        db.close()

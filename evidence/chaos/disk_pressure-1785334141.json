@@ -1,0 +1,20 @@
+{
+  "scenario": "disk_pressure",
+  "fill_mb": 800,
+  "available_mb_before": 118869,
+  "available_mb_after": 118068,
+  "available_mb_recovered": 118868,
+  "df_before": "Filesystem      Size  Used Avail Use% Mounted on\noverlay         237G  111G  117G  49% /",
+  "df_after": "Filesystem      Size  Used Avail Use% Mounted on\noverlay         237G  112G  116G  50% /",
+  "df_recovered": "Filesystem      Size  Used Avail Use% Mounted on\noverlay         237G  111G  117G  49% /",
+  "health_during_pressure": 200,
+  "observation_post_during_pressure": 201,
+  "deep_health_during_pressure": {
+    "database": true,
+    "redis": true,
+    "redpanda": false,
+    "minio": true
+  },
+  "health_after_cleanup": 200,
+  "observation_post_after_cleanup": 201
+}

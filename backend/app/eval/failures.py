@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from app.eval.failure_robustness import RobustnessFailureMixin
 from app.eval.testbed_types import (
     EntityStatus,
     Hospital,
@@ -31,13 +32,7 @@ _DEG_TO_M = 111_320.0
 _MISINFO_TYPES = frozenset({"misinformation", "adversarial"})
 _LANGS = ("hi", "en_hi", "ta", "bn", "te", "mr")
 
-_OBS_DISPATCH: dict[str, str] = {
-    "feed_loss": "inject_feed_loss", "delay": "inject_delay",
-    "false_reports": "inject_false_reports", "duplicates": "inject_duplicates",
-    "geolocation_ambiguity": "inject_geolocation_ambiguity",
-    "multilingual": "inject_multilingual",
-    "adversarial_misinformation": "inject_adversarial_misinformation",
-}
+_OBS_DISPATCH: dict[str, str] = {"feed_loss": "inject_feed_loss", "delay": "inject_delay", "false_reports": "inject_false_reports", "duplicates": "inject_duplicates", "geolocation_ambiguity": "inject_geolocation_ambiguity", "multilingual": "inject_multilingual", "adversarial_misinformation": "inject_adversarial_misinformation", "sensor_outage": "inject_sensor_outage", "sensor_delay": "inject_sensor_delay", "sensor_duplicates": "inject_sensor_duplicates", "sensor_conflict": "inject_conflicting_sensors", "weather_quality": "inject_weather_quality"}
 _INFRA_DISPATCH: dict[str, tuple[str, str | None]] = {
     "tower_failure": ("inject_tower_failure", None),
     "shelter_capacity_change": ("inject_shelter_capacity_change", "shelters"),
@@ -56,7 +51,7 @@ def _distance_m(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
     return ((lon2 - lon1) ** 2 + (lat2 - lat1) ** 2) ** 0.5 * _DEG_TO_M
 
 
-class FailureInjector:
+class FailureInjector(RobustnessFailureMixin):
     """Inject configurable failures into testbed infrastructure and observations."""
 
     def __init__(self, seed: int = 42) -> None:

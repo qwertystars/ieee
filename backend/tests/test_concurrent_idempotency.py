@@ -148,3 +148,22 @@ def test_concurrent_four_workers_one_winner(db) -> None:
         f"expected exactly 1 True among 4, got {results}"
     )
     assert len(results) == 4
+
+
+def test_same_external_id_is_independent_per_tenant(db) -> None:
+    first = check_and_record(
+        db, SOURCE, EXTERNAL_ID, org_id="org_concurrent_a", payload={"value": 1}
+    )
+    second = check_and_record(
+        db, SOURCE, EXTERNAL_ID, org_id="org_concurrent_b", payload={"value": 1}
+    )
+    assert first is True
+    assert second is True
+    db.execute(
+        delete(IdempotencyKey).where(
+            IdempotencyKey.org_id.in_(["org_concurrent_a", "org_concurrent_b"]),
+            IdempotencyKey.source == SOURCE,
+            IdempotencyKey.external_id == EXTERNAL_ID,
+        )
+    )
+    db.commit()

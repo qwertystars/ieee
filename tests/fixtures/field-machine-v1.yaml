@@ -1,0 +1,158 @@
+schema_version: resqnet.field-machine.v1
+exercise_id: field-machine-v1
+mode: machine_replay
+claim_class: field_machine
+security:
+  fail_closed: true
+  no_actuation: true
+  network_access: none
+  replay_protection: true
+required_controls:
+  - degraded_connectivity
+  - power_loss
+  - device_loss
+  - stale_map
+  - competing_incidents
+  - alert_latency
+  - loss_duplicates
+  - offline_duration
+  - sync_conflict
+  - authorization_failure
+  - audit_completeness
+  - no_actuation
+thresholds:
+  alert_latency_p95_ms_max: 2000
+  loss_rate_max: 0.05
+  duplicate_rate_max: 0.03
+  offline_duration_min_s: 600
+  sync_conflicts_unresolved_max: 0
+  audit_completeness_min: 1.0
+  authorization_failures_min: 1
+  stale_map_age_min_s: 900
+  power_loss_events_min: 1
+  device_loss_events_min: 1
+  intermittent_link_events_min: 1
+  competing_incidents_min: 2
+measurements:
+  alert_latency_ms: [400, 900, 1100, 1700, 1800]
+  sent_events: 100
+  lost_events: 4
+  duplicate_events: 2
+  offline_duration_s: 900
+  sync_conflicts:
+    - conflict_id: conflict-1
+      status: manual_resolution_required
+      unresolved: false
+  authorization_failures:
+    - request_id: unauthorized-dispatch
+      denied: true
+      side_effects: 0
+  audit:
+    expected_events: 12
+    complete_events: 12
+  stale_maps:
+    - map_id: map-stale-1
+      age_s: 1800
+      status: stale
+      action: block_critical_action
+  power_loss_events: 1
+  device_loss_events: 1
+  intermittent_link_events: 2
+  competing_incidents: 2
+  actuation:
+    dispatch: false
+    public_warning: false
+    resource_commitment: false
+    device_command: false
+    network_egress: false
+signed_log:
+  algorithm: HMAC-SHA256
+  key_id: field-machine-fixture-key-v1
+  fixture_key: field-machine-fixture-key-v1-not-production
+  expected_chain_head: ec6282bd97ee3bdcea1ba1829dedf41ffed955f4d4e9eaf8e5ba7b58fec00f19
+  expected_replay_digest: 97487f8d60a1e55a47c435c29cb50b97cd3d32fae5c80f7e3851cfaac9771e30
+event_log:
+  - sequence: 1
+    event_id: field-event-1
+    event_type: degraded_connectivity
+    payload: {link: intermittent, packet_loss_pct: 4}
+    prev_hash: "0000000000000000000000000000000000000000000000000000000000000000"
+    hash: 57e5e304e92ebefed4a79ca6636a946d19dc0ca643299b33c0a957ff05bcf743
+    signature: 6f6d33940c0064d432ff48576328f44e27786643e75c619e3ddf36f7e347cbf0
+  - sequence: 2
+    event_id: field-event-2
+    event_type: power_loss
+    payload: {device_id: device-1, mode: local_buffer}
+    prev_hash: 57e5e304e92ebefed4a79ca6636a946d19dc0ca643299b33c0a957ff05bcf743
+    hash: 7c566a631a3d7c51a20e83ad0d3c19226c3775223560f1c8eb1613ef82cc803c
+    signature: 33895a837fe32861e9af1fa9b1ec87907802bbba54d20253ef389fa416cdd080
+  - sequence: 3
+    event_id: field-event-3
+    event_type: device_loss
+    payload: {device_id: device-2, recovery: beacon_only}
+    prev_hash: 7c566a631a3d7c51a20e83ad0d3c19226c3775223560f1c8eb1613ef82cc803c
+    hash: 350d7e687ed0ec12382910bb5055490a6b64e80edb926ba0eb904e19f849caa9
+    signature: dc84377d50a3636556298170e05d320054b79b59f8627b7d7f926c36e494209f
+  - sequence: 4
+    event_id: field-event-4
+    event_type: stale_map
+    payload: {map_id: map-stale-1, age_s: 1800, critical_action: blocked}
+    prev_hash: 350d7e687ed0ec12382910bb5055490a6b64e80edb926ba0eb904e19f849caa9
+    hash: b2314a1ae42738ba90ceb577943da054e029ce69ab3f8179260e788a6349281e
+    signature: 3272c1830438bf431a40b62a026f09456851923fa081a5fa48825aed9984d32b
+  - sequence: 5
+    event_id: field-event-5
+    event_type: competing_incidents
+    payload: {incident_ids: [incident-a, incident-b], resolution: separate_scopes}
+    prev_hash: b2314a1ae42738ba90ceb577943da054e029ce69ab3f8179260e788a6349281e
+    hash: cf42137b1868eca02bee159c565c99a2db2ebb6f7960ba97fb30d151321a7ba5
+    signature: 7eb9b763b9e77fd06492d98bcbbd44b25d689c7f996a871b7a987ce548a31385
+  - sequence: 6
+    event_id: field-event-6
+    event_type: alert_latency
+    payload: {p95_ms: 1800, threshold_ms: 2000}
+    prev_hash: cf42137b1868eca02bee159c565c99a2db2ebb6f7960ba97fb30d151321a7ba5
+    hash: 227899ddc5e52ac59b0f1fe5eb5434827b7765791d6039900b3874e0abe72dab
+    signature: 45deddc22171531fb8fa66480fbd284833eb1db5cea74da099e5f0d0dacac5da
+  - sequence: 7
+    event_id: field-event-7
+    event_type: loss_duplicates
+    payload: {lost: 4, duplicates: 2, sent: 100, deduplicated: true}
+    prev_hash: 227899ddc5e52ac59b0f1fe5eb5434827b7765791d6039900b3874e0abe72dab
+    hash: f82c732c3e11e823bc873c03b29086484c2330756202ae2cb87d180c78174554
+    signature: 0b66c66050e9c2669ab7d904793b8045b90428844b0fbfa4c6642f2a5fe742f8
+  - sequence: 8
+    event_id: field-event-8
+    event_type: offline_duration
+    payload: {duration_s: 900, outbox: retained}
+    prev_hash: f82c732c3e11e823bc873c03b29086484c2330756202ae2cb87d180c78174554
+    hash: ebfa2e20548d6605fcf5c06f3c888ba4ca71a5931c6c9e8be4c688af3be0991b
+    signature: b0eb061f10f1c625b8342badffa94d276f0151b2fbeb0e6245cb3a522a594d78
+  - sequence: 9
+    event_id: field-event-9
+    event_type: sync_conflict
+    payload: {conflict_id: conflict-1, resolution: manual_resolution_required}
+    prev_hash: ebfa2e20548d6605fcf5c06f3c888ba4ca71a5931c6c9e8be4c688af3be0991b
+    hash: 3966e2b643a1c9ca5221d2ada13d5650159579395892d5c4b71bd70b1b9dc9f0
+    signature: 8115c2d3b77973bb922a27de90c926fa620aaf706d210d40f41ba20d4dba9cb7
+  - sequence: 10
+    event_id: field-event-10
+    event_type: authorization_failure
+    payload: {request_id: unauthorized-dispatch, result: deny, side_effects: 0}
+    prev_hash: 3966e2b643a1c9ca5221d2ada13d5650159579395892d5c4b71bd70b1b9dc9f0
+    hash: c2c131b45cdab99028a713f8f85e57588f308a83456400230aceffa7f1bd64a9
+    signature: 870ddc8185992a316d14356e7f97f92afbe87ec0284a31643feaa9a75d8acac7
+  - sequence: 11
+    event_id: field-event-11
+    event_type: audit_completeness
+    payload: {expected: 12, recorded: 12, chain: verified}
+    prev_hash: c2c131b45cdab99028a713f8f85e57588f308a83456400230aceffa7f1bd64a9
+    hash: cb62bf7ffa3c7186473f257b30b0fff4095afaab0c777b8acbfb224e1a5027e1
+    signature: af16358a991d008b74584535b27cdce0cad0b5f9d51a1f4f1a2fa8c61566d541
+  - sequence: 12
+    event_id: field-event-12
+    event_type: no_actuation
+    payload: {dispatch: false, public_warning: false, resource_commitment: false}
+    prev_hash: cb62bf7ffa3c7186473f257b30b0fff4095afaab0c777b8acbfb224e1a5027e1
+    hash: ec6282bd97ee3bdcea1ba1829dedf41ffed955f4d4e9eaf8e5ba7b58fec00f19
+    signature: 18a8f043c96d0c8f009183980fe3fd924a8d9e6e253b3b398fc2fb5d1bfcc78f

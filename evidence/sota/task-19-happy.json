@@ -1,0 +1,169 @@
+{
+  "cleanup": "No external datasets, models, credentials, or production systems were modified; local inputs were read-only.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "backend/.venv/bin/python scripts/reproduce_sota_report.py --manifest evidence/sota/release-manifest.json --clean-room --report evidence/sota/task-19-happy.json",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 2,
+  "failure_assertion": "manifest, code, data, model, environment, gates, and clean-room constraints verified",
+  "finished_at": "2026-08-03T01:54:03.422Z",
+  "hashes": {
+    "backend/data/models/building-damage-v2.0.0.onnx": "5b3a4bc419f09d6e2dcc9e15481558cc9b59d8610976a4a0585c3135bc65bd1f",
+    "backend/data/models/incident-nlp-tokenizer/tokenizer.json": "d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66",
+    "backend/data/models/incident-nlp-v2.0.0.onnx": "038e4fa15021d0da8ec9c5e02ceed9de37d05cd4cd9a6eb73b0a9824999a81a7",
+    "backend/data/models/manifests.json": "d52d530b766eb3117adae37a5c64806e1ceaeb6b4f234225be7957f3e541f6c8",
+    "backend/data/models/sar-flood-mapping-v2.0.0.onnx": "ee35b360436e6987beabade928b71bf56baf49e507a993ea6c6ac99f02649bdd",
+    "backend/requirements.lock": "08d106c301801866e9c29c23e6c0fca7e1f45ed23c63d7c1b15c958fff03cfb7",
+    "backend/requirements.txt": "a69298cfd739f3ad4882a32a7e9560aecb0b45087e7929843b295f55d41b32e6",
+    "config/published-baselines-v1.json": "ef216b6a8932c359fe6e9e7254d654c3cb56c4936953950f15a9e25c7942e133",
+    "data/datasets/benchmark-v1.json": "c5925502793ec4e6d92d5ad60185264362486064b3ad91a0ae9e0d4f078268f8",
+    "data/datasets/registry.json": "939a281e988d0d0b322485a7cc006ea252b1dc742910c135bb4af08a74dae0db",
+    "evidence/sota/prerequisites.json": "65b982196a807063179d02ee87d2f155e0fb1173c6e45c932dc7eaafda184e83",
+    "evidence/sota/release-manifest.json": "b59136df72811818b6a5ddae3dfe8951897a6774691b0d48d66ea4eebbb6d626",
+    "evidence/sota/task-14-happy.json": "46f3b9b3f8d368faf3bd4993d9cf33f8c8f2e40dd313333ab4169ff1c1d8adda",
+    "evidence/sota/task-16-happy.json": "d057a92904194cce3bb6a0b08344c9346ce19adf0f164955ce7d38f9e9f54124",
+    "evidence/sota/task-17-happy.json": "19dea643afc6a4e87925755ee378b862c8f6e7337b6bb87f1eeb6a6eef5234ca",
+    "evidence/sota/task-18-happy.json": "364b89f4f6d54e283cf90e585bc8e2147fd67bdf9c4266082b9c7f9b8a6ea6a0",
+    "frontend/package-lock.json": "9759d69e0ec47956bb9807fb2c2c40a526e6d640adeab69207fdea44f779db78",
+    "scripts/evaluate_calibration.py": "a16897e9db29ac23ced56bcf98d10fcd68d8744f8b30f61513147c80aa030702",
+    "scripts/reproduce_sota_contract.py": "3ab68543e44726eae034b7d35d46debfa7094b93f4edea375e9c74e25a4284fe",
+    "scripts/reproduce_sota_report.py": "f9ba4c90921aa7aa030d5a1bf0d0fef8c3c4747466d9ef4ccfabb0651de7dff6",
+    "scripts/robustness_contract.py": "fd3002fa6a292cc537b663ab831bac59f2e950f05136e706387eb0c06b346546",
+    "scripts/run_benchmark.py": "aeadd42100bbdc1fdd49794190acb808af0f48370e36cd1ade0b551d5337a56d",
+    "scripts/run_robustness_suite.py": "81872e6f8513d260924cdc962746245b6d0711e6d9c0a1ad48a3765043824e76",
+    "scripts/validate_dataset_registry.py": "93d8385694b439eef110a6fd834bb652ec0c4c6c9737522d126b1fca01db4fba",
+    "tests/fixtures/robustness-policy-v1.json": "86bd95be90477897d506f951a93369c0799aff71c5b8ec06d465fc0ad5ebec6f",
+    "tests/fixtures/stale-conflicting-sensors.json": "f0fd03512521dc55d0f2294bb5c72c1ef51cd7852754b21ab07013aa310cd1d7"
+  },
+  "inputs": [
+    "scripts/reproduce_sota_report.py",
+    "scripts/reproduce_sota_contract.py",
+    "scripts/validate_dataset_registry.py",
+    "scripts/run_benchmark.py",
+    "scripts/evaluate_calibration.py",
+    "scripts/run_robustness_suite.py",
+    "scripts/robustness_contract.py",
+    "evidence/sota/prerequisites.json",
+    "data/datasets/benchmark-v1.json",
+    "data/datasets/registry.json",
+    "config/published-baselines-v1.json",
+    "tests/fixtures/robustness-policy-v1.json",
+    "tests/fixtures/stale-conflicting-sensors.json",
+    "backend/data/models/manifests.json",
+    "backend/data/models/sar-flood-mapping-v2.0.0.onnx",
+    "backend/data/models/building-damage-v2.0.0.onnx",
+    "backend/data/models/incident-nlp-v2.0.0.onnx",
+    "backend/data/models/incident-nlp-tokenizer/tokenizer.json",
+    "backend/requirements.txt",
+    "backend/requirements.lock",
+    "frontend/package-lock.json",
+    "evidence/sota/task-14-happy.json",
+    "evidence/sota/task-16-happy.json",
+    "evidence/sota/task-17-happy.json",
+    "evidence/sota/task-18-happy.json"
+  ],
+  "metrics": {
+    "claim_statuses": {
+      "field": "DEFERRED_EXTERNAL",
+      "production": "DEFERRED_EXTERNAL",
+      "research": "DEFERRED_EXTERNAL",
+      "shadow": "DEFERRED_EXTERNAL"
+    },
+    "clean_room": {
+      "command": "backend/.venv/bin/python scripts/reproduce_sota_report.py --manifest evidence/sota/release-manifest.json --clean-room --report evidence/sota/task-19-happy.json",
+      "instructions": [
+        "Use a clean checkout at the declared revision.",
+        "Install backend/requirements.lock without network access after dependency artifacts are approved.",
+        "Use Python 3.11 on Linux x86_64 with at least two CPU cores; no GPU is required.",
+        "Run the exact command and preserve stdout, exit code, and generated report.",
+        "Do not download gated datasets or models and do not promote fixture metrics to external claims."
+      ]
+    },
+    "external_prerequisites": [
+      "dataset.flood.sen1floods11",
+      "dataset.flood.floodnet",
+      "dataset.damage.xbd",
+      "dataset.nlp.incident-evaluation",
+      "dataset.sensor.regional-trial",
+      "dataset.operator.human-factors"
+    ],
+    "hardware_constraints": {
+      "architecture": "x86_64",
+      "gpu": "not required",
+      "minimum_cpu_cores": 2,
+      "os": "Linux"
+    },
+    "invalidation_inputs": [
+      "manifest fields or expiry",
+      "code, data, model, environment, or gate-attestation bytes",
+      "prerequisite status, evidence hash, expiry, or claim mapping",
+      "runtime or hardware constraints",
+      "metric metadata or split metadata"
+    ],
+    "machine_gate_status": "PASS",
+    "metric_fingerprint": "4adcc6ab3ec2962494b4f7bf531bdc0d684db3d9800413c7e3d7db2b546a87b7",
+    "metric_metadata": {
+      "bootstrap": {
+        "confidence_level": 0.95,
+        "correction": "Holm",
+        "resamples": 10000,
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "unit": "incident"
+      },
+      "calibration": {
+        "conformal_coverage": [
+          0.85,
+          0.95
+        ],
+        "ece_max": 0.05,
+        "minimum_examples_per_group": 200
+      },
+      "primary_metrics": [
+        "flood_miou",
+        "damage_combined_f1",
+        "nlp_macro_f1"
+      ],
+      "sota_rule": "candidate lower confidence bound >= pinned baseline + 0.02",
+      "status": "DEFERRED_EXTERNAL",
+      "synthetic_fixture_metrics": "validation-only"
+    },
+    "nondeterminism_policy": {
+      "external_artifacts": "never substituted by fixtures",
+      "floating_point": "compare published numeric metrics within declared tolerances",
+      "gpu": "not required; CPU execution only",
+      "network_access": "forbidden",
+      "random_seed": 2025
+    },
+    "research_claim_status": "DEFERRED_EXTERNAL",
+    "runtime_constraints": {
+      "dependency_lock": "backend/requirements.lock",
+      "python_major_minor": "3.11",
+      "timezone": "UTC"
+    },
+    "sota_claim": false,
+    "split_metadata": {
+      "assignment_seed": 2025,
+      "calibration_examples_per_group": 200,
+      "h3_resolution": 8,
+      "spatial_buffer_km": 10,
+      "temporal_cutoff": "2024-01-01T00:00:00Z",
+      "unit": "incident"
+    },
+    "tolerances": {
+      "candidate_baseline_delta": 0.02,
+      "conformal_coverage_max": 0.95,
+      "conformal_coverage_min": 0.85,
+      "ece_max": 0.05,
+      "severe_error_max": 0.05,
+      "subgroup_gap_max": 0.1
+    }
+  },
+  "started_at": "2026-08-03T01:54:02.375Z",
+  "status": "DEFERRED_EXTERNAL",
+  "task_id": "19"
+}

@@ -185,3 +185,30 @@ def test_cross_org_observation_list_excludes_other_org() -> None:
         assert all("obs" not in oid for oid in obs_ids), (
             "cross-org data leaked into observation list"
         )
+
+
+def test_cross_org_realtime_polling_returns_403() -> None:
+    """Given an org-A incident, When org B polls it, Then access is denied."""
+    with TestClient(app) as client:
+        token_a = _login(client, "admin@demo.disaster")
+        token_b = _login(client, USER_B_EMAIL)
+        incident_id = _create_incident(client, token_a)
+
+        response = client.get(
+            f"/api/incidents/{incident_id}/updates?since=0",
+            headers=_auth_header(token_b),
+        )
+    assert response.status_code == 403
+    assert "observations" not in response.text
+
+
+def test_wrong_incident_realtime_polling_returns_403() -> None:
+    """Given an unknown incident, When an org member polls it, Then access is denied."""
+    with TestClient(app) as client:
+        token = _login(client, "admin@demo.disaster")
+        response = client.get(
+            "/api/incidents/01J9WRONGINCIDENT0000000000/updates?since=0",
+            headers=_auth_header(token),
+        )
+    assert response.status_code == 403
+    assert "observations" not in response.text

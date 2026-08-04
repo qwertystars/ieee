@@ -41,6 +41,7 @@ class SyncConflict(Base):
     __tablename__ = "sync_conflicts"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    item_id: Mapped[str | None] = mapped_column(String(26), nullable=True, index=True)
     org_id: Mapped[str] = mapped_column(String, index=True)
     incident_id: Mapped[str] = mapped_column(String, index=True)
     entity_type: Mapped[str] = mapped_column(String)
@@ -78,8 +79,8 @@ class StoreAndForwardSync:
         Returns: {received, deduplicated, applied, conflicts, errors, order}
         where `order` is the list of item_ids in applied priority order.
         """
-        sequenced = self._assign_sequences(items, db, incident_id)
-        unique = self._dedup(sequenced, db)
+        sequenced = self._assign_sequences(items, db, org_id, incident_id)
+        unique = self._dedup(sequenced, db, org_id, incident_id)
         ordered = self.sort_by_priority(unique)
 
         applied = 0
@@ -112,7 +113,7 @@ class StoreAndForwardSync:
         """
         return sorted(items, key=lambda i: (_priority_of(i), i.get("sequence", 0)))
 
-    def detect_conflicts(self, item: dict[str, Any], db: Session) -> dict[str, Any] | None:
+    def detect_conflicts(self, item: dict[str, Any], db: Session, org_id: str, incident_id: str) -> dict[str, Any] | None:
         """Check for conflicting edits on the same entity.
 
         Returns a conflict descriptor if a conflict exists, else None.
@@ -126,7 +127,10 @@ class StoreAndForwardSync:
 
         content_hash = item.get("content_hash") or compute_content_hash(payload)
         candidates = db.execute(
-            select(EdgeSyncApplied).order_by(EdgeSyncApplied.id.desc()).limit(100)
+            select(EdgeSyncApplied).where(
+                EdgeSyncApplied.org_id == org_id,
+                EdgeSyncApplied.incident_id == incident_id,
+            ).order_by(EdgeSyncApplied.id.desc()).limit(100)
         ).scalars().all()
 
         for rec in candidates:
@@ -151,13 +155,13 @@ class StoreAndForwardSync:
         """Return a conflict response. Does NOT auto-resolve or overwrite."""
         return {"status": "conflict", "local": local, "remote": remote}
 
-    def _assign_sequences(self, items: list[dict[str, Any]], db: Session, incident_id: str) -> list[dict[str, Any]]:
+    def _assign_sequences(self, items: list[dict[str, Any]], db: Session, org_id: str, incident_id: str) -> list[dict[str, Any]]:
         if not items:
             return items
         max_seq = (
             db.execute(
                 select(func.max(EdgeSyncApplied.sequence))
-                .where(EdgeSyncApplied.incident_id == incident_id)
+                .where(EdgeSyncApplied.org_id == org_id, EdgeSyncApplied.incident_id == incident_id)
             ).scalar()
             or 0
         )
@@ -170,7 +174,7 @@ class StoreAndForwardSync:
             out.append(item)
         return out
 
-    def _dedup(self, items: list[dict[str, Any]], db: Session) -> list[dict[str, Any]]:
+    def _dedup(self, items: list[dict[str, Any]], db: Session, org_id: str, incident_id: str) -> list[dict[str, Any]]:
         seen: set[str] = set()
         unique: list[dict[str, Any]] = []
         for item in items:
@@ -179,7 +183,11 @@ class StoreAndForwardSync:
                 continue
             seen.add(h)
             already = db.execute(
-                select(EdgeSyncApplied).where(EdgeSyncApplied.content_hash == h)
+                select(EdgeSyncApplied).where(
+                    EdgeSyncApplied.org_id == org_id,
+                    EdgeSyncApplied.incident_id == incident_id,
+                    EdgeSyncApplied.content_hash == h,
+                )
             ).scalars().first()
             if already is not None:
                 continue
@@ -189,12 +197,16 @@ class StoreAndForwardSync:
     def _apply_one(self, item: dict[str, Any], db: Session, org_id: str, incident_id: str) -> dict[str, Any]:
         content_hash = item.get("content_hash") or compute_content_hash(item.get("payload", {}))
         existing = db.execute(
-            select(EdgeSyncApplied).where(EdgeSyncApplied.content_hash == content_hash)
+            select(EdgeSyncApplied).where(
+                EdgeSyncApplied.org_id == org_id,
+                EdgeSyncApplied.incident_id == incident_id,
+                EdgeSyncApplied.content_hash == content_hash,
+            )
         ).scalars().first()
         if existing is not None:
             return {"status": "duplicate"}
 
-        conflict = self.detect_conflicts(item, db)
+        conflict = self.detect_conflicts(item, db, org_id, incident_id)
         if conflict is not None:
             all_keys = set(conflict["local"].keys()) | set(conflict["remote"].keys())
             diff_fields = {k for k in all_keys if conflict["local"].get(k) != conflict["remote"].get(k)}
@@ -212,7 +224,7 @@ class StoreAndForwardSync:
             # Surface the conflict — do NOT overwrite.
             resolution = self.resolve_conflict(conflict["local"], conflict["remote"])
             record = SyncConflict(
-                org_id=org_id, incident_id=incident_id,
+                item_id=item.get("item_id"), org_id=org_id, incident_id=incident_id,
                 entity_type=conflict["entity_type"], entity_id=conflict["entity_id"],
                 local=conflict["local"], remote=conflict["remote"],
                 content_hash_local=conflict["content_hash_local"],
@@ -234,6 +246,7 @@ class StoreAndForwardSync:
     def _record(self, item: dict[str, Any], db: Session, org_id: str, incident_id: str, content_hash: str, payload: dict) -> bool:
         record = EdgeSyncApplied(
             item_id=item.get("item_id") or generate_ulid(),
+            idempotency_key=item.get("idempotency_key") or item.get("item_id") or generate_ulid(),
             content_hash=content_hash,
             item_type=item.get("item_type", "unknown"),
             sequence=item.get("sequence", 0),

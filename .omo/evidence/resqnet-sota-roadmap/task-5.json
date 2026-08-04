@@ -1,0 +1,46 @@
+{
+  "task_id": "5",
+  "command": "../scripts/verify_ack_boundaries.py --scenario crash-after-api-ack --expect-ledger-presence --dlq-retention-days 30 --replay-role admin",
+  "cwd": "/root/srijan/ieee/backend",
+  "inputs": [
+    "crash-after-api-ack",
+    "expect-ledger-presence=True",
+    "dlq-retention-days=30",
+    "replay-role=admin"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-03T06:19:13.314025Z",
+  "finished_at": "2026-08-03T06:19:13.501173Z",
+  "exit_code": 0,
+  "status": "DEFERRED_EXTERNAL",
+  "metrics": {
+    "api_route_ack_observed": true,
+    "background_fusion_deferred": true,
+    "ledger_present_after_fresh_session": true,
+    "projection_present_after_fresh_session": true,
+    "replay_audited": true,
+    "audit_chain_valid": true,
+    "acknowledged": 1,
+    "acknowledged_absent_from_ledger": 0,
+    "ack_loss": 0,
+    "zero_acknowledged_loss": true,
+    "broker_acknowledged": null,
+    "broker_redelivery_verified": false,
+    "external_limitations": [
+      "No live broker or process restart was available; broker acknowledgement, redelivery, and runtime retention remain DEFERRED_EXTERNAL.",
+      "The route boundary was exercised directly with downstream BackgroundTasks withheld to model an immediate crash after the durable API transaction."
+    ],
+    "retention": {
+      "configured_days": 30,
+      "config_sha256": "817a33c6186b39d3a6c2172336f6cbb6e9b290c0941366288954b8e175ce62e9",
+      "broker_runtime_verified": false
+    }
+  },
+  "hashes": {
+    "raw_event_sha256": "f2c22a1cf9a8157280a286c4d59d51ec37fe9a9720cd738af8b6be8daea582f7",
+    "verify_script_sha256": "53b47dead3b6c669b5e5f98824f93a5a47809620233e3f127f524cc80024a2a3",
+    "retention_config_sha256": "817a33c6186b39d3a6c2172336f6cbb6e9b290c0941366288954b8e175ce62e9"
+  },
+  "failure_assertion": "A route acknowledgement is valid only when a fresh database session finds both raw ledger and observation projection; the simulated crash leaves zero acknowledged events absent from the ledger.",
+  "cleanup": "Dedicated raw, observation, idempotency, audit-event, and audit-head rows are deleted in finally; no shared tenant rows are modified."
+}

@@ -61,7 +61,9 @@ EXPECTED_COLUMNS = {
     ],
     "events": [
         "id", "org_id", "incident_id", "actor", "action", "entity",
-        "ts", "prev_hash", "hash",
+        "ts", "prev_hash", "hash", "event_type", "source_id", "source_time_ms",
+        "receipt_time_ms", "sequence", "payload", "provenance", "visibility",
+        "review_status", "schema_version", "serialization_version",
     ],
     "incidents": [
         "id", "org_id", "title", "disaster_type", "severity", "status",
@@ -159,3 +161,9 @@ def test_events_hash_chain_columns_exist() -> None:
         cols = _table_columns(conn, "events")
     assert "prev_hash" in cols, "events.prev_hash column missing"
     assert "hash" in cols, "events.hash column missing"
+
+
+def test_task4_projection_tables_exist() -> None:
+    with engine.connect() as conn:
+        for table in ("raw_events", "predictions", "canonical_decisions", "audit_chain_heads"):
+            assert _table_exists(conn, table), f"missing task-4 table: {table}"

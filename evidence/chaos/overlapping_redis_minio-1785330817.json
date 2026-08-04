@@ -1,0 +1,18 @@
+{
+  "scenario": "overlapping_redis_minio",
+  "services_killed": [
+    "redis",
+    "minio"
+  ],
+  "load_successes": 64,
+  "load_failures": 1,
+  "login_during_outage": 200,
+  "observation_post_during_outage": 201,
+  "deep_health_during_outage": {
+    "database": true,
+    "redis": false,
+    "redpanda": true,
+    "minio": false
+  },
+  "recovery_time_s": 13.761
+}

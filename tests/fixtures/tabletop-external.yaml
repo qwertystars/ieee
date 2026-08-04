@@ -1,0 +1,19 @@
+schema_version: resqnet.tabletop-external.v1
+exercise_id: tabletop-external
+mode: participant_tabletop
+claim_class: participant_tabletop
+status: DEFERRED_EXTERNAL
+prerequisite_ids:
+  - dataset.operator.human-factors
+  - dataset.sensor.regional-trial
+report: evidence/sota/tabletop-report.json
+required_report_fields:
+  - authorized_participants
+  - agency_roles
+  - scoring
+  - unresolved_risk_severity
+  - after_action_owners
+  - retest_dates
+  - hash
+  - prerequisite_linkage
+deferred_reason: authorized participants, agency roles, scoring, risk owners, and retest dates are unavailable

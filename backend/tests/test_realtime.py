@@ -6,14 +6,16 @@ pytest-asyncio dependency.
 """
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
+import anyio
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketState
 
 from app.deps import get_db
-from app.realtime.manager import WebSocketManager, router
+from app.realtime.manager import WebSocketManager, _filter_message, router
 
 
 class MockWebSocket:
@@ -31,7 +33,7 @@ class MockWebSocket:
 
     async def receive_text(self) -> str:
         # Block forever — tests don't drive the receive loop.
-        await asyncio.Event().wait()
+        await anyio.sleep_forever()
         return ""
 
 
@@ -99,7 +101,7 @@ def test_broadcast_to_connected() -> None:
     async def scenario() -> None:
         mgr = WebSocketManager()
         ws = MockWebSocket()
-        await mgr.connect(ws, "inc_001")
+        await mgr.connect(ws, "inc_001", "admin")
         await mgr.broadcast_observation(
             "inc_001", {"observation_id": "obs_1", "event_type": "flood"}
         )
@@ -109,7 +111,7 @@ def test_broadcast_to_connected() -> None:
         assert msg["type"] == "new_observation"
         assert msg["payload"]["observation_id"] == "obs_1"
 
-    asyncio.run(scenario())
+    anyio.run(scenario)
 
 
 def test_concurrent_clients() -> None:
@@ -119,15 +121,15 @@ def test_concurrent_clients() -> None:
         mgr = WebSocketManager()
         ws_a = MockWebSocket()
         ws_b = MockWebSocket()
-        await mgr.connect(ws_a, "inc_001")
-        await mgr.connect(ws_b, "inc_001")
+        await mgr.connect(ws_a, "inc_001", "admin")
+        await mgr.connect(ws_b, "inc_001", "admin")
         await mgr.broadcast_hypothesis("inc_001", {"id": "h_1"})
         assert len(ws_a.sent) == 1
         assert len(ws_b.sent) == 1
         assert ws_a.sent[0]["type"] == "hypothesis_changed"
         assert ws_b.sent[0]["payload"]["id"] == "h_1"
 
-    asyncio.run(scenario())
+    anyio.run(scenario)
 
 
 def test_no_cross_incident_leak() -> None:
@@ -137,14 +139,14 @@ def test_no_cross_incident_leak() -> None:
         mgr = WebSocketManager()
         ws_a = MockWebSocket()
         ws_b = MockWebSocket()
-        await mgr.connect(ws_a, "inc_A")
-        await mgr.connect(ws_b, "inc_B")
+        await mgr.connect(ws_a, "inc_A", "admin")
+        await mgr.connect(ws_b, "inc_B", "admin")
         await mgr.broadcast_plan("inc_A", {"plan_id": "p_1"})
         assert len(ws_a.sent) == 1
         assert ws_a.sent[0]["type"] == "plan_updated"
         assert len(ws_b.sent) == 0
 
-    asyncio.run(scenario())
+    anyio.run(scenario)
 
 
 def test_connection_count() -> None:
@@ -154,19 +156,32 @@ def test_connection_count() -> None:
         mgr = WebSocketManager()
         ws_a = MockWebSocket()
         ws_b = MockWebSocket()
-        await mgr.connect(ws_a, "inc_001")
-        await mgr.connect(ws_b, "inc_001")
+        await mgr.connect(ws_a, "inc_001", "admin")
+        await mgr.connect(ws_b, "inc_001", "admin")
         assert mgr.get_connection_count("inc_001") == 2
         await mgr.disconnect(ws_a, "inc_001")
         assert mgr.get_connection_count("inc_001") == 1
         await mgr.disconnect(ws_b, "inc_001")
         assert mgr.get_connection_count("inc_001") == 0
 
-    asyncio.run(scenario())
+    anyio.run(scenario)
+
+
+def test_connection_count_prunes_starlette_disconnected_socket() -> None:
+    async def scenario() -> None:
+        mgr = WebSocketManager()
+        ws = MockWebSocket()
+        ws.client_state = WebSocketState.CONNECTED
+        ws.application_state = WebSocketState.CONNECTED
+        await mgr.connect(ws, "inc_001", "admin")
+        ws.client_state = WebSocketState.DISCONNECTED
+        assert mgr.get_connection_count("inc_001") == 0
+
+    anyio.run(scenario)
 
 
 def test_polling_fallback() -> None:
-    """GET /api/incidents/{id}/updates?since=N returns observations newer than N."""
+    """Given no auth, When polling, Then the standalone router denies access."""
     obs_rows = [
         FakeObservation(
             observation_id="obs_a",
@@ -189,11 +204,33 @@ def test_polling_fallback() -> None:
 
     client = TestClient(app)
     resp = client.get("/api/incidents/inc_001/updates?since=1000")
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["incident_id"] == "inc_001"
-    assert body["since"] == 1000
-    assert body["count"] == 2
-    ids = [o["observation_id"] for o in body["observations"]]
-    assert ids == ["obs_a", "obs_b"]
-    assert body["observations"][0]["observed_at"] == 1500
+    assert resp.status_code == 401
+
+
+def test_viewer_stream_drops_sensitive_payloads() -> None:
+    """Given a viewer stream, When a sensitive observation broadcasts, Then no payload is sent."""
+
+    async def scenario() -> None:
+        mgr = WebSocketManager()
+        ws = MockWebSocket()
+        await mgr.connect(ws, "inc_001", "viewer")
+        await mgr.broadcast_observation(
+            "inc_001",
+            {
+                "properties": {
+                    "observation_id": "obs_sensitive",
+                    "access_policy": "sensitive",
+                    "raw_data_hash": "protected",
+                }
+            },
+        )
+        assert ws.sent == []
+
+    anyio.run(scenario)
+
+
+@pytest.mark.parametrize("policy", [[], {}, object(), "not-a-policy"])
+def test_malformed_access_policy_is_dropped(policy: Any) -> None:
+    """Given an untrusted policy value, When filtering, Then no exception or payload escapes."""
+    message = {"type": "new_observation", "payload": {"access_policy": policy}}
+    assert _filter_message(message, "viewer") is None

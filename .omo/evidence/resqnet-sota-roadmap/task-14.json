@@ -1,0 +1,71 @@
+{
+  "task_id": "14",
+  "command": "backend/.venv/bin/python scripts/run_benchmark.py --manifest data/datasets/benchmark-v1.json --check-leakage --report evidence/sota/task-14-happy.json; backend/.venv/bin/python scripts/run_benchmark.py --manifest tests/fixtures/benchmark-duplicate-incident.json --check-leakage; backend/.venv/bin/python -m pytest tests/ -q",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "data/datasets/benchmark-v1.json",
+    "scripts/run_benchmark.py",
+    "scripts/benchmark_contract.py",
+    "scripts/benchmark_leakage.py",
+    "scripts/benchmark_contract_types.py",
+    "tests/fixtures/benchmark-duplicate-incident.json",
+    "tests/test_benchmark.py"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-02T23:00:00Z",
+  "finished_at": "2026-08-02T23:05:00Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "happy": {
+      "exit_code": 0,
+      "status": "PASS",
+      "split_hashes": {
+        "train": "db0e835c6c9566964f1288ed1d0743dc60d2765c25030a3a6cccd49d5a1dc172",
+        "calibration": "b4f9c0e03c1fc6c7aede452989b801527e57f105be5f97422d7319d9edcbb761",
+        "test": "4bdd33b52e49799bdb065ef99decbf9123ff1c8f4609dcfc02db8584936525e3"
+      },
+      "final_test_hash_verified": true,
+      "external_datasets_pending": 3,
+      "real_data_execution": "DEFERRED_EXTERNAL",
+      "stdout": "status=PASS"
+    },
+    "failure": {
+      "exit_code": 1,
+      "status": "FAIL",
+      "stdout": "status=FAIL\nfinding=incident-hierarchy leakage: sen-train-01 and sen-test-01 share incident hierarchy"
+    },
+    "focused_tests": "backend/.venv/bin/python -m pytest tests/test_benchmark.py -q: 4 passed",
+    "root_tests": "backend/.venv/bin/python -m pytest tests/ -q: 23 passed in 4.34s",
+    "compile": "backend/.venv/bin/python -m py_compile scripts/run_benchmark.py scripts/benchmark_contract.py scripts/benchmark_leakage.py scripts/benchmark_contract_types.py tests/test_benchmark.py: passed",
+    "json_validation": "passed",
+    "ruff": "backend/.venv/bin/ruff check scripts/run_benchmark.py scripts/benchmark_contract.py scripts/benchmark_leakage.py scripts/benchmark_contract_types.py tests/test_benchmark.py: passed without warnings",
+    "pure_loc": {
+      "scripts/run_benchmark.py": 64,
+      "scripts/benchmark_contract.py": 249,
+      "scripts/benchmark_leakage.py": 67,
+      "scripts/benchmark_contract_types.py": 14
+    },
+    "diff_check": "passed",
+    "external_data_downloaded": false,
+    "gated_data_substituted": false,
+    "limitations": [
+      "Sen1Floods11, FloodNet, and xView2 artifacts are unavailable or licensed/registration gated; the manifest remains metadata-only and no real-data metrics are claimed.",
+      "The deterministic records are validation-only and do not substitute for real benchmark artifacts.",
+      "Root python is unavailable; commands use backend/.venv/bin/python.",
+      "basedpyright diagnostics are unavailable because the repository's prior installation decision declined the server."
+    ]
+  },
+  "hashes": {
+    "data/datasets/benchmark-v1.json": "c5925502793ec4e6d92d5ad60185264362486064b3ad91a0ae9e0d4f078268f8",
+    "scripts/run_benchmark.py": "d8e90377bcb99d9df1f868939381caa01e000d974e43dbe1acdf4908fd379f3d",
+    "scripts/benchmark_contract.py": "90b91a1c4bfa2613c970638df1dd2a4835254c695a769513d725f334b1ca1f77",
+    "scripts/benchmark_leakage.py": "eca4581d9fcdeb24cdc03123cf00bed98e74810e631e492e21f8b64ec2df5224",
+    "scripts/benchmark_contract_types.py": "42884da24fad76487cd296f63275a8bbd1bf72362e44bb12f7793fc290cbc6e9",
+    "tests/fixtures/benchmark-duplicate-incident.json": "22d6e63e9899bf6dcdf07e43b164f076b4c9c82e86940435f996e49d84828e0d",
+    "tests/test_benchmark.py": "518f8b9b06c5642d780e37958f17209b47883e1045d19c986c6ffe4fb6d0c2ad",
+    "evidence/sota/task-14-happy.json": "9e08db43b4be34eab77b4db6134e88b511148c3b9e1f279c5710f134bbf84731"
+  },
+  "failure_assertion": "The canonical manifest passes immutable split, final-test hash, preprocessing fit, event/time/geography, and duplicate/near-duplicate/tile/source/incident-hierarchy checks. The duplicate-incident fixture must exit 1 and name incident-hierarchy leakage.",
+  "cleanup": "No external datasets were downloaded, no gated source was contacted, and no operational ML serving/calibration path, database, queue, model artifact, or secret was modified. Temporary pytest files were discarded."
+}

@@ -1,0 +1,51 @@
+{
+  "kind": "cap",
+  "profile": "FEMA IPAWS CAP Profile 1.0",
+  "now_ms": 1700000000000,
+  "messages": [
+    {
+      "identifier": "alert-1",
+      "sender": "alerts@example.gov",
+      "sent": "2023-11-14T22:13:20Z",
+      "status": "Actual",
+      "msgType": "Alert",
+      "scope": "Public",
+      "code": "IPAWSv1.0",
+      "references": null,
+      "info": {"category": "Met", "event": "Flood", "urgency": "Immediate", "severity": "Severe", "certainty": "Observed", "headline": "Flood warning", "description": "Water is rising.", "expires": "2023-11-14T23:13:20Z", "area": {"areaDesc": "Rivertown", "polygon": "19.0,72.0 19.1,72.0 19.1,72.1 19.0,72.0"}, "eventCode": {"valueName": "SAME", "value": "FLW"}},
+      "provenance": {"org_id": "org-demo", "source_id": "cap:alerts@example.gov:alert-1", "external_id": "alert-1", "source_time": "2023-11-14T22:13:20Z", "receipt_time": "2023-11-14T22:13:21Z", "sequence": "1", "raw_data_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+      "idempotency": {"key": "cap-alert-1", "external_id": "alert-1", "canonical_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "replay_effect": "same_effect"}
+    },
+    {
+      "identifier": "alert-1",
+      "sender": "alerts@example.gov",
+      "sent": "2023-11-14T22:23:20Z",
+      "status": "Actual",
+      "msgType": "Update",
+      "scope": "Public",
+      "code": "IPAWSv1.0",
+      "references": "alerts@example.gov,alert-1,2023-11-14T22:13:20Z",
+      "info": {"category": "Met", "event": "Flood", "urgency": "Immediate", "severity": "Severe", "certainty": "Observed", "headline": "Flood warning update", "description": "Water is still rising.", "expires": "2023-11-14T23:23:20Z", "area": {"areaDesc": "Rivertown", "polygon": "19.0,72.0 19.1,72.0 19.1,72.1 19.0,72.0"}, "eventCode": {"valueName": "SAME", "value": "FLW"}},
+      "provenance": {"org_id": "org-demo", "source_id": "cap:alerts@example.gov:alert-1", "external_id": "alert-1", "source_time": "2023-11-14T22:23:20Z", "receipt_time": "2023-11-14T22:23:21Z", "sequence": "2", "raw_data_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},
+      "idempotency": {"key": "cap-update-1", "external_id": "alert-1", "canonical_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "replay_effect": "same_effect"}
+    },
+    {
+      "identifier": "alert-1",
+      "sender": "alerts@example.gov",
+      "sent": "2023-11-14T22:33:20Z",
+      "status": "Actual",
+      "msgType": "Cancel",
+      "scope": "Public",
+      "code": "IPAWSv1.0",
+      "references": "alerts@example.gov,alert-1,2023-11-14T22:23:20Z",
+      "info": {"category": "Met", "event": "Flood", "urgency": "Immediate", "severity": "Severe", "certainty": "Observed", "headline": "Flood warning cancelled", "description": "The warning is cancelled.", "expires": "2023-11-14T23:33:20Z", "area": {"areaDesc": "Rivertown", "polygon": "19.0,72.0 19.1,72.0 19.1,72.1 19.0,72.0"}, "eventCode": {"valueName": "SAME", "value": "FLW"}},
+      "signature_payload": {"action": "cancel", "identifier": "alert-1", "sender": "alerts@example.gov"},
+      "approvals": [
+        {"user_id": "u-em", "role": "emergency_manager", "key_id": "k-em", "public_key": "A6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg=", "nonce": "01ARZ3NDEKTSV4RRFFQ69G5FAV", "signed_at_ms": 1699999999000, "expires_at_ms": 1700000299000, "signature": "U77VqV2+z0twLC1+L7Ia1jbWEbgsevTGPoDSBrcaLV0LDlKsx+et/HkrkJxaMGO/gN78QA/MNMuCv/g5LVg0Cg==", "payload": {"action": "cancel", "identifier": "alert-1", "sender": "alerts@example.gov"}, "revoked": false},
+        {"user_id": "u-res", "role": "responder_coordinator", "key_id": "k-res", "public_key": "Kay64UG8yvCyLhqU000LxzYeUm0L/hLIl5S8kyKWbdc=", "nonce": "01ARZ3NDEKTSV4RRFFQ69G5FAW", "signed_at_ms": 1699999999000, "expires_at_ms": 1700000299000, "signature": "rLz7babEq2tRYjFMVGT75TNv9/U7yQWOF892h7v6638vyhgszIf+aQwoYa5vwDHRCVk73Qj/0Ig5Bk1DdU4FDA==", "payload": {"action": "cancel", "identifier": "alert-1", "sender": "alerts@example.gov"}, "revoked": false}
+      ],
+      "provenance": {"org_id": "org-demo", "source_id": "cap:alerts@example.gov:alert-1", "external_id": "alert-1", "source_time": "2023-11-14T22:33:20Z", "receipt_time": "2023-11-14T22:33:21Z", "sequence": "3", "raw_data_hash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"},
+      "idempotency": {"key": "cap-cancel-1", "external_id": "alert-1", "canonical_hash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "replay_effect": "same_effect"}
+    }
+  ]
+}

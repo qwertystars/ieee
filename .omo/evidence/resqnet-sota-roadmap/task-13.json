@@ -1,0 +1,53 @@
+{
+  "task_id": "13",
+  "command": "backend/.venv/bin/python scripts/validate_dataset_registry.py --manifest data/datasets/registry.json --prerequisites evidence/sota/prerequisites.json --require-license --require-hashes --require-split-metadata --require-claim-classes; backend/.venv/bin/python scripts/validate_dataset_registry.py --manifest tests/fixtures/registry-missing-license.json --prerequisites tests/fixtures/prerequisites-expired.json",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "data/datasets/registry.json",
+    "evidence/sota/prerequisites.json",
+    "tests/fixtures/registry-missing-license.json",
+    "tests/fixtures/prerequisites-expired.json",
+    "scripts/validate_dataset_registry.py",
+    "tests/test_dataset_registry.py"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-02T22:20:00Z",
+  "finished_at": "2026-08-02T22:31:59Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "happy": {
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout": "status=PASS"
+    },
+    "failure": {
+      "exit_code": 2,
+      "status": "DEFERRED_EXTERNAL",
+      "deferred_reason": "license_not_permitted",
+      "stdout": "status=DEFERRED_EXTERNAL\\ndeferred_reason=license_not_permitted\\nerror=datasets[0].license_name must be a non-empty string\\nerror=prerequisites[0] evidence is expired"
+    },
+    "focused_tests": "backend/.venv/bin/python -m pytest tests/test_dataset_registry.py -q: 5 passed in 0.03s; no database or Alembic fixture loaded",
+    "interpreter": "backend/.venv/bin/python (root python command is unavailable)",
+    "python_compile": "passed",
+    "json_validation": "passed",
+    "ruff": "passed",
+    "diff_check": "passed",
+    "external_data_downloaded": false,
+    "gated_data_substituted": false,
+    "limitations": [
+      "No local licensed Sen1Floods11 artifact is available; its registry record remains metadata-only and DEFERRED_EXTERNAL.",
+      "basedpyright diagnostics were unavailable because the repository's prior installation decision declined the server."
+    ]
+  },
+  "hashes": {
+    "data/datasets/registry.json": "939a281e988d0d0b322485a7cc006ea252b1dc742910c135bb4af08a74dae0db",
+    "evidence/sota/prerequisites.json": "65b982196a807063179d02ee87d2f155e0fb1173c6e45c932dc7eaafda184e83",
+    "scripts/validate_dataset_registry.py": "93d8385694b439eef110a6fd834bb652ec0c4c6c9737522d126b1fca01db4fba",
+    "tests/fixtures/registry-missing-license.json": "a3be5acf6a1e36db193de1016ffdf40bb1b20af114d1999ae06149395af71aaf",
+    "tests/fixtures/prerequisites-expired.json": "298ed31ca819161380148931a88f7644af045c44b8a6d34921ac7855888224d2",
+    "tests/test_dataset_registry.py": "30dc592ef8f2ab4500d7257cae2c265af6a789efb1307fbb6d2218b394dc8c3e"
+  },
+  "failure_assertion": "The exact failure fixture must not pass: missing license and expired external evidence return status=DEFERRED_EXTERNAL, deferred_reason=license_not_permitted, and exit code 2; revoked or available-but-not-permitted artifacts fail closed with exit code 1.",
+  "cleanup": "No external datasets were downloaded, no gated source was contacted, and no production data, model artifact, database, queue, or secret was modified. Temporary pytest files were discarded."
+}

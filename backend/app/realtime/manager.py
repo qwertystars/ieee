@@ -1,189 +1,188 @@
-"""WebSocket manager + polling fallback router for realtime incident updates.
-
-Provides:
-- WebSocketManager: in-memory pub/sub keyed by incident_id
-- manager: module-level singleton
-- router: FastAPI APIRouter with WS endpoint + GET polling fallback
-"""
 from __future__ import annotations
 
-import asyncio
 import logging
+import uuid
 from collections import defaultdict
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+import anyio
+from fastapi import WebSocket, WebSocketDisconnect
+from starlette.websockets import WebSocketState
 
-from app.deps import get_db
-from app.models.observation import Observation
+from app.realtime.fanout import RedisFanout
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+
+@dataclass(frozen=True, slots=True)
+class _Connection:
+    websocket: WebSocket
+    role: str
+    org_id: str | None = None
 
 
 class WebSocketManager:
-    """In-memory WebSocket connection registry keyed by incident_id.
+    """Process-local socket delivery backed by shared Redis fanout."""
 
-    Connections are stored in a defaultdict(set). All mutation goes through
-    an asyncio.Lock so concurrent connect/disconnect cannot corrupt state.
-    """
+    def __init__(
+        self,
+        publisher: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
+    ) -> None:
+        self._connections: dict[str, set[_Connection]] = defaultdict(set)
+        self._lock = anyio.Lock()
+        self._instance_id = uuid.uuid4().hex
+        self._publisher = publisher
+        self._fanout = RedisFanout(self.handle_shared_message)
 
-    def __init__(self) -> None:
-        self._connections: dict[str, set[WebSocket]] = defaultdict(set)
-        self._lock = asyncio.Lock()
+    async def start(self, task_group: anyio.abc.TaskGroup) -> None:
+        """Start the shared Redis subscriber for this backend instance."""
+        self._publisher = self._fanout.publish
+        task_group.start_soon(self._fanout.subscribe)
 
-    async def connect(self, websocket: WebSocket, incident_id: str) -> None:
-        """Accept a WebSocket and register it under incident_id."""
+    async def connect(
+        self,
+        websocket: WebSocket,
+        incident_id: str,
+        role: str,
+        org_id: str | None = None,
+    ) -> None:
         await websocket.accept()
         async with self._lock:
-            self._connections[incident_id].add(websocket)
-        logger.info(
-            "ws.connect",
-            extra={"incident_id": incident_id},
-        )
+            self._connections[incident_id].add(_Connection(websocket, role, org_id))
+        logger.info("ws.connect", extra={"incident_id": incident_id})
 
     async def disconnect(self, websocket: WebSocket, incident_id: str) -> None:
-        """Remove a WebSocket from the incident_id registry."""
         async with self._lock:
-            conns = self._connections.get(incident_id)
-            if conns is None:
+            connections = self._connections.get(incident_id)
+            if connections is None:
                 return
-            conns.discard(websocket)
-            if not conns:
+            removed = {
+                connection
+                for connection in connections
+                if connection.websocket is websocket
+            }
+            connections.difference_update(removed)
+            if not connections:
                 self._connections.pop(incident_id, None)
 
-    async def broadcast(self, incident_id: str, message: dict[str, Any]) -> None:
-        """Send a JSON message to every connection for incident_id.
+    async def broadcast(
+        self,
+        incident_id: str,
+        message: dict[str, Any],
+        org_id: str | None = None,
+    ) -> None:
+        await self._broadcast_local(incident_id, message, org_id)
+        if self._publisher is not None and org_id is not None:
+            await self._publisher(
+                {
+                    "origin": self._instance_id,
+                    "incident_id": incident_id,
+                    "org_id": org_id,
+                    "message": message,
+                }
+            )
 
-        Dead connections are removed after the send attempt.
-        """
+    async def handle_shared_message(self, envelope: dict[str, Any]) -> None:
+        origin = envelope.get("origin")
+        if not isinstance(origin, str) or origin == self._instance_id:
+            return
+        incident_id = envelope.get("incident_id")
+        message = envelope.get("message")
+        org_id = envelope.get("org_id")
+        if (
+            not isinstance(incident_id, str)
+            or not isinstance(org_id, str)
+            or not isinstance(message, dict)
+        ):
+            return
+        await self._broadcast_local(incident_id, message, org_id)
+
+    async def _broadcast_local(
+        self,
+        incident_id: str,
+        message: dict[str, Any],
+        org_id: str | None,
+    ) -> None:
         async with self._lock:
-            conns = list(self._connections.get(incident_id, set()))
-
-        dead: list[WebSocket] = []
-        for ws in conns:
+            connections = list(self._connections.get(incident_id, set()))
+        dead: list[_Connection] = []
+        for connection in connections:
+            if org_id is not None and connection.org_id not in (None, org_id):
+                continue
+            filtered = _filter_message(message, connection.role)
+            if filtered is None:
+                continue
             try:
-                await ws.send_json(message)
-            except Exception:
-                dead.append(ws)
-
+                await connection.websocket.send_json(filtered)
+            except (OSError, RuntimeError, WebSocketDisconnect):
+                dead.append(connection)
         if dead:
             async with self._lock:
                 bucket = self._connections.get(incident_id)
                 if bucket is not None:
-                    for ws in dead:
-                        bucket.discard(ws)
+                    bucket.difference_update(dead)
                     if not bucket:
                         self._connections.pop(incident_id, None)
 
     async def broadcast_observation(
-        self, incident_id: str, observation: dict[str, Any]
+        self,
+        incident_id: str,
+        observation: dict[str, Any],
+        org_id: str | None = None,
     ) -> None:
         await self.broadcast(
             incident_id,
             {"type": "new_observation", "payload": observation},
+            org_id,
         )
 
     async def broadcast_hypothesis(
-        self, incident_id: str, hypothesis: dict[str, Any]
+        self,
+        incident_id: str,
+        hypothesis: dict[str, Any],
+        org_id: str | None = None,
     ) -> None:
         await self.broadcast(
             incident_id,
             {"type": "hypothesis_changed", "payload": hypothesis},
+            org_id,
         )
 
     async def broadcast_plan(
-        self, incident_id: str, plan: dict[str, Any]
+        self,
+        incident_id: str,
+        plan: dict[str, Any],
+        org_id: str | None = None,
     ) -> None:
         await self.broadcast(
             incident_id,
             {"type": "plan_updated", "payload": plan},
+            org_id,
         )
 
     def get_connection_count(self, incident_id: str) -> int:
-        """Return the number of live connections for incident_id."""
-        return len(self._connections.get(incident_id, set()))
+        connections = self._connections.get(incident_id)
+        if not connections:
+            return 0
+        closed = {
+            connection
+            for connection in connections
+            if getattr(connection.websocket, "client_state", None)
+            is WebSocketState.DISCONNECTED
+            or getattr(connection.websocket, "application_state", None)
+            is WebSocketState.DISCONNECTED
+        }
+        if closed:
+            connections.difference_update(closed)
+            if not connections:
+                self._connections.pop(incident_id, None)
+        return len(connections)
 
 
 manager = WebSocketManager()
 
+from app.realtime.routes import _filter_message, router
 
-@router.websocket("/ws/realtime/{incident_id}")
-async def realtime_ws(
-    websocket: WebSocket,
-    incident_id: str,
-    token: str = Query(..., description="JWT Bearer token"),
-) -> None:
-    """WebSocket endpoint streaming realtime updates for one incident.
-
-    Validates the JWT from the `token` query param before accepting the
-    connection. Closes with code 4001 if the token is invalid or missing.
-    """
-    from app.auth.jwt import JWTError, decode_token
-
-    try:
-        decode_token(token)
-    except JWTError:
-        await websocket.close(code=4001)
-        return
-
-    await manager.connect(websocket, incident_id)
-    try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        pass
-    finally:
-        await manager.disconnect(websocket, incident_id)
-
-
-@router.get("/api/incidents/{incident_id}/updates")
-def polling_updates(
-    incident_id: str,
-    since: int = Query(0, ge=0),
-    db: Session = Depends(get_db),
-) -> dict[str, Any]:
-    """Polling fallback: return observations newer than `since` (epoch ms).
-
-    Clients without WebSocket support poll this endpoint with their last
-    `observed_at` watermark as `since`.
-    """
-    stmt = (
-        select(Observation)
-        .where(Observation.incident_id == incident_id)
-        .where(Observation.observed_at > since)
-        .order_by(Observation.observed_at.asc())
-    )
-    rows = db.execute(stmt).scalars().all()
-    observations = [_serialize_observation(o) for o in rows]
-    return {
-        "incident_id": incident_id,
-        "since": since,
-        "count": len(observations),
-        "observations": observations,
-    }
-
-
-def _serialize_observation(obs: Observation) -> dict[str, Any]:
-    """Project an Observation row into a JSON-safe dict for the polling API."""
-    return {
-        "observation_id": obs.observation_id,
-        "incident_id": obs.incident_id,
-        "event_type": obs.event_type,
-        "phenomenon": obs.phenomenon,
-        "value": obs.value,
-        "unit": obs.unit,
-        "observed_at": obs.observed_at,
-        "received_at": obs.received_at,
-        "source_id": obs.source_id,
-        "source_type": obs.source_type.value if obs.source_type else None,
-        "corroboration_state": (
-            obs.corroboration_state.value if obs.corroboration_state else None
-        ),
-        "access_policy": (
-            obs.access_policy.value if obs.access_policy else None
-        ),
-    }
+__all__ = ["WebSocketManager", "manager", "router"]

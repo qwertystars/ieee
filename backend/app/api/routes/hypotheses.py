@@ -140,7 +140,7 @@ def create_hypothesis(
     h = db.get(Hypothesis, hid)
     result = _to_dict(h)  # type: ignore[arg-type]
     schedule_broadcast(
-        manager.broadcast_hypothesis(incident_id, result),
+        manager.broadcast_hypothesis(incident_id, result, org_id),
         request.app,
     )
     return result

@@ -32,8 +32,8 @@ installed, it runs in a standalone window without browser chrome.
 
 ## Service worker
 
-The service worker (`frontend/public/sw.js`) implements a cache-first
-strategy for same-origin GET requests.
+The service worker (`frontend/public/sw.js`) implements a cache-first strategy
+for the app shell and static same-origin GET requests.
 
 ### Install
 
@@ -56,15 +56,18 @@ open tabs immediately.
 
 ### Fetch handling
 
-Same-origin GET requests follow a cache-first strategy:
+Non-API same-origin GET requests follow a cache-first strategy:
 
 1. Check the cache. If present, serve from cache.
 2. If not cached, fetch from network.
 3. On success (200, same-type), cache a copy and return the response.
 4. On network failure, serve cached `/index.html` for navigation requests.
 
-Cross-origin and non-GET requests bypass the cache entirely and go straight
-to the network. This ensures API mutations are never served from stale cache.
+Every `/api/` request bypasses the cache, including GETs. Cross-origin and
+non-GET requests also bypass it. Authenticated or sensitive API responses are
+therefore never placed in a public service-worker cache, even if a caller
+omits an authorization header. Navigation requests receive the cached shell
+only when the network is unavailable; other failed requests return `503`.
 
 ### Cache versioning
 
@@ -84,27 +87,37 @@ is unavailable and replays them on reconnect with conflict-aware resolution.
 
 ### Data model
 
-Each outbox item carries:
+Each outbox item carries the following metadata. The request body, conflict
+data, and server acknowledgement are encrypted before IndexedDB persistence
+with AES-GCM 256-bit encryption. IndexedDB stores the non-exportable
+`CryptoKey` in a separate key ring; raw request bodies are not stored.
 
 | Field | Description |
 |---|---|
-| `id` | ULID (26-char Crockford base32, monotonic) |
+| `id` | ULID (26-char Crockford base32, monotonic even when the wall clock moves backward) |
 | `url` | Target API endpoint |
 | `method` | POST, PATCH, PUT, or DELETE |
 | `body` | Request payload |
 | `content_hash` | SHA-256 of the serialized body |
-| `timestamp` | Creation time (epoch ms) |
+| `created_at` | Client creation time (epoch ms), checked by the server at receipt |
 | `priority` | 1 (highest) through 4 (lowest) |
 | `idempotency_key` | ULID for server-side dedup |
-| `status` | pending, syncing, synced, failed, conflict |
-| `conflict_resolution` | null, `last_write_wins`, or `manual` |
-| `conflict_data` | Server response on conflict |
+| `device_id` | Durable installation identity |
+| `device_sequence` | Monotonic per-device sequence allocated transactionally in IndexedDB |
+| `reinstalled` | Explicit marker when the local installation identity changes |
+| `status` | `queued`, `sending`, `acked`, `failed`, or `conflict` |
+| `conflict_class` | `ordinary`, `task_state`, `task_assignment`, `public_warning`, or `resource_commitment` |
+| `conflict_resolution` | `null` or `manual`; last-write-wins is not a client policy |
+| `conflict_data` | Encrypted authoritative server conflict response |
+| `server_ack` | Encrypted authoritative server acknowledgement |
 | `attempts` | Retry count |
 | `last_attempt` | Last sync attempt timestamp |
 
 ### Priority ordering
 
-Sync order on reconnect is determined by priority, then timestamp:
+Sync order on reconnect is determined by priority, then creation time. Priority
+only controls delivery order; it never grants permission to overwrite a
+server value:
 
 | Priority | Mutation type | Example |
 |---|---|---|
@@ -120,8 +133,12 @@ large imagery uploads.
 ### Conflict resolution
 
 When the server returns a conflict (409), the outbox marks the item as
-`conflict` with `conflict_resolution: 'manual'` and stores the server's
-response in `conflict_data`. The item is not retried automatically.
+`conflict` with `conflict_resolution: 'manual'`, stores the authoritative
+response in encrypted `conflict_data`, and records a transition. The item is
+not retried automatically. Task assignment/state, public warnings, resource
+commitments, and other safety-critical classes fail closed and require a
+coordinator or other authorized human to choose the resolution. There is no
+last-write-wins path.
 
 For non-conflict failures (5xx, network errors), the item is marked `failed`
 and the `attempts` counter increments. Failed items remain in the outbox
@@ -129,16 +146,19 @@ for manual or automatic retry.
 
 ### Conflict audit log
 
-Every conflict is recorded in a separate IndexedDB object store (`audit`)
-with:
+Every transition and conflict is recorded in the append-only IndexedDB
+`audit` store with:
 
 - The item ID, URL, and method
-- The conflict resolution policy (`last_write_wins` or `manual`)
+- The transition (`queued` → `sending` → `acked`, or a terminal failure)
+- The conflict resolution policy (`manual` only)
 - The conflict data from the server
 - A timestamp
 
-This audit trail survives outbox cleanup and provides a record of all
-conflicts for post-incident review.
+The server edge boundary also appends acknowledgement, duplicate replay,
+conflict, and failure decisions to the organization hash-chained audit log.
+Local audit entries survive acknowledgement cleanup and provide a record of
+the device lifecycle for post-incident review.
 
 ### ULID generation
 
@@ -150,30 +170,52 @@ portion monotonically within the process.
 
 ### Idempotency
 
-Every outbox item carries an `idempotency_key` (ULID). The server uses this
-key to deduplicate requests on reconnect. If the same mutation is replayed
-multiple times (e.g., the client crashed after the server processed it but
-before receiving the response), the server returns the original response
-instead of creating a duplicate.
+Every outbox item carries an `idempotency_key` (ULID), `X-Device-Id`,
+`X-Device-Sequence`, `X-Client-Created-At`, and `X-Content-Hash` on replay.
+The server uses the idempotency key and receipt ledger to make duplicate
+replay harmless. If the client crashes after server application but before
+receiving the response, replay returns a duplicate acknowledgement instead
+of applying the mutation again. The authenticated
+`/api/incidents/{incident_id}/sync` boundary scopes each batch to the caller’s
+organization and incident, and persists the idempotency key with the receipt so
+a new item ID cannot reuse an already-applied key.
+
+### Key lifecycle, reinstall, and clock rules
+
+- A missing active key or revoked key fails closed; queued plaintext is never
+  returned to the application. Keys are non-exportable AES-GCM keys, rotate
+  every 30 days, and retired ciphertext is quarantined when the key ring is
+  revoked.
+- Explicit revocation prevents new writes and decryption for every key in the
+  ring, including retired keys. Operators must export or reconcile affected
+  work through the approved human process.
+- A durable device sequence is allocated transactionally with the device
+  identity. A new installation gets a new device identity and an explicit
+  `reinstalled` marker; the server quarantines that stream until a coordinator
+  re-enrolls the device.
+- The server rejects items older than 24 hours or more than 30 seconds in the
+  future. Receipt time, not the client clock, is authoritative; time-uncertain
+  items are quarantined rather than sent automatically.
 
 ## Reconciliation flow
 
 ```
 1. User makes mutation offline
    → addToOutbox(url, method, body, priority)
-   → Item stored in IndexedDB with status=pending
+   → encrypted item stored in IndexedDB with status=queued
 
 2. Network reconnects
-   → getPendingItems() returns items sorted by priority, then timestamp
+   → getPendingItems() first converts any orphaned `sending` items to visible `failed` recovery state
+   → items are returned sorted by priority, then creation time
    → For each item:
-     a. Mark status=syncing
-     b. Send request with idempotency_key header
-     c. On 2xx: markSynced(id) → status=synced
-     d. On 409: markConflict(id, serverResponse) → status=conflict
-     e. On 5xx/network error: markFailed(id, error) → status=failed, attempts++
+      a. Mark status=sending and append a local transition
+      b. Send request with idempotency and device headers
+      c. On an authoritative 2xx acknowledgement: status=acked
+      d. On 409: status=conflict and surface for human resolution
+      e. On 5xx/network error: status=failed, attempts++, and keep visible for retry
 
 3. Cleanup
-   → clearSynced() removes synced items with no conflict_resolution
+   → clearSynced() removes acked ciphertext while retaining audit entries
    → Conflict items remain for manual review
    → getConflictAudit() returns all conflict audit entries
 ```
@@ -201,7 +243,7 @@ down. This supports the offline-first frontend model:
 
 | Dependency | Offline behavior |
 |---|---|
-| Redis | Token denylist fails open (tokens assumed valid). Rate limiting disabled. |
+| Redis | Protected authentication and revocation checks fail closed when Redis freshness is unavailable; refresh-token validation also fails closed. Rate limiting is disabled while Redis is unavailable. |
 | Kafka/Redpanda | Observations inserted directly into PostgreSQL. WebSocket updates not pushed. |
 | Ollama LLM | LLM features fall back to structured-data-only reports. |
 | ONNX models | ML inference returns `model_unavailable` response. |

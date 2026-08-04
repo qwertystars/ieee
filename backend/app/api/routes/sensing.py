@@ -6,91 +6,68 @@ Wires the SOTA sensing and perception engines to incident-scoped endpoints:
   - POST /{incident_id}/damage-assessment               — building damage (degrades)
   - POST /{incident_id}/nlp-report                       — citizen NLP (degrades)
 
-ML features (damage, nlp) degrade gracefully when model weights are
-unavailable, returning a ``model_unavailable`` response.
+ML features expose explicit contract states when artifacts or calibration are unavailable.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 from typing import Any
 
+import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import StrictFloat, StrictStr
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.api.routes.scenarios import RasterRequest
+from app.db import SessionLocal
 from app.deps import get_current_user, get_db
 from app.lib.time import now_ms
 from app.models.incident import Incident
 from app.models.user import User
+from app.perception.serving import (
+    ContractResolution,
+    ContractState,
+    ContractVersions,
+    InferenceContractError,
+    ModelServing,
+    RasterInputMetadata,
+    prepare_raster_input,
+    resolve_contract,
+)
 
 logger = logging.getLogger("app.api.routes.sensing")
 
 router = APIRouter(prefix="/incidents", tags=["sensing"])
 
 _DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "data")
+_SERVING = ModelServing(SessionLocal, cache_dir=_DATA_DIR)
 
 
-def _weights_available(r2_key: str) -> bool:
-    """Check if model weights exist in the local cache directory."""
-    local_path = os.path.join(_DATA_DIR, r2_key.replace("/", os.sep))
-    return os.path.exists(local_path)
+def _route_resolution(
+    model_id: str,
+    requested: ContractVersions | None = None,
+) -> ContractResolution:
+    resolution = resolve_contract(model_id, requested)
+    if resolution.contract is not None and not _SERVING.artifact_available(model_id):
+        return ContractResolution(ContractState.unavailable, resolution.contract, "weights_unavailable")
+    return resolution
 
 
-def _model_unavailable(feature: str) -> dict[str, Any]:
-    """Standard degraded response for unavailable ML model weights."""
-    return {
-        "status": "model_unavailable",
+def _contract_response(feature: str, resolution: ContractResolution) -> dict[str, Any]:
+    response: dict[str, Any] = {
+        "status": resolution.state.value,
         "feature": feature,
-        "message": (
-            f"Model weights for '{feature}' are not available. "
-            "Download weights via scripts/download_models.py."
-        ),
+        "reason": resolution.reason,
+        "review_status": "draft",
     }
-
-
-_MANIFEST_PATH = os.path.join(_DATA_DIR, "models", "manifests.json")
-
-
-def _check_placeholder_models() -> bool:
-    """Return True if any model manifest is a placeholder or unsigned.
-
-    Reads ``data/models/manifests.json`` and returns True if any entry has
-    ``validation_status == "placeholder"`` or ``signed`` is not true.
-    Returns False if the manifest is missing, empty, or malformed.
-    """
-    if not os.path.isfile(_MANIFEST_PATH):
-        return False
-    try:
-        with open(_MANIFEST_PATH, "r", encoding="utf-8") as fh:
-            manifests = json.load(fh)
-    except (OSError, json.JSONDecodeError) as exc:
-        logger.warning("manifest load failed (%s): %s", _MANIFEST_PATH, exc)
-        return False
-    if not isinstance(manifests, list) or not manifests:
-        return False
-    for entry in manifests:
-        if not isinstance(entry, dict):
-            continue
-        if entry.get("validation_status") == "placeholder" or entry.get("signed") is not True:
-            return True
-    return False
-
-
-def _placeholder_model_response(feature: str) -> dict[str, Any]:
-    """Degraded response when model manifests are unvalidated placeholders."""
-    return {
-        "status": "model_unavailable",
-        "reason": "placeholder_model_not_validated",
-        "feature": feature,
-        "message": (
-            f"Model weights for '{feature}' are placeholders and not validated. "
-            "Download real weights via scripts/download_models.py."
-        ),
-    }
+    if resolution.contract is not None:
+        response["provenance"] = _SERVING._provenance(
+            resolution.contract, state=resolution.state,
+        )
+    return response
 
 
 def _get_incident(db: Session, org_id: str, incident_id: str) -> Incident:
@@ -210,10 +187,8 @@ def dispatch_sensing_action(
 # ── Damage assessment (ML — degrades gracefully) ────────────────────────────
 
 
-class DamageRequest(BaseModel):
-    """Request body for damage assessment."""
-
-    image_data: list[list[list[float]]] | None = None
+class DamageRequest(RasterRequest):
+    image_data: list[list[list[list[StrictFloat]]]] | None = None
     flood_prob: float = 0.5
     damage_prob: float = 0.3
     road_class: str = "residential"
@@ -227,66 +202,105 @@ def assess_damage(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """Assess building damage and road passability. Degrades when weights missing."""
     org_id = request.state.org_id or ""
     _get_incident(db, org_id, incident_id)
-
-    if _check_placeholder_models():
-        return _placeholder_model_response("damage")
-
-    if not _weights_available("models/building-damage-v1.0.0.onnx"):
-        return _model_unavailable("damage")
-
-    try:
-        import numpy as np
-
-        from app.perception.damage import DamageAssessor
-
-        assessor = DamageAssessor()
-        image = np.array(payload.image_data or [[[0.0]]], dtype=np.float32)
-        damage_result = assessor.assess_building_damage(image)
-
-        road_segment = {
-            "id": "road_segment_1",
-            "properties": {"road_class": payload.road_class},
-        }
-        road_result = assessor.assess_road_passability(
-            road_segment, payload.flood_prob, payload.damage_prob,
+    versions = payload.versions()
+    base_resolution = resolve_contract("building-damage", versions)
+    if payload.image_data is not None:
+        if payload.crs is None or payload.resolution_m is None or payload.quality is None:
+            raise HTTPException(status_code=422, detail="raster metadata is required")
+        try:
+            tensor = np.asarray(payload.image_data, dtype=np.float32)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail="malformed inference input") from exc
+        prepared = prepare_raster_input(
+            tensor,
+            RasterInputMetadata(
+                crs=payload.crs,
+                resolution_m=payload.resolution_m,
+                valid_fraction=payload.quality.valid_fraction,
+                nodata_fraction=payload.quality.nodata_fraction,
+                snr_db=payload.quality.snr_db,
+            ),
+            (1, 4, 256, 256),
         )
-
-        return {
-            "incident_id": incident_id,
-            "status": "ok",
-            "feature": "damage",
-            "building_damage": {
-                "damage_class": damage_result.damage_class.value,
-                "probability": damage_result.probability,
-                "uncertainty": damage_result.uncertainty,
-                "class_probabilities": damage_result.class_probabilities,
-                "model_version": damage_result.model_version,
-            },
-            "road_passability": {
-                "vehicle_class_passabilities": road_result.vehicle_class_passabilities,
-                "traversal_speed": road_result.traversal_speed,
-                "failure_time": road_result.failure_time,
-                "uncertainty": road_result.uncertainty,
-            },
-            "generated_at": now_ms(),
-        }
-    except Exception as exc:
-        logger.warning("damage assessment failed: %s", exc)
-        return _model_unavailable("damage")
+        if prepared.state is ContractState.incompatible:
+            raise HTTPException(status_code=422, detail=prepared.reason)
+        if prepared.state is ContractState.abstain:
+            response = _contract_response(
+                "damage",
+                ContractResolution(
+                    ContractState.abstain,
+                    base_resolution.contract,
+                    prepared.reason,
+                ),
+            )
+            response["incident_id"] = incident_id
+            return response
+    else:
+        prepared = None
+    resolution = _route_resolution("building-damage", versions)
+    if resolution.state is ContractState.incompatible:
+        raise HTTPException(status_code=422, detail=resolution.reason)
+    if resolution.state is not ContractState.available:
+        response = _contract_response("damage", resolution)
+        response["incident_id"] = incident_id
+        return response
+    if payload.image_data is None:
+        response = _contract_response(
+            "damage",
+            ContractResolution(ContractState.abstain, resolution.contract, "input_required"),
+        )
+        response["incident_id"] = incident_id
+        return response
+    if prepared is None or prepared.tensor is None:
+        raise HTTPException(status_code=422, detail="validated raster tensor is required")
+    try:
+        result = _SERVING.run_registered_inference(
+            "building-damage",
+            {"input": prepared.tensor},
+            versions,
+        )
+    except InferenceContractError as exc:
+        if exc.resolution.state is ContractState.incompatible:
+            raise HTTPException(status_code=422, detail=exc.resolution.reason) from exc
+        return _contract_response("damage", exc.resolution)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="malformed inference input") from exc
+    except (OSError, RuntimeError, ImportError) as exc:
+        logger.warning("damage inference failed: %s", exc)
+        return _contract_response("damage", ContractResolution(
+            ContractState.unavailable, resolution.contract, "inference_unavailable",
+        ))
+    output_name, output = next(iter(result["outputs"].items()))
+    logits = np.asarray(output, dtype=np.float32)
+    logits -= logits.max(axis=1, keepdims=True)
+    probabilities = np.exp(logits)
+    probabilities /= probabilities.sum(axis=1, keepdims=True)
+    class_probabilities = probabilities.mean(axis=(0, 2, 3))
+    return {
+        "incident_id": incident_id,
+        "status": result["state"],
+        "feature": "damage",
+        "prediction": {
+            "output_name": output_name,
+            "shape": list(output.shape),
+            "class_index": int(np.argmax(class_probabilities)),
+            "class_probabilities": class_probabilities.tolist(),
+        },
+        "provenance": result["provenance"],
+        "review_status": "draft",
+        "generated_at": now_ms(),
+    }
 
 
 # ── NLP report (ML — degrades gracefully) ──────────────────────────────────
 
 
-class NLPRequest(BaseModel):
-    """Request body for citizen report NLP processing."""
-
-    text: str | None = None
-    audio_base64: str | None = None
-    image_base64: str | None = None
+class NLPRequest(RasterRequest):
+    text: StrictStr | None = None
+    audio_base64: StrictStr | None = None
+    image_base64: StrictStr | None = None
 
 
 @router.post("/{incident_id}/nlp-report")
@@ -297,41 +311,76 @@ def process_nlp_report(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """Process a citizen report through the NLP pipeline. Degrades when weights missing."""
     org_id = request.state.org_id or ""
     _get_incident(db, org_id, incident_id)
-
-    if _check_placeholder_models():
-        return _placeholder_model_response("nlp")
-
-    if not _weights_available("models/incident-nlp-v1.0.0.onnx"):
-        return _model_unavailable("nlp")
-
+    versions = payload.versions()
+    resolution = _route_resolution("incident-nlp", versions)
+    if resolution.state is ContractState.incompatible:
+        raise HTTPException(status_code=422, detail=resolution.reason)
+    if payload.text is not None and not payload.text.strip():
+        raise HTTPException(status_code=422, detail="text input is empty")
+    if payload.text is None and (payload.audio_base64 is not None or payload.image_base64 is not None):
+        raise HTTPException(status_code=422, detail="unsupported NLP input modality")
+    if resolution.state is not ContractState.available:
+        response = _contract_response("nlp", resolution)
+        response["incident_id"] = incident_id
+        return response
+    if not payload.text:
+        response = _contract_response(
+            "nlp",
+            ContractResolution(ContractState.abstain, resolution.contract, "input_required"),
+        )
+        response["incident_id"] = incident_id
+        return response
     try:
-        from app.perception.nlp import CitizenReportProcessor
+        from transformers import AutoTokenizer
 
-        processor = CitizenReportProcessor(org_id=org_id)
-        report = processor.process_report(text=payload.text)
+        from app.perception.nlp import prepare_text_for_model
 
-        return {
-            "incident_id": incident_id,
-            "status": "ok",
-            "feature": "nlp",
-            "report_id": report.report_id,
-            "language": report.language,
-            "urgency": report.urgency.value,
-            "category": report.category.value,
-            "credibility": report.credibility,
-            "needs_human_review": report.needs_human_review,
-            "geolocation": {
-                "type": report.geolocation.type.value,
-                "place_names": report.geolocation.place_names,
-                "uncertainty_m": report.geolocation.uncertainty_m,
-                "confidence": report.geolocation.confidence,
+        tokenizer = AutoTokenizer.from_pretrained(
+            os.path.join(_DATA_DIR, "models", "incident-nlp-tokenizer"),
+            local_files_only=True,
+        )
+        encoded = tokenizer(
+            prepare_text_for_model(payload.text),
+            padding="max_length",
+            truncation=True,
+            max_length=128,
+            return_tensors="np",
+        )
+        result = _SERVING.run_registered_inference(
+            "incident-nlp",
+            {
+                "input_ids": np.asarray(encoded["input_ids"], dtype="int64"),
+                "attention_mask": np.asarray(encoded["attention_mask"], dtype="int64"),
             },
-            "pii_spans_count": len(report.pii_spans),
-            "generated_at": now_ms(),
-        }
-    except Exception as exc:
-        logger.warning("nlp report processing failed: %s", exc)
-        return _model_unavailable("nlp")
+            versions,
+        )
+    except InferenceContractError as exc:
+        if exc.resolution.state is ContractState.incompatible:
+            raise HTTPException(status_code=422, detail=exc.resolution.reason) from exc
+        return _contract_response("nlp", exc.resolution)
+    except (OSError, ValueError, RuntimeError, ImportError) as exc:
+        logger.warning("nlp inference unavailable: %s", exc)
+        return _contract_response("nlp", ContractResolution(
+            ContractState.unavailable, resolution.contract, "inference_unavailable",
+        ))
+    output_name, output = next(iter(result["outputs"].items()))
+    logits = np.asarray(output, dtype=np.float32)
+    logits -= logits.max(axis=1, keepdims=True)
+    probabilities = np.exp(logits)
+    probabilities /= probabilities.sum(axis=1, keepdims=True)
+    return {
+        "incident_id": incident_id,
+        "status": result["state"],
+        "feature": "nlp",
+        "prediction": {
+            "output_name": output_name,
+            "shape": list(output.shape),
+            "class_index": int(np.argmax(probabilities[0])),
+            "class_probabilities": probabilities[0].tolist(),
+        },
+        "provenance": result["provenance"],
+        "review_status": "draft",
+        "generated_at": now_ms(),
+    }

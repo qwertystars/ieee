@@ -1,0 +1,72 @@
+{
+  "cleanup": "No source, dependency, or lockfile changes; aggregate report was generated from individual reports.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "python scripts/run_quality_gate.py --aggregate .omo/evidence/resqnet-sota-roadmap/F2/01-lint.json .omo/evidence/resqnet-sota-roadmap/F2/02-typecheck.json .omo/evidence/resqnet-sota-roadmap/F2/03-frontend-eslint.json .omo/evidence/resqnet-sota-roadmap/F2/04-frontend-typecheck.json .omo/evidence/resqnet-sota-roadmap/F2/05-frontend-tests.json .omo/evidence/resqnet-sota-roadmap/F2/06-source-audit.json .omo/evidence/resqnet-sota-roadmap/F2/report.json --report-file .omo/evidence/resqnet-sota-roadmap/F2/report.json",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 0,
+  "failure_assertion": "F2 APPROVE requires every individual report to have exit_code 0 and aggregate status PASS.",
+  "finished_at": "2026-08-03T05:27:35.216073Z",
+  "hashes": {
+    "01-lint.json": "188a6762a93cce3859938ef6f7c67aad07a0915bc52d62e4a372266b53552296",
+    "02-typecheck.json": "425ab91b95481e7e71d56157c82ff496766ac88250b1338f2b1277a0be49486a",
+    "03-frontend-eslint.json": "86bb2cdd1a1f87c9b38d1e46ed4124f7b5debedb2a7e9fabdb4e1c9c3155c7e4",
+    "04-frontend-typecheck.json": "fd18e429fc40a07833c866af7c45adc543ffbe2ef473ea05b2ebfda7c784f281",
+    "05-frontend-tests.json": "665f00aa38c206c0b32c5a7c865391bdeeedc131691bb7dfe97fbf99db9ffd72",
+    "06-source-audit.json": "b1b440be2240e10fffadcbaa94a11e8318adbddf437565ff9788a26e26a69da9"
+  },
+  "inputs": [
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F2/01-lint.json",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F2/02-typecheck.json",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F2/03-frontend-eslint.json",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F2/04-frontend-typecheck.json",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F2/05-frontend-tests.json",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F2/06-source-audit.json"
+  ],
+  "metrics": {
+    "aggregate_semantics": "FAIL if any individual exit_code is 1; DEFERRED_EXTERNAL only when no exit_code is 1 and at least one is 2; otherwise PASS.",
+    "deferred_count": 0,
+    "failure_count": 0,
+    "individual_reports": [
+      {
+        "exit_code": 0,
+        "observed_exit_code": 0,
+        "path": "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F2/01-lint.json",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "observed_exit_code": 0,
+        "path": "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F2/02-typecheck.json",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "observed_exit_code": 0,
+        "path": "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F2/03-frontend-eslint.json",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "observed_exit_code": 0,
+        "path": "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F2/04-frontend-typecheck.json",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "observed_exit_code": 0,
+        "path": "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F2/05-frontend-tests.json",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "observed_exit_code": 0,
+        "path": "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F2/06-source-audit.json",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at": "2026-08-03T05:27:35.216031Z",
+  "status": "PASS",
+  "task_id": "resqnet-sota-roadmap-F2",
+  "verdict": "APPROVE"
+}

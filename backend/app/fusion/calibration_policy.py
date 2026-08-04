@@ -1,0 +1,146 @@
+"""Named calibration, uncertainty, shift, and abstention policies."""
+
+from __future__ import annotations
+
+from typing import Final
+
+from .calibration_policy_decisions import decide_abstention, policy_for_output_type, release_gate
+from .calibration_policy_types import (
+    AbstentionDecision,
+    AbstentionInput,
+    CalibrationPolicy,
+    CalibrationThresholds,
+    OutputType,
+    ReleaseGateDecision,
+)
+
+_BINARY_THRESHOLDS: Final = CalibrationThresholds(
+    confidence_min=0.80,
+    disagreement_max=0.10,
+    ece_max=0.05,
+    brier_max=0.15,
+    nll_max=0.70,
+    coverage_min=0.85,
+    coverage_max=0.95,
+    risk_max=0.10,
+    shift_ece_delta=0.05,
+    shift_coverage_delta=0.05,
+)
+
+_SEGMENTATION_THRESHOLDS: Final = CalibrationThresholds(
+    confidence_min=0.80,
+    disagreement_max=0.10,
+    ece_max=0.05,
+    brier_max=0.15,
+    nll_max=0.70,
+    coverage_min=0.85,
+    coverage_max=0.95,
+    risk_max=0.10,
+    shift_ece_delta=0.05,
+    shift_coverage_delta=0.05,
+)
+
+CALIBRATION_POLICIES: Final[tuple[CalibrationPolicy, ...]] = (
+    CalibrationPolicy(
+        output_type=OutputType.SAR_SEGMENTATION,
+        method="pixelwise_temperature_scaling_plus_split_conformal",
+        confidence_level=0.90,
+        minimum_samples=200,
+        subgroup_minimum_samples=200,
+        hazard_minimum_samples=200,
+        required_metrics=(
+            "segmentation_confidence",
+            "conformal_coverage",
+            "conformal_interval_width",
+            "risk_coverage",
+            "subgroup_coverage",
+            "hazard_coverage",
+            "reliability",
+            "ece",
+            "brier",
+            "nll",
+        ),
+        thresholds=_SEGMENTATION_THRESHOLDS,
+        shift_trigger="ece_delta_or_coverage_delta_or_member_disagreement",
+        recalibration_cadence_days=30,
+        test_tuning_forbidden=True,
+    ),
+    CalibrationPolicy(
+        output_type=OutputType.DAMAGE_PROBABILITY,
+        method="temperature_scaling_multiclass_probability",
+        confidence_level=0.90,
+        minimum_samples=200,
+        subgroup_minimum_samples=200,
+        hazard_minimum_samples=200,
+        required_metrics=("reliability", "ece", "brier", "nll", "risk_coverage", "subgroup_ece", "hazard_ece"),
+        thresholds=_BINARY_THRESHOLDS,
+        shift_trigger="ece_delta_or_coverage_delta",
+        recalibration_cadence_days=30,
+        test_tuning_forbidden=True,
+    ),
+    CalibrationPolicy(
+        output_type=OutputType.NLP_PROBABILITY,
+        method="temperature_scaling_binary_probability",
+        confidence_level=0.90,
+        minimum_samples=200,
+        subgroup_minimum_samples=200,
+        hazard_minimum_samples=200,
+        required_metrics=("reliability", "ece", "brier", "nll", "risk_coverage", "subgroup_ece", "hazard_ece"),
+        thresholds=_BINARY_THRESHOLDS,
+        shift_trigger="ece_delta_or_coverage_delta",
+        recalibration_cadence_days=30,
+        test_tuning_forbidden=True,
+    ),
+    CalibrationPolicy(
+        output_type=OutputType.ENSEMBLE_DISAGREEMENT,
+        method="member_variance_plus_risk_coverage",
+        confidence_level=0.90,
+        minimum_samples=200,
+        subgroup_minimum_samples=200,
+        hazard_minimum_samples=200,
+        required_metrics=("ensemble_disagreement", "risk_coverage", "subgroup_ece", "hazard_ece"),
+        thresholds=_BINARY_THRESHOLDS,
+        shift_trigger="member_disagreement_or_ece_delta",
+        recalibration_cadence_days=30,
+        test_tuning_forbidden=True,
+    ),
+    CalibrationPolicy(
+        output_type=OutputType.CONFORMAL_INTERVAL,
+        method="split_conformal_prediction",
+        confidence_level=0.90,
+        minimum_samples=200,
+        subgroup_minimum_samples=200,
+        hazard_minimum_samples=200,
+        required_metrics=("conformal_coverage", "conformal_interval_width", "subgroup_coverage", "hazard_coverage"),
+        thresholds=_SEGMENTATION_THRESHOLDS,
+        shift_trigger="coverage_delta_or_interval_width_delta",
+        recalibration_cadence_days=30,
+        test_tuning_forbidden=True,
+    ),
+    CalibrationPolicy(
+        output_type=OutputType.RISK_COVERAGE,
+        method="selective_prediction_risk_coverage_curve",
+        confidence_level=0.90,
+        minimum_samples=200,
+        subgroup_minimum_samples=200,
+        hazard_minimum_samples=200,
+        required_metrics=("risk_coverage", "subgroup_risk_coverage", "hazard_risk_coverage"),
+        thresholds=_BINARY_THRESHOLDS,
+        shift_trigger="risk_delta_or_coverage_delta",
+        recalibration_cadence_days=30,
+        test_tuning_forbidden=True,
+    ),
+)
+
+__all__ = [
+    "CALIBRATION_POLICIES",
+    "AbstentionDecision",
+    "AbstentionInput",
+    "CalibrationPolicy",
+    "CalibrationThresholds",
+    "OutputType",
+    "ReleaseGateDecision",
+    "decide_abstention",
+    "policy_for_output_type",
+    "release_gate",
+]

@@ -19,7 +19,11 @@ import logging
 import httpx
 from sqlalchemy.orm import Session
 
-from app.lib.idempotency import check_and_record
+from app.lib.idempotency import (
+    check_and_record,
+    record_published_raw_event,
+    stable_ingestion_claim,
+)
 from app.lib.time import now_ms
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
@@ -173,6 +177,7 @@ class RedditAdapter:
             "valid_until": None,
             "received_at": now_ms(),
             "source_id": source_id,
+            "external_id": post_id,
             "source_type": SourceType.social_media.value,
             "collection_method": "reddit_api",
             "source_reliability": 0.5,
@@ -222,10 +227,24 @@ class RedditAdapter:
             post_id = post.get("id")
             if not post_id:
                 continue
-            if not check_and_record(db, "reddit", post_id):
-                continue
             obs = self.map_to_observation(post, org_id, incident_id)
-            await producer.send("observations.raw", obs)
+            if not check_and_record(
+                db,
+                "reddit",
+                post_id,
+                org_id=org_id,
+                incident_id=incident_id,
+                payload=stable_ingestion_claim(obs),
+                commit=False,
+            ):
+                continue
+            try:
+                await producer.send("observations.raw", obs)
+                record_published_raw_event(db, obs)
+                db.commit()
+            except (OSError, RuntimeError, TimeoutError):
+                db.rollback()
+                raise
             count += 1
 
         logger.info("Reddit: published %d/%d posts", count, len(posts))

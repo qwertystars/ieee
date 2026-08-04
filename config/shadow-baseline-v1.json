@@ -1,0 +1,71 @@
+{
+  "schema_version": "resqnet.shadow-baseline.v1",
+  "baseline_version": "trusted-baseline-v1",
+  "status": "DEFERRED_EXTERNAL",
+  "owner": "baseline-data-governance",
+  "authority": "No external baseline authority registered",
+  "population": {
+    "population_id": "synthetic-shadow-v1",
+    "kind": "synthetic_validation_fixture",
+    "source": "tests/fixtures/shadow-incident.ndjson",
+    "minimum_incidents": 100,
+    "minimum_window_days": 30,
+    "real_data": false
+  },
+  "comparison": {
+    "baseline_decision_source": "pinned_fixture_only",
+    "comparison_after_replay": true,
+    "operator_feedback_required_for_external_claim": true
+  },
+  "blinding": {
+    "baseline_hidden_during_shadow_evaluation": true,
+    "baseline_revealed_only_for_comparison": true
+  },
+  "feedback": {
+    "schema_version": "resqnet.shadow-feedback.v1",
+    "allowed_statuses": ["observed", "missing", "not_applicable"],
+    "missing_handling": "exclude_missing_feedback_from_operator_metrics_never_impute",
+    "operator_identity_required_for_disagreement": true
+  },
+  "thresholds": {
+    "false_alert_rate_max": 0.05,
+    "p95_end_to_end_latency_ms_max": 2000,
+    "availability_min": 0.999,
+    "calibration_ece_max": 0.05,
+    "disagreement_attribution_min": 1.0
+  },
+  "auth_context": {
+    "authenticated": true,
+    "principal_type": "service",
+    "subject": "shadow-replay-service",
+    "audience": "resqnet-service",
+    "org_id": "shadow-lab",
+    "scope": "shadow:replay",
+    "mode": "shadow"
+  },
+  "actuation_controls": {
+    "route_allowlist": ["eval.shadow_replay"],
+    "dispatch_allowed": false,
+    "task_mutation_allowed": false,
+    "resource_commitment_allowed": false,
+    "public_warning_allowed": false,
+    "network_egress_allowed": false,
+    "queue_publish_allowed": false
+  },
+  "provenance": {
+    "hash_algorithm": "SHA-256",
+    "chain": "canonical_record_hash_chained",
+    "operator_identity_source": "authenticated_service_account"
+  },
+  "prerequisites": {
+    "source": "evidence/sota/prerequisites.json",
+    "ids": ["dataset.baseline.shadow-operational", "dataset.operator.human-factors"],
+    "required_status": "DEFERRED_EXTERNAL",
+    "required_claim_class": "shadow"
+  },
+  "claims": {
+    "machine": "shadow_machine",
+    "external_shadow": "DEFERRED_EXTERNAL",
+    "deferred_reason": "operator feedback, trusted external baseline data, agency authorization, and a real 30-day field window are unavailable"
+  }
+}

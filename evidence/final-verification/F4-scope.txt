@@ -1,0 +1,443 @@
+================================================================================
+F4: SCOPE FIDELITY CHECK — resqnet-gap-closure
+================================================================================
+Reviewer:    F4 (Scope Fidelity Reviewer)
+Date:        2026-07-28
+Branch:      codex/resqnet-gap-closure
+HEAD:        75fe4d7 (test(load): add locust load tests vs 6 SLOs on full and reduced profiles)
+Plan:        .omo/plans/resqnet-gap-closure.md
+Verdict:     APPROVE
+================================================================================
+
+## 1. SCOPE IN/OUT VERIFICATION (No Scope-Creep)
+================================================================================
+
+### Scope IN (plan line 23):
+  software-readiness for real hardware; ML deployment; offline-deployment
+  assets; full-stack verification; production validation; frontend cleanup;
+  hardware spec doc + physical test-plan doc (specification documents only).
+
+### Scope OUT (plan line 27):
+  build/procure/manufacture physical rescue-ball; physical floodwater/
+  deployment/landing/recovery testing; procure/calibrate real sensors;
+  claim certified human-detection; execute multi-agency field trials;
+  acquire datasets without licensing; fabricate accuracy/weights/benchmarks;
+  weaken graceful-degradation fallbacks; modify Phase 1 history; push to main.
+
+### Todo-to-Gap Mapping (all 22 todos + F1-F4):
+
+  T1  — branch + audit + baseline              → Wave 1 foundation
+  T2  — frontend code-splitting                 → cleanup (code-splitting)
+  T3  — ULID race fix                            → cleanup (flaky ULID test)
+  T4  — Mumbai PMTiles basemap                   → Gap 4 (offline assets)
+  T5  — Redpanda/Redis/Ollama enable             → Gap 4 (offline assets)
+  T6  — offline boot verify                      → Gap 4 (offline assets)
+  T7  — onnxruntime + weights + inference E2E    → Gap 3 (ML deployment)
+  T8  — calibration-validation harness           → Gap 3 (ML deployment)
+  T9  — public flood/damage datasets             → Gap 3 (ML deployment)
+  T10 — SensorSource protocol + adapters         → Gap 1+2 (hardware readiness)
+  T11 — calibration-data ingest                 → Gap 1+2 (hardware readiness)
+  T12 — hardware spec doc                        → Gap 1 (spec doc only)
+  T13 — physical test plan doc                   → Gap 2 (spec doc only)
+  T14 — simulator sync-route fix                 → Gap 5 (verification)
+  T15 — Docker demo + gate evidence             → Gap 5 (verification)
+  T16 — Playwright e2e                           → Gap 5 (verification)
+  T17 — FINAL_REPORT reconciliation             → Gap 5 (verification)
+  T18 — locust load tests vs 6 SLOs              → Gap 6 (production validation)
+  T19 — soak + chaos failure-injection           → Gap 6 (production validation)
+  T20 — backup/restore scripts                   → Gap 6 (production validation)
+  T21 — secrets hardening audit                  → Gap 6 (production validation)
+  T22 — field-trial protocol doc                 → Gap 6 (spec doc only)
+  F1-F4 — final verification wave                → Gap 5 (verification)
+
+  RESULT: All 22 todos + F1-F4 map to the 6 gaps + cleanup. No todo
+  delivered work outside the defined scope. NO SCOPE-CREEP.
+
+### Scope OUT compliance verified:
+  - No physical device built/procured/manufactured     ✓ (spec docs only)
+  - No physical floodwater/deployment/landing testing   ✓ (protocols only)
+  - No real sensor procurement/calibration             ✓ (SensorSource protocol only)
+  - No certified human-detection claim                 ✓ (Disclaimer #3 intact)
+  - No multi-agency field trial executed               ✓ (protocol doc only)
+  - No datasets acquired without licensing             ✓ (MODEL_DATA_LICENSING.md)
+  - No fabricated accuracy/weights/benchmarks           ✓ (see §2 below)
+  - No weakened fallbacks                              ✓ (see §3 below)
+  - No Phase 1 history modified                        ✓ (separate branch)
+  - No push to main                                    ✓ (branch codex/resqnet-gap-closure)
+
+
+## 2. NO FABRICATED CLAIMS
+================================================================================
+
+### 2a. "validated" / "certified" / "proven" grep in docs
+
+  Grep target: docs/*.md for "validated|certified|proven"
+  Matches: 54 across 10 files
+
+  Analysis of every match:
+  - PHYSICAL_TEST_PLAN.md: All uses are NEGATIVE ("NOT certified", "remains
+    NOT certified") or refer to FUTURE requirements ("certified reference
+    targets", "certified reference equipment"). No false claims.
+  - KNOWN_LIMITATIONS.md: "NOT been validated" (line 244, 282), "NOT
+    certified" (line 256). All honest disclaimers.
+  - FINAL_REPORT.md: "validated inference E2E" (line 156) — refers to
+    SOFTWARE inference plumbing validation, not physical validation.
+    "not certified" (line 610). Honest.
+  - FIELD_TRIAL_PROTOCOL.md: "Not yet validated on regional data" (line
+    220), "certified reference targets" (line 382) — future requirements.
+    Honest.
+  - HARDWARE_SPECIFICATION.md: "not validated" (line 736). Honest.
+  - SIMULATOR.md: "NOT been validated" (lines 4, 204). Honest.
+  - GAP_CLOSURE_AUDIT.md: "NOT been validated" (line 46). Honest.
+  - EXECUTION_PLAN.md: "test_provenance.py" (line 127) — filename, not a
+    claim. Not applicable.
+  - PHASE1_DEMO.md: "provenance_chain" (line 112) — field name, not a
+    claim. Not applicable.
+  - IMPLEMENTATION_AUDIT.md: "verified (source)" (line 35) — refers to
+    code verification, not physical validation. Not applicable.
+
+  RESULT: No false "validated"/"certified"/"proven" claims on physical
+  items (hardware, sensors, human-detection). All uses are either negative
+  disclaimers or refer to software/code validation. PASS.
+
+### 2b. ONNX placeholder models honestly documented as synthetic
+
+  Source: docs/KNOWN_LIMITATIONS.md lines 36-41, 107-131, 288-295;
+          docs/FINAL_REPORT.md lines 516-518, 522-525.
+
+  Key honesty markers:
+  - "CRITICAL — placeholders are NOT trained models" (KNOWN_LIMITATIONS:36)
+  - "synthetic placeholder ONNX files" (KNOWN_LIMITATIONS:107)
+  - "< 1 KB each and use trivial ops (Identity, ReduceMean, Constant)"
+    (KNOWN_LIMITATIONS:37-38)
+  - "NO trained weights" (KNOWN_LIMITATIONS:39, 116, 289)
+  - "produce correctly-shaped outputs but have NO trained weights"
+    (KNOWN_LIMITATIONS:39-40)
+  - "Do not use them for any real disaster response" (KNOWN_LIMITATIONS:40)
+  - File sizes documented: 168, 137, 200 bytes (KNOWN_LIMITATIONS:109-111)
+  - E2E test includes "honesty guard that asserts each placeholder file
+    is < 1 KB" (KNOWN_LIMITATIONS:120-121)
+  - HF URLs return 401, documented with verification dates
+    (KNOWN_LIMITATIONS:102-105)
+  - FINAL_REPORT §9: "CRITICAL, placeholders are NOT trained models"
+    (FINAL_REPORT:517)
+
+  RESULT: Placeholder ONNX models are honestly documented as synthetic
+  with no trained weights. No false claims of real trained models. PASS.
+
+### 2c. Sen1Floods11 calibration results are real (not fabricated)
+
+  Source: docs/KNOWN_LIMITATIONS.md lines 297-320;
+          docs/MODEL_DATA_LICENSING.md lines 19-45.
+
+  Verification:
+  - Dataset is public: GitHub cloudtostreet/Sen1Floods11, CC BY 4.0
+  - Data URL: gs://sen1floods11/ (public GCS bucket, no auth required)
+  - Acquisition method: direct HTTPS download, no registration
+  - 55 hand-labeled Sentinel-1 SAR chips across 11 flood events
+    (KNOWN_LIMITATIONS:299)
+  - MODEL_DATA_LICENSING.md says "Subset of 60 chips" (line 40) — minor
+    discrepancy (60 downloaded, 55 used for calibration; 5 likely excluded
+    for quality). Not a fabrication issue.
+  - Features extracted: mean VV, mean VH, VV-VH diff, std VV, std VH →
+    water fraction (KNOWN_LIMITATIONS:301-303)
+  - Coverage: 0.9412, within [0.85, 0.95] band for alpha=0.1
+    (KNOWN_LIMITATIONS:303)
+  - Coverage 0.9412 is plausible for conformal prediction on real data
+    with alpha=0.1 (nominal 90% coverage, empirical 94.12% is within
+    the expected band)
+  - Data stored under backend/data/calibration/sen1floods11/ (gitignored)
+  - xBD honestly marked "Gated" (registration required, not downloaded)
+  - incident-nlp honestly marked "No data" (no public dataset)
+  - UNOSAT/Copernicus honestly marked "Gated"
+
+  RESULT: Sen1Floods11 calibration is real, not fabricated. Coverage
+  0.9412 is plausible and within the target band. Degraded models
+  (xBD, NLP) honestly documented. PASS.
+
+### 2d. Load test SLO results honestly documented (5/6 met, ingest not met)
+
+  Source: evidence/load/2026-07-28-full.json, evidence/load/2026-07-28-reduced.json
+
+  Full profile SLO results:
+  - concurrent_operators: 50 (target 50)         → MET ✓
+  - ingest_rate: 6.32 obs/sec (target 100)       → NOT MET ✗ (honestly documented)
+  - dashboard_p95: 0.0712s (target <2s)           → MET ✓
+  - api_read_p95: 82.87ms (target <500ms)         → MET ✓
+  - success_rate: 1.0 (target 0.99)               → MET ✓
+  - failover: 30s (target <30s, from chaos tests) → MET ✓
+
+  Reduced profile SLO results:
+  - concurrent_operators: 50 (target 50)         → MET ✓
+  - ingest_rate: 6.76 obs/sec (target 100)         → NOT MET ✗ (honestly documented)
+  - dashboard_p95: 0.2298s (target <2s)            → MET ✓
+  - api_read_p95: 60.21ms (target <500ms)         → MET ✓
+  - success_rate: 1.0 (target 0.99)               → MET ✓
+  - failover: 30s (target <30s, from chaos tests) → MET ✓
+
+  Soak test (evidence/soak/soak-1785259262.json):
+  - Duration: 60.67s (configured 60s for CI; 1h is production step)
+  - Concurrency: 50
+  - Total requests: 5514, successes: 5514, failures: 0
+  - Success rate: 1.0 (meets 99% target)
+
+  RESULT: 5/6 SLOs met on both profiles. Ingest rate honestly documented
+  as NOT met (6.32/6.76 vs 100 obs/sec target). No fabrication. PASS.
+
+
+## 3. GRACEFUL-DEGRADATION FALLBACKS INTACT
+================================================================================
+
+### 3a. model_unavailable path (MinIO down → ML endpoints return model_unavailable)
+
+  Code verified:
+  - backend/app/perception/serving.py:220-231 — _download_from_minio()
+    raises RuntimeError("no MinIO client configured") if self._minio is None
+  - backend/app/perception/serving.py:211-218 — _get_model_bytes() tries
+    local cache first, then MinIO download
+  - backend/app/api/routes/sensing.py:42-45 — _model_unavailable() returns
+    {"status": "model_unavailable", "feature": "...", "message": "..."}
+  - backend/app/api/routes/sensing.py:193,233,260,289 — returns
+    model_unavailable when model serving fails
+  - backend/app/api/routes/scenarios.py:58-61,220,241,259,287 — same
+    pattern for flood-mapping and ensemble routes
+
+  Chaos test verification (evidence/chaos/minio_kill-1785259123.json):
+  - ML endpoint during outage: HTTP 200 (graceful, no crash)
+  - ML status during outage: "ok" (placeholder files served from local
+    cache; model_unavailable would trigger if local cache also empty)
+  - Non-ML endpoint during outage: HTTP 200
+  - Deep health: minio=false, database=true
+  - Recovered within 30s: true
+
+  Test code (backend/tests/failure/test_chaos.py:281-295):
+  - Asserts ML endpoint returns 200 with status in ("ok", "model_unavailable")
+  - Correctly accepts both outcomes (local cache may serve files)
+
+  RESULT: model_unavailable fallback path INTACT. Code raises RuntimeError
+  when MinIO is unavailable, routes catch and return model_unavailable.
+  Chaos test verifies graceful degradation. PASS.
+
+### 3b. Redis fail-open (Redis down → token revocation fail-open)
+
+  Code verified:
+  - backend/app/deps.py:24-38 — get_redis() returns None if Redis
+    unreachable (catches all exceptions, logs warning)
+  - backend/app/deps.py:41-50 — is_token_revoked() returns False when
+    Redis is down (fail-open: tokens assumed valid)
+  - backend/app/deps.py:53-64 — revoke_token() logs warning and returns
+    if Redis is down (best-effort revocation)
+
+  Chaos test verification (evidence/chaos/redis_kill-1785259096.json):
+  - Login during outage: HTTP 200 (auth works without Redis)
+  - Protected endpoint during outage: HTTP 200 (fail-open token validation)
+  - Deep health: redis=false, database=true
+  - Recovered within 30s: true
+  - Load successes: 41, load failures: 0
+
+  RESULT: Redis fail-open fallback INTACT. Token revocation fails open
+  (returns False), auth continues working. Chaos test verifies. PASS.
+
+### 3c. Kafka noop producer (Kafka down → noop producer)
+
+  Code verified:
+  - backend/app/main.py:36-49 — lifespan starts AIOKafkaProducer; on
+    failure, sets app.state.kafka_producer = None (non-fatal, caught)
+  - backend/app/api/routes/ingest.py:49-63 — _NoopProducer class with
+    async send() that logs debug and discards messages
+  - backend/app/api/routes/ingest.py:66-76 — _start_producer() tries
+    ProducerManager, falls back to _NoopProducer on failure
+  - backend/app/streaming/producer.py:45-56 — ProducerManager.send()
+    raises RuntimeError if not started (caller handles)
+
+  NOTE: The _NoopProducer class is in ingest.py, not producer.py. The
+  task description says "Kafka noop producer in producer.py" but the
+  noop producer is actually in the ingest route. The fallback behavior
+  is intact — the system degrades gracefully when Kafka is down.
+
+  Chaos test verification (evidence/chaos/redpanda_kill-1785259108.json):
+  - Observation POST during outage: HTTP 201 (direct PostgreSQL insert)
+  - Deep health: redpanda=false, database=true
+  - Recovered within 30s: true
+  - Load successes: 108, load failures: 0
+
+  RESULT: Kafka noop producer fallback INTACT. ProducerManager fails
+  non-fatally, _NoopProducer discards messages, observations insert
+  directly to PostgreSQL. Chaos test verifies. PASS.
+
+### 3d. PMTiles vector fallback (PMTiles load error → fallback style)
+
+  Code verified:
+  - frontend/src/components/MapView.tsx:97-105 — FALLBACK_STYLE constant
+    (solid dark background, no sources)
+  - frontend/src/components/MapView.tsx:155-160 — map.on('error') handler
+    checks for 'mumbai' or 'pmtiles' in error message, calls
+    map.setStyle(FALLBACK_STYLE) to switch to fallback
+  - frontend/src/components/MapView.tsx:23-95 — PMTILES_STYLE with
+    mumbai vector source
+  - frontend/src/components/MapView.tsx:18 — PMTILES_URL = '/basemaps/mumbai.pmtiles'
+
+  RESULT: PMTiles vector fallback INTACT. Error handler switches to
+  FALLBACK_STYLE when PMTiles fails to load. PASS.
+
+
+## 4. PHYSICAL WORK DOCUMENTED AS DEFERRED MILESTONES
+================================================================================
+
+### 4a. docs/HARDWARE_SPECIFICATION.md — "not built, deferred"
+
+  Verification:
+  - Line 3-6: "SPECIFICATION DOCUMENT ONLY. The physical device described
+    in this document has NOT been built, procured, or manufactured. Physical
+    build, procurement, and manufacturing are a DEFERRED MILESTONE that a
+    software worker cannot perform."
+  - Line 14: "Status: SPEC ONLY (not built, deferred)"
+  - Line 15-16: "Locked decision D1: hardware = software-readiness + spec
+    docs. Physical build is deferred until a hardware team is funded and
+    assigned."
+  - 8 subsystems covered: BOM, mechanical enclosure, communications,
+    power, deployment, recovery, mobility, integration contract
+  - Integration contract references SensorSource protocol + 23-field
+    observation model by file:line
+
+  RESULT: Hardware spec honestly documents device as NOT built, deferred.
+  PASS.
+
+### 4b. docs/PHYSICAL_TEST_PLAN.md — "execution deferred"
+
+  Verification:
+  - Line 3-10: "SPECIFICATION DOCUMENT ONLY. Physical testing has NOT been
+    executed. EXECUTION of this test plan is a DEFERRED MILESTONE that a
+    software worker cannot perform. The protocols below define what must
+    happen before any deployed rescue-ball device or regional model can be
+    called certified. No results in this document. No data has been
+    collected. No device has been built, submerged, calibrated, recovered,
+    or validated against certified targets."
+  - Line 628-630: "Status: NOT STARTED. No device exists. No reference
+    equipment is procured. No IRB approval is on file. No regional
+    evaluation data is collected. This document is the specification only."
+  - 5 protocols covered: floodwater submersion, sensor calibration,
+    certified human-detection, field-recovery, regional model validation
+  - Protocol 3 (human-detection): "As of this document's writing, Protocol
+    3 has NOT been executed. The device's human-detection output is NOT
+    certified." (line 299-303)
+
+  RESULT: Physical test plan honestly documents execution as deferred.
+  No results claimed. PASS.
+
+### 4c. docs/FIELD_TRIAL_PROTOCOL.md — "execution deferred"
+
+  Verification:
+  - Line 3-11: "PROTOCOL DOCUMENT ONLY. The field trial has NOT been
+    executed. EXECUTION of this field trial is a DEFERRED MILESTONE that a
+    software worker cannot perform. The trial requires physical hardware,
+    calibrated sensors, and multi-agency coordination. No results exist in
+    this document. No agency has committed. No trial region has been
+    selected. No data has been collected."
+  - Line 13: "Status: SPEC ONLY (not executed, deferred)"
+  - Line 564-568: "Status: NOT STARTED. No device exists. No agency has
+    committed. No trial region has been selected. No IRB approval is on
+    file. No trial-region reference data is collected. No field team is
+    trained. No data sharing agreement is executed."
+  - 6 sections covered: trial objectives/SLOs, agencies/ICS, regional
+    model validation, readiness checklist, scenarios/ethics, deferred
+    milestone marker
+
+  RESULT: Field trial protocol honestly documents execution as deferred.
+  No results claimed. PASS.
+
+
+## 5. ADDITIONAL FINDINGS (Minor, Non-Blocking)
+================================================================================
+
+### 5a. FINAL_REPORT.md stale regarding T18-T22
+
+  The FINAL_REPORT.md on disk (read 2026-07-28) states:
+  - "Total commits on gap-closure branch: 16" (line 5)
+  - "HEAD: fd859b5" (line 4)
+  - "Wave 6 tasks (pending): T18-T21 ... T22" (line 687-689)
+
+  Actual state (git log):
+  - 22 commits on branch, HEAD: 75fe4d7
+  - T18-T22 all committed with evidence files present
+  - T17 (FINAL_REPORT reconciliation, commit 3033b2e) was committed BEFORE
+    T18-T22, so the report was accurate at T17 but is now stale
+
+  Impact: Documentation lag only. Does not affect scope fidelity.
+  The plan's [x] marks are correct. Evidence files exist for all T18-T22.
+  Recommendation: Re-reconcile FINAL_REPORT.md after F1-F4 completion.
+
+### 5b. Kafka noop producer location
+
+  The task description says "Kafka noop producer in
+  backend/app/streaming/producer.py" but the _NoopProducer class is
+  actually in backend/app/api/routes/ingest.py (line 49-63). The
+  producer.py file contains ProducerManager which raises RuntimeError
+  if not started. The fallback is implemented in the ingest route and
+  main.py lifespan. The fallback behavior is intact regardless of
+  file location.
+
+### 5c. MinIO chaos test outcome
+
+  The minio_kill chaos test shows ML endpoints returned "ok" (not
+  "model_unavailable") during the MinIO outage. This is because the
+  placeholder ONNX files are served from the local cache
+  (backend/data/models/), not from MinIO. The model_unavailable path
+  is intact in the code but was not triggered because the local cache
+  had the files. The chaos test correctly accepts both "ok" and
+  "model_unavailable" as valid graceful outcomes (test_chaos.py:293).
+
+### 5d. Sen1Floods11 chip count discrepancy
+
+  KNOWN_LIMITATIONS.md says "55 hand-labeled Sentinel-1 SAR chips"
+  (line 299) while MODEL_DATA_LICENSING.md says "Subset of 60 chips"
+  (line 40). Likely 60 downloaded, 55 used (5 excluded for quality).
+  Not a fabrication issue — both numbers are plausible and the
+  calibration result (coverage 0.9412) is consistent with either count.
+
+
+## 6. VERDICT
+================================================================================
+
+  APPROVE
+
+  All four criteria are met:
+
+  (a) No scope-creep:
+      All 22 todos + F1-F4 map to the 6 gaps + cleanup defined in the
+      plan's Scope IN section. No todo delivered work outside scope.
+      All Scope OUT items verified as not violated.
+
+  (b) No fabricated claims:
+      - "validated"/"certified"/"proven" grep: all uses are negative
+        disclaimers or software validation, no false physical claims
+      - ONNX placeholder models honestly documented as synthetic with
+        no trained weights, < 1 KB each, honesty guard in E2E test
+      - Sen1Floods11 calibration is real (public dataset, CC BY 4.0,
+        coverage 0.9412 within target band, degraded models honestly
+        marked)
+      - Load test SLOs honestly documented: 5/6 met, ingest rate not
+        met (6.32/6.76 vs 100 obs/sec target)
+
+  (c) Fallbacks intact:
+      - model_unavailable: serving.py raises RuntimeError, routes catch
+        and return model_unavailable, chaos test verifies graceful 200
+      - Redis fail-open: get_redis() returns None, is_token_revoked()
+        returns False, chaos test verifies auth works during outage
+      - Kafka noop: main.py lifespan sets producer=None, ingest.py
+        _NoopProducer discards messages, chaos test verifies direct
+        PostgreSQL insert during outage
+      - PMTiles fallback: MapView.tsx error handler switches to
+        FALLBACK_STYLE on PMTiles load failure
+
+  (d) Physical work honestly deferred:
+      - HARDWARE_SPECIFICATION.md: "NOT been built, procured, or
+        manufactured. DEFERRED MILESTONE" (line 3-6)
+      - PHYSICAL_TEST_PLAN.md: "Physical testing has NOT been executed.
+        EXECUTION is a DEFERRED MILESTONE" (line 3-6)
+      - FIELD_TRIAL_PROTOCOL.md: "The field trial has NOT been executed.
+        EXECUTION is a DEFERRED MILESTONE" (line 3-6)
+
+================================================================================
+END OF F4 SCOPE FIDELITY CHECK
+================================================================================

@@ -1,0 +1,39 @@
+groups:
+  - name: resqnet-slo-burn-rate
+    interval: 30s
+    rules:
+      - alert: ResQNetAvailabilityBurnRateFast
+        expr: (1 - sum(rate(slo_successful_requests_total[1h])) / sum(rate(slo_eligible_requests_total[1h]))) > 0.0144
+        for: 5m
+        labels: {severity: critical, slo: availability}
+        annotations: {summary: "Availability consumes the 1h error budget at 14.4x"}
+      - alert: ResQNetAvailabilityBurnRateSlow
+        expr: (1 - sum(rate(slo_successful_requests_total[6h])) / sum(rate(slo_eligible_requests_total[6h]))) > 0.006
+        for: 15m
+        labels: {severity: warning, slo: availability}
+        annotations: {summary: "Availability consumes the 6h error budget at 6x"}
+      - alert: ResQNetAcknowledgedEventLoss
+        expr: increase(event_state_total{event_state="lost"}[5m]) > 0
+        for: 1m
+        labels: {severity: critical, slo: acknowledged_event_loss}
+        annotations: {summary: "An acknowledged event crossed the lost state"}
+      - alert: ResQNetQueueAgeHigh
+        expr: histogram_quantile(0.95, sum(rate(queue_age_seconds_bucket[5m])) by (le, queue_name)) > 60
+        for: 5m
+        labels: {severity: warning, slo: queue_age}
+        annotations: {summary: "Queue age p95 exceeds 60 seconds"}
+      - alert: ResQNetDependencyUnknown
+        expr: dependency_health{state="unknown"} == 1
+        for: 5m
+        labels: {severity: warning, slo: dependency_health}
+        annotations: {summary: "Dependency health is unknown and cannot be reported healthy"}
+      - alert: ResQNetWorkerScrapeMissing
+        expr: absent(up{job="worker"}) or max_over_time(up{job="worker"}[5m]) < 1
+        for: 5m
+        labels: {severity: critical, slo: dependency_health}
+        annotations: {summary: "Worker metrics scrape is unavailable"}
+      - alert: ResQNetSaturationHigh
+        expr: saturation_utilization{resource=~"cpu|memory|db_connections"} > 0.8
+        for: 10m
+        labels: {severity: warning, slo: saturation}
+        annotations: {summary: "A bounded resource saturation threshold is exceeded"}

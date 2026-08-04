@@ -17,9 +17,10 @@ import contextlib
 import logging
 import signal
 
-from prometheus_client import Counter, start_http_server
+from prometheus_client import start_http_server
 
 from app.config import settings
+from app.lib.observability_metrics import worker_messages_total, worker_retries_total
 from app.streaming.consumer import ConsumerManager
 
 logger = logging.getLogger("app.worker")
@@ -29,18 +30,9 @@ METRICS_PORT = 8001
 
 # ── Prometheus metrics ───────────────────────────────────────────────────────
 
-messages_processed_total = Counter(
-    "worker_messages_processed_total",
-    "Total messages processed successfully",
-)
-messages_failed_total = Counter(
-    "worker_messages_failed_total",
-    "Total messages that failed processing (sent to DLQ)",
-)
-retry_attempts_total = Counter(
-    "worker_retry_attempts_total",
-    "Total retry attempts for transient errors",
-)
+messages_processed_total = worker_messages_total.labels(worker="worker", outcome="processed")
+messages_failed_total = worker_messages_total.labels(worker="worker", outcome="failed")
+retry_attempts_total = worker_retries_total.labels(worker="worker")
 
 
 async def run_worker() -> None:

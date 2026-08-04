@@ -21,7 +21,11 @@ import logging
 import httpx
 from sqlalchemy.orm import Session
 
-from app.lib.idempotency import check_and_record
+from app.lib.idempotency import (
+    check_and_record,
+    record_published_raw_event,
+    stable_ingestion_claim,
+)
 from app.lib.time import from_iso, now_ms
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
@@ -158,6 +162,7 @@ class EventRegistryAdapter:
             "valid_until": None,
             "received_at": now_ms(),
             "source_id": source_id,
+            "external_id": article_uri,
             "source_type": SourceType.official_feed.value,
             "collection_method": "event_registry_api",
             "source_reliability": 0.8,
@@ -203,10 +208,24 @@ class EventRegistryAdapter:
             article_uri = article.get("uri")
             if not article_uri:
                 continue
-            if not check_and_record(db, "event_registry", article_uri):
-                continue
             obs = self.map_to_observation(article, org_id, incident_id)
-            await producer.send("observations.raw", obs)
+            if not check_and_record(
+                db,
+                "event_registry",
+                article_uri,
+                org_id=org_id,
+                incident_id=incident_id,
+                payload=stable_ingestion_claim(obs),
+                commit=False,
+            ):
+                continue
+            try:
+                await producer.send("observations.raw", obs)
+                record_published_raw_event(db, obs)
+                db.commit()
+            except (OSError, RuntimeError, TimeoutError):
+                db.rollback()
+                raise
             count += 1
 
         logger.info(

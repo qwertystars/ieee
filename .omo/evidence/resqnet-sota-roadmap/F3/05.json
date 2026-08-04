@@ -1,0 +1,35 @@
+{
+  "cleanup": "Command output was captured; no external validators, data, participants, credentials, or production state were created or modified by the wrapper.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "python scripts/run_shadow_replay.py --fixture tests/fixtures/shadow-incident.ndjson --baseline config/shadow-baseline-v1.json --min-incidents 100 --min-window-days 30 --machine-only",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 0,
+  "failure_assertion": "The observed exit/status pair must match the exact F3 expectation; expected DEFERRED_EXTERNAL is accepted only for the declared external preflight.",
+  "finished_at": "2026-08-03T23:36:08.008467Z",
+  "hashes": {
+    "command_sha256": "2b175aede98c21f9fbd01f3f0a5e87c410d22c1b8ca9d0331a150aabd7dea0b2",
+    "config/shadow-baseline-v1.json": "0d8335e7e37159e2532fb9599dc33fdf35b500cd4203ce2212529746b15dff3b",
+    "evidence/sota/prerequisites.json": "6cb552992f67188c9b150770b0d8dfd63da6afcf92d95befaff4da937dd24f4f",
+    "scripts/run_shadow_replay.py": "9e3067a82d4d0fb636824e8c70b9799603ccbaf032c78cae15ccc5ad4d111214",
+    "scripts/shadow_replay_contract.py": "c68f34b30cbd54151ad86d8ade44286f7abd2e50fe6384c31dd318ced824ae34",
+    "tests/fixtures/shadow-incident.ndjson": "fe82e0bf59a88c80b3797a40d2e857148d01058818215c4978a2230ca7ae0389"
+  },
+  "inputs": [
+    "scripts/run_shadow_replay.py",
+    "tests/fixtures/shadow-incident.ndjson",
+    "config/shadow-baseline-v1.json",
+    "scripts/shadow_replay_contract.py",
+    "evidence/sota/prerequisites.json"
+  ],
+  "metrics": {
+    "expected_exit_code": 0,
+    "expected_pair_match": true,
+    "expected_status": "PASS",
+    "observed_exit_code": 0,
+    "stderr": "",
+    "stdout": "status=PASS\n"
+  },
+  "started_at": "2026-08-03T23:36:07.916444Z",
+  "status": "PASS",
+  "task_id": "resqnet-sota-roadmap-F3-F3-05"
+}

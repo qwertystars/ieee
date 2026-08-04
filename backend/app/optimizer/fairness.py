@@ -18,6 +18,11 @@ from __future__ import annotations
 
 from ortools.sat.python import cp_model
 
+from app.optimizer.fairness_metrics import (
+    SubgroupGap,
+    compute_subgroup_gap,
+    subgroup_gap_passes,
+)
 from app.optimizer.fairness_types import EquityReport, FairnessZone, Plan
 
 # Upper bound for delay variables (seconds). 10^6 = ~11.5 days.
@@ -187,4 +192,9 @@ class FairnessEngine:
         return True
 
 
-__all__ = ["FairnessEngine"]
+__all__ = [
+    "FairnessEngine",
+    "SubgroupGap",
+    "compute_subgroup_gap",
+    "subgroup_gap_passes",
+]

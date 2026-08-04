@@ -24,8 +24,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
-import shutil
 import sys
 from pathlib import Path
 
@@ -57,6 +55,19 @@ def _load_manifest() -> list[dict]:
     return data
 
 
+def _manifest_entry(model_id: str) -> dict:
+    """Return one model entry from the canonical manifest."""
+    for entry in _load_manifest():
+        if entry.get("model_id") == model_id:
+            return entry
+    raise RuntimeError(f"model {model_id} not found in manifest")
+
+
+def _artifact_path(model_id: str) -> Path:
+    """Resolve an export path from the canonical manifest artifact."""
+    return _MODELS_DIR / _manifest_entry(model_id)["artifact"]["filename"]
+
+
 def _save_manifest(entries: list[dict]) -> None:
     """Write the manifests JSON array with stable formatting."""
     with open(_MANIFEST_PATH, "w", encoding="utf-8") as fh:
@@ -76,12 +87,7 @@ _SAR_WEIGHTS_FILE = "model.pt"
 _SAR_ACCURACY = {"iou": 0.67, "f1": 0.80}
 
 # ONNX export target.
-_SAR_ONNX_NAME = "sar-flood-mapping-v2.0.0.onnx"
-_SAR_ONNX_PATH = _MODELS_DIR / _SAR_ONNX_NAME
-
-# Old placeholder to preserve.
-_SAR_PLACEHOLDER = _MODELS_DIR / "sar-flood-mapping-v1.0.0.onnx"
-_SAR_PLACEHOLDER_BAK = _MODELS_DIR / "sar-flood-mapping-v1.0.0.onnx.placeholder.bak"
+_SAR_ONNX_PATH = _artifact_path("sar-flood-mapping")
 
 
 def _download_sar_weights() -> Path:
@@ -102,8 +108,8 @@ def _build_sar_model(weights_path: Path):
     (dry / water), so ``classes=2`` — not 1 — to match the trained weights.
     Loading with ``classes=1`` would silently skip the trained output head.
     """
-    import torch
     import segmentation_models_pytorch as smp
+    import torch
 
     checkpoint = torch.load(weights_path, map_location="cpu", weights_only=False)
     state_dict = checkpoint["model_state"] if isinstance(checkpoint, dict) and "model_state" in checkpoint else checkpoint
@@ -133,7 +139,7 @@ def _export_sar_onnx(model, classes: int) -> None:
     """Export the model to ONNX with dynamic batch dimension."""
     import torch
 
-    dummy = torch.randn(1, 2, 512, 512)
+    export_input = torch.zeros(1, 2, 512, 512)
     dynamic_axes = {"input": {0: "batch"}, "output": {0: "batch"}}
     print(f"exporting ONNX to {_SAR_ONNX_PATH} (classes={classes})")
     # torch 2.13's default exporter (dynamo=True) requires onnxscript, which
@@ -142,7 +148,7 @@ def _export_sar_onnx(model, classes: int) -> None:
     try:
         torch.onnx.export(
             model,
-            dummy,
+            export_input,
             str(_SAR_ONNX_PATH),
             input_names=["input"],
             output_names=["output"],
@@ -156,7 +162,7 @@ def _export_sar_onnx(model, classes: int) -> None:
         print("retrying with opset_version=16, no constant folding")
         torch.onnx.export(
             model,
-            dummy,
+            export_input,
             str(_SAR_ONNX_PATH),
             input_names=["input"],
             output_names=["output"],
@@ -168,21 +174,20 @@ def _export_sar_onnx(model, classes: int) -> None:
 
 
 def _update_sar_manifest(checksum: str, classes: int) -> None:
-    """Update the ``sar_flood_mapping`` manifest entry to v2.0.0 validated."""
+    """Update the canonical SAR artifact digest and output schema."""
     entries = _load_manifest()
     updated = False
     for entry in entries:
         if entry.get("model_type") != "sar_flood_mapping":
             continue
-        entry["version"] = "2.0.0"
         entry["checksum"] = checksum
+        entry["artifact"]["sha256"] = checksum
         entry["training_dataset"] = "Sen1Floods11"
         entry["validation_status"] = "validated"
         entry["signed"] = True
         entry["accuracy_metrics"] = dict(_SAR_ACCURACY)
         entry["output_schema"] = {
-            "flood_mask": [1, classes, 512, 512],
-            "dtype": "float32",
+            "output": {"shape": [1, classes, 512, 512], "dtype": "float32"},
         }
         entry["notes"] = (
             "Real pre-trained U-Net+ResNet34 from "
@@ -193,16 +198,7 @@ def _update_sar_manifest(checksum: str, classes: int) -> None:
     if not updated:
         raise RuntimeError("sar_flood_mapping entry not found in manifest")
     _save_manifest(entries)
-    print(f"manifest updated: sar_flood_mapping -> v2.0.0 validated (checksum={checksum[:12]}...)")
-
-
-def _archive_placeholder() -> None:
-    """Rename the old placeholder ONNX to ``*.placeholder.bak``."""
-    if _SAR_PLACEHOLDER.exists():
-        shutil.move(str(_SAR_PLACEHOLDER), str(_SAR_PLACEHOLDER_BAK))
-        print(f"archived placeholder: {_SAR_PLACEHOLDER.name} -> {_SAR_PLACEHOLDER_BAK.name}")
-    else:
-        print(f"placeholder already absent: {_SAR_PLACEHOLDER.name}")
+    print(f"manifest updated: sar_flood_mapping validated (checksum={checksum[:12]}...)")
 
 
 def _verify_onnx() -> None:
@@ -227,7 +223,6 @@ def download_sar() -> int:
     _verify_onnx()
     checksum = _sha256(_SAR_ONNX_PATH)
     _update_sar_manifest(checksum, classes)
-    _archive_placeholder()
     print("\nSAR flood mapping model installed successfully.")
     return 0
 
@@ -247,14 +242,10 @@ _BD_WEIGHTS_FILE = "best_checkpoint.pth"
 _BD_ACCURACY = {"f1": 0.34}
 
 # ONNX export target — matches MODEL_CATALOG building-damage entry.
-_BD_ONNX_NAME = "building-damage-v2.0.0.onnx"
-_BD_ONNX_PATH = _MODELS_DIR / _BD_ONNX_NAME
+_BD_ONNX_PATH = _artifact_path("building-damage")
 _BD_INPUT_SHAPE = (1, 4, 256, 256)
 _BD_CLASSES = 4  # no-damage, minor, major, destroyed (background dropped)
 
-# Old placeholder to preserve.
-_BD_PLACEHOLDER = _MODELS_DIR / "building-damage-v1.0.0.onnx"
-_BD_PLACEHOLDER_BAK = _MODELS_DIR / "building-damage-v1.0.0.onnx.placeholder.bak"
 
 
 def _download_building_damage_weights() -> Path:
@@ -285,8 +276,8 @@ def _build_building_damage_model(weights_path: Path):
        with an older smp version where the last decoder block output 32
        channels; current smp outputs 16.
     """
-    import torch
     import segmentation_models_pytorch as smp
+    import torch
 
     checkpoint = torch.load(weights_path, map_location="cpu", weights_only=False)
     state_dict = checkpoint["model_state_dict"]
@@ -347,13 +338,13 @@ def _export_building_damage_onnx(model) -> None:
     """Export the model to ONNX with dynamic batch dimension."""
     import torch
 
-    dummy = torch.randn(*_BD_INPUT_SHAPE)
+    export_input = torch.zeros(*_BD_INPUT_SHAPE)
     dynamic_axes = {"input": {0: "batch"}, "output": {0: "batch"}}
     print(f"exporting ONNX to {_BD_ONNX_PATH} (input={_BD_INPUT_SHAPE})")
     try:
         torch.onnx.export(
             model,
-            dummy,
+            export_input,
             str(_BD_ONNX_PATH),
             input_names=["input"],
             output_names=["output"],
@@ -367,7 +358,7 @@ def _export_building_damage_onnx(model) -> None:
         print("retrying with opset_version=16, no constant folding")
         torch.onnx.export(
             model,
-            dummy,
+            export_input,
             str(_BD_ONNX_PATH),
             input_names=["input"],
             output_names=["output"],
@@ -379,21 +370,20 @@ def _export_building_damage_onnx(model) -> None:
 
 
 def _update_building_damage_manifest(checksum: str) -> None:
-    """Update the ``building_damage`` manifest entry to v2.0.0 validated."""
+    """Update the canonical building-damage artifact digest and schema."""
     entries = _load_manifest()
     updated = False
     for entry in entries:
         if entry.get("model_type") != "building_damage":
             continue
-        entry["version"] = "2.0.0"
         entry["checksum"] = checksum
+        entry["artifact"]["sha256"] = checksum
         entry["training_dataset"] = "xBD (xView2)"
         entry["validation_status"] = "validated"
         entry["signed"] = True
         entry["accuracy_metrics"] = dict(_BD_ACCURACY)
         entry["output_schema"] = {
-            "damage_class": [1, _BD_CLASSES, 256, 256],
-            "dtype": "float32",
+            "output": {"shape": [1, _BD_CLASSES, 256, 256], "dtype": "float32"},
         }
         entry["notes"] = (
             "Real pre-trained U-Net+ResNet50 (SCSE attention) from "
@@ -409,16 +399,7 @@ def _update_building_damage_manifest(checksum: str) -> None:
     if not updated:
         raise RuntimeError("building_damage entry not found in manifest")
     _save_manifest(entries)
-    print(f"manifest updated: building_damage -> v2.0.0 validated (checksum={checksum[:12]}...)")
-
-
-def _archive_building_damage_placeholder() -> None:
-    """Rename the old building-damage placeholder ONNX to ``*.placeholder.bak``."""
-    if _BD_PLACEHOLDER.exists():
-        shutil.move(str(_BD_PLACEHOLDER), str(_BD_PLACEHOLDER_BAK))
-        print(f"archived placeholder: {_BD_PLACEHOLDER.name} -> {_BD_PLACEHOLDER_BAK.name}")
-    else:
-        print(f"placeholder already absent: {_BD_PLACEHOLDER.name}")
+    print(f"manifest updated: building_damage validated (checksum={checksum[:12]}...)")
 
 
 def _verify_building_damage_onnx() -> None:
@@ -443,7 +424,6 @@ def download_building_damage() -> int:
     _verify_building_damage_onnx()
     checksum = _sha256(_BD_ONNX_PATH)
     _update_building_damage_manifest(checksum)
-    _archive_building_damage_placeholder()
     print("\nBuilding damage model installed successfully.")
     return 0
 
@@ -460,45 +440,20 @@ _NLP_HF_REPO = "sakibalfahim/CrisisPulse"
 _NLP_ACCURACY: dict[str, float] = {}
 
 # ONNX export targets — match MODEL_CATALOG incident-nlp input shape [1, 128].
-_NLP_ONNX_NAME = "incident-nlp-v2.0.0.onnx"
-_NLP_ONNX_PATH = _MODELS_DIR / _NLP_ONNX_NAME
+_NLP_ONNX_PATH = _artifact_path("incident-nlp")
 _NLP_TOKENIZER_DIR = _MODELS_DIR / "incident-nlp-tokenizer"
 _NLP_MAX_LENGTH = 128
 
-# Old placeholder to preserve.
-_NLP_PLACEHOLDER = _MODELS_DIR / "incident-nlp-v1.0.0.onnx"
-_NLP_PLACEHOLDER_BAK = _MODELS_DIR / "incident-nlp-v1.0.0.onnx.placeholder.bak"
 
 
 def _download_incident_nlp_model():
-    """Download the BERT model + tokenizer from HuggingFace.
-
-    Returns (model, tokenizer, num_labels). Falls back to alternative crisis
-    NLP repos if the primary repo is unavailable.
-    """
+    """Download the pinned BERT model and tokenizer from its manifest source."""
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-    repos = [
-        _NLP_HF_REPO,
-        "sakibalfahim/disaster-tweets-bert",
-    ]
-    model = None
-    tokenizer = None
-    used_repo = None
-    for repo in repos:
-        try:
-            print(f"downloading model from HF: {repo}")
-            model = AutoModelForSequenceClassification.from_pretrained(repo)
-            tokenizer = AutoTokenizer.from_pretrained(repo)
-            used_repo = repo
-            break
-        except Exception as exc:
-            print(f"  failed: {type(exc).__name__}: {exc}")
-    if model is None or tokenizer is None:
-        raise RuntimeError(
-            "could not download any crisis NLP model from HuggingFace; "
-            "tried: " + ", ".join(repos)
-        )
+    print(f"downloading model from HF: {_NLP_HF_REPO}")
+    model = AutoModelForSequenceClassification.from_pretrained(_NLP_HF_REPO)
+    tokenizer = AutoTokenizer.from_pretrained(_NLP_HF_REPO)
+    used_repo = _NLP_HF_REPO
     num_labels = model.config.num_labels
     print(f"loaded {used_repo}: class={type(model).__name__} num_labels={num_labels} "
           f"id2label={model.config.id2label}")
@@ -529,8 +484,8 @@ def _export_incident_nlp_onnx(model, num_labels: int) -> None:
                                token_type_ids=token_type_ids).logits
 
     wrapper = _BertTwoInputWrapper(model)
-    dummy_ids = torch.zeros(1, _NLP_MAX_LENGTH, dtype=torch.long)
-    dummy_mask = torch.ones(1, _NLP_MAX_LENGTH, dtype=torch.long)
+    export_ids = torch.zeros(1, _NLP_MAX_LENGTH, dtype=torch.long)
+    export_mask = torch.ones(1, _NLP_MAX_LENGTH, dtype=torch.long)
     dynamic_axes = {
         "input_ids": {0: "batch"},
         "attention_mask": {0: "batch"},
@@ -540,7 +495,7 @@ def _export_incident_nlp_onnx(model, num_labels: int) -> None:
     try:
         torch.onnx.export(
             wrapper,
-            (dummy_ids, dummy_mask),
+            (export_ids, export_mask),
             str(_NLP_ONNX_PATH),
             input_names=["input_ids", "attention_mask"],
             output_names=["logits"],
@@ -554,7 +509,7 @@ def _export_incident_nlp_onnx(model, num_labels: int) -> None:
         print("retrying with opset_version=16, no constant folding")
         torch.onnx.export(
             wrapper,
-            (dummy_ids, dummy_mask),
+            (export_ids, export_mask),
             str(_NLP_ONNX_PATH),
             input_names=["input_ids", "attention_mask"],
             output_names=["logits"],
@@ -573,26 +528,27 @@ def _save_incident_nlp_tokenizer(tokenizer) -> None:
 
 
 def _update_incident_nlp_manifest(checksum: str, num_labels: int, used_repo: str) -> None:
-    """Update the ``incident_nlp`` manifest entry to v2.0.0 validated."""
+    """Update the canonical incident-NLP artifact digest and schema."""
+    if used_repo != _NLP_HF_REPO:
+        raise RuntimeError("incident NLP source is not the pinned manifest repository")
     entries = _load_manifest()
     updated = False
     for entry in entries:
         if entry.get("model_type") != "incident_nlp":
             continue
-        entry["version"] = "2.0.0"
+        expected_source = f"https://huggingface.co/{used_repo}/resolve/main/model.onnx"
+        if entry["artifact"]["source_url"] != expected_source:
+            raise RuntimeError("incident NLP manifest source URL is not pinned")
         entry["checksum"] = checksum
+        entry["artifact"]["sha256"] = checksum
         entry["training_dataset"] = "CrisisPulse (disaster tweets)"
         entry["validation_status"] = "validated"
         entry["signed"] = True
         entry["accuracy_metrics"] = dict(_NLP_ACCURACY)
-        entry["input_schema"] = {
-            "input_ids": [1, _NLP_MAX_LENGTH],
-            "attention_mask": [1, _NLP_MAX_LENGTH],
-            "dtype": "int64",
-        }
+        entry["input_schema"]["input_ids"] = [1, _NLP_MAX_LENGTH]
+        entry["input_schema"]["attention_mask"] = [1, _NLP_MAX_LENGTH]
         entry["output_schema"] = {
-            "logits": [1, num_labels],
-            "dtype": "float32",
+            "logits": {"shape": [1, num_labels], "dtype": "float32"},
         }
         entry["notes"] = (
             f"Real pre-trained BERT (bert-base-uncased fine-tune) from {used_repo}. "
@@ -607,16 +563,7 @@ def _update_incident_nlp_manifest(checksum: str, num_labels: int, used_repo: str
     if not updated:
         raise RuntimeError("incident_nlp entry not found in manifest")
     _save_manifest(entries)
-    print(f"manifest updated: incident_nlp -> v2.0.0 validated (checksum={checksum[:12]}...)")
-
-
-def _archive_incident_nlp_placeholder() -> None:
-    """Rename the old incident-nlp placeholder ONNX to ``*.placeholder.bak``."""
-    if _NLP_PLACEHOLDER.exists():
-        shutil.move(str(_NLP_PLACEHOLDER), str(_NLP_PLACEHOLDER_BAK))
-        print(f"archived placeholder: {_NLP_PLACEHOLDER.name} -> {_NLP_PLACEHOLDER_BAK.name}")
-    else:
-        print(f"placeholder already absent: {_NLP_PLACEHOLDER.name}")
+    print(f"manifest updated: incident_nlp validated (checksum={checksum[:12]}...)")
 
 
 def _verify_incident_nlp_onnx() -> None:
@@ -641,7 +588,6 @@ def download_incident_nlp() -> int:
     _verify_incident_nlp_onnx()
     checksum = _sha256(_NLP_ONNX_PATH)
     _update_incident_nlp_manifest(checksum, num_labels, used_repo)
-    _archive_incident_nlp_placeholder()
     print("\nIncident NLP model installed successfully.")
     return 0
 

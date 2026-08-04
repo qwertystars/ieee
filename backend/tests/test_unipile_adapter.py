@@ -140,7 +140,7 @@ def test_ingest_webhook():
         # Patch check_and_record to return True (first time)
         import app.ingestion.adapters.unipile as mod
         original = mod.check_and_record
-        mod.check_and_record = lambda d, s, e: True
+        mod.check_and_record = lambda d, s, e, **kwargs: True
         try:
             count = await client.ingest_webhook(
                 db, producer, payload, "org_1", "inc_1",
@@ -195,7 +195,7 @@ def test_ingest_webhook_duplicate():
 
         import app.ingestion.adapters.unipile as mod
         original = mod.check_and_record
-        mod.check_and_record = lambda d, s, e: False  # Already seen
+        mod.check_and_record = lambda d, s, e, **kwargs: False  # Already seen
         try:
             count = await client.ingest_webhook(
                 db, producer, payload, "org_1", "inc_1",

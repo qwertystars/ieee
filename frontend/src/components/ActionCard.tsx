@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import type { Alert } from '../api/types'
+import { ActionCardControls } from './ActionCardControls'
 
 export interface ObservationRef {
   id: string
@@ -40,6 +41,8 @@ export interface ActionCardProps {
   onApprove?: (id: string) => void
   onDismiss?: (id: string) => void
   onModify?: (id: string) => void
+  onDispatchRequest?: (id: string) => void
+  dispatchPending?: boolean
   onEvidenceClick?: (obsId: string) => void
 }
 
@@ -81,9 +84,9 @@ function Section({ label, testId, children }: { label: string; testId: string; c
   )
 }
 
-export function ActionCard({ action, status, onApprove, onDismiss, onModify, onEvidenceClick }: ActionCardProps) {
+export function ActionCard({ action, status, onApprove, onDismiss, onModify, onDispatchRequest, dispatchPending = false, onEvidenceClick }: ActionCardProps) {
   const [internalStatus, setInternalStatus] = useState(status ?? 'pending')
-  const current = status ?? internalStatus
+  const current = dispatchPending ? 'dispatch_pending' : status ?? internalStatus
   const isResolved = current === 'approved' || current === 'dismissed'
 
   const confidencePct = Math.round(action.confidence * 100)
@@ -99,6 +102,10 @@ export function ActionCard({ action, status, onApprove, onDismiss, onModify, onE
   const handleModify = () => {
     setInternalStatus('modified')
     onModify?.(action.id)
+  }
+  const handleDispatchRequest = () => {
+    setInternalStatus('dispatch_pending')
+    onDispatchRequest?.(action.id)
   }
 
   return (
@@ -120,7 +127,7 @@ export function ActionCard({ action, status, onApprove, onDismiss, onModify, onE
           current === 'modified' ? 'bg-blue-900 text-blue-300' :
           'bg-gray-700 text-gray-300'
         }`} aria-label={`Status: ${current}`}>
-          {current}
+          {current === 'dispatch_pending' ? 'dispatch pending' : current}
         </span>
       </div>
 
@@ -211,35 +218,15 @@ export function ActionCard({ action, status, onApprove, onDismiss, onModify, onE
         </Section>
       </div>
 
-      <div className="mt-3 flex gap-2 border-t border-gray-700 pt-3">
-        <button
-          data-testid="approve-button"
-          onClick={handleApprove}
-          disabled={isResolved}
-          className="flex-1 rounded bg-green-700 px-2 py-1 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-40"
-          aria-label={`Approve action: ${action.proposedAction}`}
-        >
-          Approve
-        </button>
-        <button
-          data-testid="dismiss-button"
-          onClick={handleDismiss}
-          disabled={isResolved}
-          className="flex-1 rounded bg-red-700 px-2 py-1 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-40"
-          aria-label={`Dismiss action: ${action.proposedAction}`}
-        >
-          Dismiss
-        </button>
-        <button
-          data-testid="modify-button"
-          onClick={handleModify}
-          disabled={isResolved}
-          className="flex-1 rounded bg-gray-700 px-2 py-1 text-xs font-medium text-gray-200 hover:bg-gray-600 disabled:opacity-40"
-          aria-label={`Modify action: ${action.proposedAction}`}
-        >
-          Modify
-        </button>
-      </div>
+      <ActionCardControls
+        actionLabel={action.proposedAction}
+        isResolved={isResolved}
+        dispatchPending={current === 'dispatch_pending'}
+        onApprove={handleApprove}
+        onDismiss={handleDismiss}
+        onModify={handleModify}
+        onDispatchRequest={handleDispatchRequest}
+      />
     </div>
   )
 }

@@ -14,6 +14,7 @@ from fastapi import (
     APIRouter,
     BackgroundTasks,
     Depends,
+    Header,
     HTTPException,
     Query,
     Request,
@@ -30,10 +31,19 @@ from app.api.routes.observations_queries import (
     to_feature,
     visible_policies,
 )
+from app.api.routes.observations_validation import parse_feature
 from app.deps import get_current_user, get_db, require_roles
+from app.lib.idempotency import (
+    IdempotencyConflictError,
+    claim_raw_event,
+    lookup_observation_id,
+    next_raw_sequence,
+)
+from app.lib.observability_metrics import record_event_state
 from app.lib.time import now_ms
 from app.lib.ulid import generate_ulid
 from app.models.enums import AccessPolicy, CorroborationState, SourceType
+from app.models.events import RawEvent
 from app.models.observation import Observation
 from app.models.user import User
 from app.realtime import manager, schedule_broadcast
@@ -76,6 +86,7 @@ def create_observation(
     background_tasks: BackgroundTasks,
     feature: dict[str, Any],
     incident_id: str = Query(..., description="Incident ID to scope this observation to"),
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
     db: Session = Depends(get_db),
     user: User = Depends(require_roles(*_WRITE_ROLES)),
 ) -> dict[str, Any]:
@@ -92,22 +103,45 @@ def create_observation(
             detail="org_id not resolved from token",
         )
 
-    if feature.get("type") != "Feature":
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="GeoJSON Feature required",
-        )
-    geometry = feature.get("geometry")
-    if not geometry:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="geometry is required",
-        )
-    props = feature.get("properties") or {}
+    feature = parse_feature(feature)
+    geometry = feature["geometry"]
+    props = feature["properties"]
 
     observation_id = generate_ulid()
     ts_now = now_ms()
-    observed_at = int(props.get("observed_at", ts_now))
+    observed_at = props.get("observed_at") or ts_now
+    source_id = str(props["source_id"])
+    external_id = str(props.get("external_id") or idempotency_key or observation_id)
+    raw_event = RawEvent(
+        event_id=generate_ulid(),
+        org_id=org_id,
+        incident_id=incident_id,
+        source_id=source_id,
+        external_id=external_id,
+        event_type=str(props["event_type"]),
+        source_time_ms=observed_at,
+        receipt_time_ms=ts_now,
+        sequence=next_raw_sequence(db, org_id, source_id),
+        payload=feature,
+    )
+    try:
+        is_new = claim_raw_event(db, raw_event, feature, idempotency_key)
+    except IdempotencyConflictError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="idempotency key conflicts with a different payload",
+        ) from None
+    if not is_new:
+        existing_id = lookup_observation_id(db, org_id, source_id, external_id)
+        if existing_id is not None:
+            existing = fetch_feature(db, existing_id, org_id)
+            if existing is not None:
+                return existing
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="idempotency record has no observation projection",
+        )
 
     obs = Observation(
         observation_id=observation_id,
@@ -120,10 +154,10 @@ def create_observation(
         ),
         geometry_uncertainty=float(props.get("geometry_uncertainty", 0.0)),
         observed_at=observed_at,
-        valid_from=int(props.get("valid_from", observed_at)),
+        valid_from=props.get("valid_from") or observed_at,
         valid_until=props.get("valid_until"),
         received_at=ts_now,
-        source_id=props["source_id"],
+        source_id=source_id,
         source_type=SourceType(str(props.get("source_type", "other")).lower()),
         collection_method=props.get("collection_method", "unknown"),
         source_reliability=float(props.get("source_reliability", 0.5)),
@@ -141,6 +175,14 @@ def create_observation(
         duplicate_group=props.get("duplicate_group"),
         org_id=org_id,
         incident_id=incident_id,
+        raw_event_id=raw_event.event_id,
+        source_time_ms=raw_event.source_time_ms,
+        receipt_time_ms=raw_event.receipt_time_ms,
+        sequence=raw_event.sequence,
+        payload_hash=raw_event.canonical_hash(),
+        visibility=raw_event.visibility.value,
+        review_status=raw_event.review_status.value,
+        schema_version=raw_event.schema_version,
     )
     db.add(obs)
     try:
@@ -152,6 +194,7 @@ def create_observation(
             detail="observation could not be created (constraint violation)",
         ) from None
     db.refresh(obs)
+    record_event_state("accepted", "api", "observations.raw")
 
     background_tasks.add_task(
         run_single_post_commit_fusion,
@@ -164,7 +207,7 @@ def create_observation(
     result = fetch_feature(db, observation_id, org_id)
     if result is not None:
         schedule_broadcast(
-            manager.broadcast_observation(incident_id, result),
+            manager.broadcast_observation(incident_id, result, org_id),
             request.app,
         )
     return result  # type: ignore[return-value]

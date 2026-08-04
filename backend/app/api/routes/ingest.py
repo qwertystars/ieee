@@ -1,10 +1,8 @@
-"""Social media ingestion API — trigger async ingestion per incident.
+"""Social media ingestion API with durable publish acknowledgement.
 
-POST /api/incidents/{id}/ingest/social-media?source_type=twitter
-Returns 202 (Accepted) immediately; ingestion runs in the background via
-FastAPI BackgroundTasks. Each adapter degrades gracefully when credentials
-are missing (returns 0 observations) and when Kafka is unavailable (noop
-producer logs sends instead of crashing).
+POST /api/incidents/{id}/ingest/social-media?source_type=twitter returns 202
+only after the ingestion event has been durably published. Unavailable
+streaming infrastructure returns 503 without acknowledging the request.
 """
 
 from __future__ import annotations
@@ -12,9 +10,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import anyio
+from aiokafka.errors import KafkaError
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Body,
     Depends,
     HTTPException,
@@ -22,15 +21,16 @@ from fastapi import (
     Request,
     status,
 )
-from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
-from app.deps import get_db, require_roles
+from app.deps import require_roles
 from app.ingestion.adapters.instagram import InstagramAdapter
 from app.ingestion.adapters.reddit import RedditAdapter
 from app.ingestion.adapters.twitter import TwitterAdapter
 from app.ingestion.adapters.youtube import YouTubeAdapter
+from app.lib.observability_metrics import record_event_state, record_external_feed
 from app.models.user import User
+from app.streaming.producer import ProducerManager
 
 logger = logging.getLogger("app.api.routes.ingest")
 
@@ -46,36 +46,19 @@ _ADAPTERS: dict[str, type] = {
 }
 
 
-class _NoopProducer:
-    """No-op producer used when Kafka/Redpanda is unavailable.
-
-    Allows adapter.sync() to complete (pull + map + dedup) even when the
-    broker is down. Observations are not published but idempotency keys
-    are recorded so re-runs skip already-processed items.
-    """
-
-    async def send(
-        self, topic: str, message: dict, key: str | None = None,
-    ) -> None:
-        logger.debug("noop producer: would send to %s", topic)
-
-    async def stop(self) -> None:
-        pass
+class ProducerUnavailableError(RuntimeError):
+    pass
 
 
-async def _start_producer() -> Any:
-    """Start ProducerManager; fall back to _NoopProducer on failure."""
+async def _start_producer() -> ProducerManager:
+    producer = ProducerManager()
     try:
-        import asyncio
-
-        from app.streaming.producer import ProducerManager
-
-        producer = ProducerManager()
-        await asyncio.wait_for(producer.start(), timeout=5.0)
-        return producer
-    except Exception as exc:
-        logger.warning("Kafka unavailable, using noop producer: %s", exc)
-        return _NoopProducer()
+        with anyio.fail_after(5.0):
+            await producer.start()
+    except (KafkaError, OSError, RuntimeError, TimeoutError) as exc:
+        await producer.stop()
+        raise ProducerUnavailableError("Redpanda is unavailable") from exc
+    return producer
 
 
 async def _run_ingestion(
@@ -83,26 +66,22 @@ async def _run_ingestion(
     config: dict[str, Any],
     org_id: str,
     incident_id: str,
-) -> None:
-    """Background task: pull observations, dedup, publish to Kafka."""
+) -> int:
     db = SessionLocal()
+    producer = await _start_producer()
+    adapter = adapter_cls(config)
     try:
-        producer = await _start_producer()
-        adapter = adapter_cls(config)
-        try:
-            count = await adapter.sync(db, producer, org_id, incident_id)
-            logger.info(
-                "Ingested %d observations for incident %s via %s",
-                count, incident_id, adapter_cls.__name__,
-            )
-        finally:
-            await adapter.close()
-            await producer.stop()
-    except Exception as exc:
-        logger.error(
-            "Social media ingestion failed for %s: %s", incident_id, exc,
+        count = await adapter.sync(db, producer, org_id, incident_id)
+        record_external_feed(adapter_cls.__name__, "processed")
+        record_event_state("processed", "api", "observations.raw")
+        logger.info(
+            "Ingested %d observations for incident %s via %s",
+            count, incident_id, adapter_cls.__name__,
         )
+        return count
     finally:
+        await adapter.close()
+        await producer.stop()
         db.close()
 
 
@@ -113,21 +92,12 @@ async def _run_ingestion(
 async def trigger_social_media_ingestion(
     incident_id: str,
     request: Request,
-    background_tasks: BackgroundTasks,
     source_type: str = Query(
         ..., description="twitter|reddit|instagram|youtube",
     ),
     config: dict[str, Any] | None = Body(default=None),
-    db: Session = Depends(get_db),
     user: User = Depends(require_roles(*_WRITE_ROLES)),
 ) -> dict[str, Any]:
-    """Trigger async social media ingestion for an incident.
-
-    Returns 202 (Accepted) immediately. The adapter's ``pull_observations()``
-    runs in the background via ``sync()``. Degrades gracefully when
-    credentials are missing (adapter returns 0) or Kafka is down (noop
-    producer).
-    """
     org_id = request.state.org_id or ""
     source = source_type.lower()
     if source not in _ADAPTERS:
@@ -136,15 +106,27 @@ async def trigger_social_media_ingestion(
             detail=f"source_type must be one of {list(_ADAPTERS)}",
         )
 
-    adapter_cls = _ADAPTERS[source]
-    background_tasks.add_task(
-        _run_ingestion, adapter_cls, config or {}, org_id, incident_id,
-    )
+    try:
+        count = await _run_ingestion(
+            _ADAPTERS[source], config or {}, org_id, incident_id
+        )
+    except ProducerUnavailableError as exc:
+        record_external_feed(source, "failed")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"status": "deferred", "reason": str(exc)},
+        ) from exc
+    except (OSError, RuntimeError, TimeoutError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"status": "deferred", "reason": "publish failed"},
+        ) from exc
 
     return {
         "status": "accepted",
         "incident_id": incident_id,
         "source_type": source,
+        "published_count": count,
         "message": "Ingestion triggered. Observations land as access_policy=sensitive.",
     }
 

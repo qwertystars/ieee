@@ -5,19 +5,23 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import anyio
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
 from starlette.responses import Response
 
-from app.config import settings
+from app.config import settings, validate_startup_configuration
+from app.realtime.manager import manager as realtime_manager
 
 logger = logging.getLogger("app.main")
+
+validate_startup_configuration()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Startup: seed users + start Kafka producer. Shutdown: stop producer."""
+    validate_startup_configuration()
     # 0. Store the main event loop for sync->async broadcast scheduling.
     app.state.event_loop = asyncio.get_running_loop()
 
@@ -48,7 +52,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.warning("Kafka producer failed to start (non-fatal): %s", exc)
         app.state.kafka_producer = None
 
-    yield
+    async with anyio.create_task_group() as coordination_tasks:
+        await realtime_manager.start(coordination_tasks)
+        yield
+        coordination_tasks.cancel_scope.cancel()
 
     # Shutdown: stop Kafka producer (best-effort).
     if producer is not None:
@@ -90,12 +97,14 @@ else:
 
 # Middleware order (last added = outermost = runs first on request):
 # RequestID → OrgContext → CORS → router
+from app.middleware.cache_policy import ProtectedCachePolicyMiddleware
 from app.middleware.error_handler import register_error_handlers
 from app.middleware.org_context import OrgContextMiddleware
 from app.middleware.request_id import RequestIDMiddleware
 
 app.add_middleware(OrgContextMiddleware)
 app.add_middleware(RequestIDMiddleware)
+app.add_middleware(ProtectedCachePolicyMiddleware)
 
 # Register global error handlers.
 register_error_handlers(app)
@@ -104,80 +113,6 @@ register_error_handlers(app)
 from app.lib.telemetry import setup_telemetry
 
 setup_telemetry(app)
-
-
-# ── Health checks ───────────────────────────────────────────────────────────
-
-
-@app.get("/healthz")
-async def healthz() -> dict:
-    """Shallow health check — returns configured service names without URLs."""
-    return {
-        "ok": True,
-        "services": {
-            "database": "configured",
-            "redis": "configured",
-            "redpanda": "configured",
-            "minio": "configured",
-            "ollama": "configured",
-        },
-        "environment": settings.ENVIRONMENT,
-    }
-
-
-@app.get("/healthz/deep")
-async def healthz_deep() -> dict:
-    """Deep health check — tests connectivity to PostgreSQL, Redis, Redpanda, MinIO."""
-    checks: dict[str, bool] = {}
-
-    # PostgreSQL
-    try:
-        from app.db import engine
-
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        checks["database"] = True
-    except Exception:
-        checks["database"] = False
-
-    # Redis
-    try:
-        import redis
-
-        r = redis.from_url(settings.REDIS_URL, socket_connect_timeout=3)
-        r.ping()
-        checks["redis"] = True
-    except Exception:
-        checks["redis"] = False
-
-    # Redpanda (TCP connect check)
-    try:
-        import socket
-
-        host, port = settings.REDPANDA_BOOTSTRAP_SERVERS.split(":")
-        sock = socket.create_connection((host, int(port)), timeout=3)
-        sock.close()
-        checks["redpanda"] = True
-    except Exception:
-        checks["redpanda"] = False
-
-    # MinIO
-    try:
-        from minio import Minio
-
-        client = Minio(
-            settings.MINIO_ENDPOINT,
-            access_key=settings.MINIO_ACCESS_KEY,
-            secret_key=settings.MINIO_SECRET_KEY,
-            secure=False,
-        )
-        client.list_buckets()
-        checks["minio"] = True
-    except Exception:
-        checks["minio"] = False
-
-    all_ok = all(checks.values())
-    return {"ok": all_ok, "checks": checks}
 
 
 @app.get("/api/_test/error")
@@ -205,6 +140,7 @@ from app.api.routes.audit_routes import router as audit_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.calibration import router as calibration_router
 from app.api.routes.capabilities import router as capabilities_router
+from app.api.routes.edge_sync import router as edge_sync_router
 from app.api.routes.entities import router as entities_router
 from app.api.routes.eval import router as eval_router
 from app.api.routes.health import router as health_router
@@ -222,8 +158,10 @@ from app.api.routes.optimize import (
     router as optimize_router,
 )
 from app.api.routes.privacy import router as privacy_router
+from app.api.routes.privacy_controls import router as privacy_controls_router
 from app.api.routes.scenarios import router as scenarios_router
 from app.api.routes.sensing import router as sensing_router
+from app.api.routes.service_health import router as service_health_router
 from app.api.routes.simulator import router as simulator_router
 from app.api.routes.tasks import router as tasks_router
 from app.api.routes.tasks import task_router as task_item_router
@@ -242,6 +180,7 @@ api_router.include_router(optimize_router)
 api_router.include_router(optimize_incident_router)
 api_router.include_router(twin_router)
 api_router.include_router(privacy_router)
+api_router.include_router(privacy_controls_router)
 api_router.include_router(sensing_router)
 api_router.include_router(simulator_router)
 api_router.include_router(eval_router)
@@ -253,8 +192,10 @@ api_router.include_router(audit_router)
 api_router.include_router(ingest_router)
 api_router.include_router(capabilities_router)
 api_router.include_router(calibration_router)
+api_router.include_router(edge_sync_router)
 
 app.include_router(api_router)
+app.include_router(service_health_router)
 app.include_router(health_router)
 app.include_router(ws_router)
 app.include_router(realtime_router)

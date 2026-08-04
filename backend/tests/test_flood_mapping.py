@@ -129,7 +129,10 @@ def test_gfm_fusion(mapper, sar_tensor):
     """fuse_with_gfm produces weighted average and disagreement."""
     result = mapper.run_inference(sar_tensor)
     gfm_prob = torch.rand(224, 224)
-    gfm_product = {"flood_prob": gfm_prob}
+    gfm_product = {
+        "flood_prob": gfm_prob,
+        "provenance": {"model_id": "gfm", "artifact_sha256": "b" * 64},
+    }
 
     fused = mapper.fuse_with_gfm(result, gfm_product)
 

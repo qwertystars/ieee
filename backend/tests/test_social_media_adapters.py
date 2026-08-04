@@ -7,7 +7,8 @@ Tests per adapter:
 - PII in text is redacted before storage in quality_flags.text
 
 API route test:
-- POST /api/incidents/{id}/ingest/social-media?source_type=X returns 202
+- POST /api/incidents/{id}/ingest/social-media?source_type=X returns 202 after
+  durable publish succeeds
 - Invalid source_type returns 422
 """
 
@@ -307,9 +308,22 @@ def _seed_users() -> Any:
 
 
 @pytest.mark.parametrize("source_type", ["twitter", "reddit", "instagram", "youtube"])
-def test_ingest_route_returns_202(source_type: str) -> None:
-    """POST /api/incidents/{id}/ingest/social-media?source_type=X returns 202."""
+def test_ingest_route_returns_202_after_durable_publish(
+    source_type: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.api.routes import ingest
     from app.main import app
+
+    async def fake_run_ingestion(
+        adapter_cls: type,
+        config: dict[str, Any],
+        org_id: str,
+        incident_id: str,
+    ) -> int:
+        return 0
+
+    monkeypatch.setattr(ingest, "_run_ingestion", fake_run_ingestion)
 
     with TestClient(app) as client:
         token = _login(client, _ADMIN_EMAIL)

@@ -5,7 +5,7 @@
 # Run:    docker run --rm -e POSTGRES_PASSWORD=disaster -p 5432:5432 resqnet-db
 # Test:   docker exec <cid> psql -U disaster -d disaster -c "CREATE EXTENSION postgis; CREATE EXTENSION age; CREATE EXTENSION timescaledb; CREATE EXTENSION h3; SELECT extname FROM pg_extension;"
 
-FROM postgres:16-bookworm
+FROM postgres:16.3-bookworm
 
 # Default credentials (matching docker-compose.yml)
 ENV POSTGRES_USER=disaster \
