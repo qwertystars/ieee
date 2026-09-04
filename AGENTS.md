@@ -1,80 +1,122 @@
 # Disaster Situational Awareness & Response Platform
 
-Real-time situational awareness and response coordination for urban flooding
-(demo region: **Rivertown**). Monorepo: FastAPI backend + async Kafka worker +
-React/Vite PWA on PostgreSQL (PostGIS + Apache AGE + TimescaleDB + h3).
+ResQNet-SAGE is a brownfield disaster situational-awareness and response-support platform. Canonical runtime: FastAPI backend + aiokafka worker + React/Vite PWA on PostgreSQL (PostGIS + Apache AGE + TimescaleDB + h3), with Redpanda, Redis, MinIO, optional Ollama, and Docker-based integrated verification.
 
-## Overview
-FastAPI serves the API + WebSocket realtime; a separate aiokafka worker
-consumes `observations.normalized`; the React PWA is offline-first with an
-encrypted IndexedDB outbox. ML (ONNX) serves flood/damage/NLP; a rescue-ball
-digital-twin simulator drives scenarios. The repo is evidence-driven: every
-SOTA/production claim is backed by normative JSON evidence under
-`.omo/evidence/` and `evidence/` (see `scripts/verify_*` / `run_*`).
+## Start here
 
-## Structure
-```
-backend/        FastAPI app, aiokafka worker, alembic, pytest suite
-frontend/       React 18 + Vite PWA, MapLibre + deck.gl, Playwright e2e
-scripts/        verify_* gates, run_* drivers (emit evidence), *_contract libs, ops
-config/         pinned baselines, parity spec, SLOs, validators.lock
-tests/          root integration harness (robustness, shadow replay, parity)
-benchmarks/     pinned baseline configs (DEFERRED_EXTERNAL until licensed)
-data/datasets/  dataset registry + benchmark manifest (licensed metadata only)
-evidence/       RPO/RTO, chaos, load, soak, gates, final-verification, sota
-.omo/           work plans (plans/), per-task evidence (evidence/), boulder.json
-docs/           runbooks, security model, field trial protocol, final report
-deploy/         production-parity HAProxy config
-```
+1. `docs/INDEX.md` — task-to-context router and authority rules.
+2. `docs/execution/current-state.md` — what is actually implemented/verified now.
+3. Load only the domain documents needed for the task.
+
+Do not use historical plans/reports as current behavioral authority when they conflict with current code, migrations, runtime configuration, or later canonical contracts.
+
+## Project mode and boundaries
+
+**Mode: BROWNFIELD.** Existing code, migrations, tests, data contracts, evidence, and deployment behavior constrain changes.
+
+The historical Cloudflare `platform/` runtime was removed and is not an active architecture. Do not recreate or extend it unless an explicit accepted architecture decision authorizes that work.
+
+This repository is safety-sensitive decision-support software. Do not fabricate model quality, hardware/field results, production readiness, or certification. AI/ML/optimization must not independently dispatch responders or create high-consequence emergency effects.
+
+## Authority by subject
+
+- Current implemented behavior: current code + migrations/runtime configuration, then executed tests/evidence.
+- Product intent: `docs/product/product-spec.md`.
+- Business rules/invariants: `docs/domain/rules-and-invariants.md`.
+- Architecture: `docs/architecture/system-architecture.md`.
+- Contract ownership: `docs/contracts/contract-map.md` plus executable schemas/models/routes.
+- Current status/gaps/next work: `docs/execution/`.
+- Verification: `docs/quality/verification-strategy.md`.
+- Security/offline/hardware/field detail: existing dedicated documents under `docs/`.
+
+If sources conflict, record the conflict and determine whether it concerns desired behavior, observed behavior, or both. Do not silently choose stale prose over current code.
 
 ## WHERE TO LOOK
+
 | Task | Location | Notes |
-|------|----------|-------|
-| API routes | `backend/app/api/routes/` | 30 modules; aggregated inline in `main.py` (no api/router.py) |
-| Auth/tenancy | `backend/app/auth/`, `middleware/`, `deps.py` | org_id server-side from JWT, RBAC + ABAC |
-| Realtime | `backend/app/realtime/` | WS via `realtime/manager.py` router + Redis fanout |
-| ML serving | `backend/app/perception/` | manifest-bound ONNX (serving_runtime/contracts/execution/storage) |
-| Canonical data | `backend/app/models/events.py`, `lib/canonical_json.py` | frozen event contract, RFC 8785 hashing |
-| Frontend data | `frontend/src/api/client.ts`, `lib/outbox.ts` | fetch wrapper + offline outbox routing |
-| Map | `frontend/src/components/MapView.tsx`, `hooks/useMapLayers.ts` | MapLibre + deck.gl, PMTiles basemap |
-| Evidence gates | `scripts/verify_plan.py`, `verify_release_gate.py`, `verify_scope.py` | F1-F4 final verification |
-| SOTA plan | `.omo/plans/resqnet-sota-roadmap.md` | 27 todos / 7 waves, all `[x]` |
+|---|---|---|
+| API routes | `backend/app/api/routes/` | aggregated inline in `main.py` |
+| Auth/tenancy | `backend/app/auth/`, `backend/app/deps.py`, middleware | `org_id` server-side; protected revocation fails closed |
+| Realtime | `backend/app/realtime/` | authenticated WS/polling + Redis fanout |
+| ML serving | `backend/app/perception/` | canonical inference contract; uncalibrated safety output abstains |
+| Model registry | `backend/data/models/manifests.json` | checksums, versions, dataset/calibration metadata |
+| Canonical events | `backend/app/models/events.py`, `backend/app/lib/canonical_json.py` | frozen event contract and canonical hashing |
+| Database | ORM models + `backend/alembic/versions/` | PostgreSQL is system of record; forward migrations |
+| Worker | `backend/app/worker/main.py` | `python -m app.worker.main`, aiokafka ConsumerManager |
+| Frontend data/offline | `frontend/src/api/client.ts`, `frontend/src/lib/outbox.ts` | encrypted outbox + idempotent replay/conflicts |
+| Map | `frontend/src/components/MapView.tsx`, map hooks/types | MapLibre + deck.gl |
+| Evidence gates | `scripts/verify_*`, `scripts/run_*`, `evidence/`, `.omo/evidence/` | bind claims to exact evidence/revision |
+| Current production gaps | `docs/execution/gap-analysis.md` | do not reopen closed old gaps without reproduction |
 
-## CONVENTIONS
-- Durable IDs: 26-char uppercase ULIDs (`backend/app/lib/ulid.py`, `frontend/src/lib/ulid.ts`); timestamps UTC epoch ms (`lib/time.py`)
-- `org_id` tenancy on every table, derived server-side from JWT (never client body)
-- `visibility ∈ {public,internal,sensitive}` + `review_status ∈ {draft,reviewed,official}`; all AI output lands as `draft` until human approval
-- Hash-chained append-only audit: `events(prev_hash,hash)` with chain verification (`lib/audit.py`)
-- Idempotency keys on external/queue/webhook paths, exactly-once per `(org_id, source, external_id)` (`lib/idempotency.py`)
-- Geometry: GeoJSON + PostGIS `Geometry(srid=4326)` (canonical contract: DESIGN.md §13)
-- Files under 250 LOC; `*_types.py` split convention in domain modules
-- Conventional commits: `feat(scope): description`
-- Honest boundaries: `DEFERRED_EXTERNAL` marks claims blocked on licensed data / hardware / agency / IRB — never fabricate PASS
+## Engineering invariants
 
-## COMMANDS
+- Durable IDs: uppercase 26-char ULIDs.
+- Durable canonical time: UTC epoch milliseconds.
+- Tenant isolation through authenticated `org_id` scope.
+- External geometry: GeoJSON; spatial storage SRID 4326 where applicable.
+- PostgreSQL is primary durable authority; schema changes use forward Alembic migrations.
+- External delivery may be at least once; application effects must honor canonical idempotency scope.
+- Hash-chained append-only audit/provenance must not be silently rewritten.
+- AI/ML output is non-authoritative until required human review.
+- Placeholder/synthetic/unregistered/incompatible models cannot produce operational safety output.
+- Missing required calibration/domain evidence must abstain, not fake readiness.
+- Protected authorization fails closed when credential revocation/freshness cannot be verified.
+- Offline safety-critical conflicts require explicit resolution; no silent last-write-wins.
+- Simulation and field/hardware evidence remain distinguishable.
+
+## Commands
+
+These commands exist in the repository. Do not claim they pass until executed for the relevant revision/environment.
+
 ```bash
-make bootstrap     # pip + npm install
-make migrate       # alembic upgrade head
-make seed          # python -m app.seed.seed_demo (Rivertown demo)
-make test          # pytest backend (skips test_seed.py)
-make lint          # ruff            make typecheck # mypy
-make build         # frontend vite build
-make verify        # migrate + seed + test + build
-make docker-up     # full stack       make docker-up-full # + observability
-make e2e           # compose up + seed + Playwright (needs fresh seed for freshness tiers)
-make load-test     # 2-phase locust    make backup-restore-verify # RPO/RTO proof
+make bootstrap
+make migrate
+make seed
+make test
+make lint
+make typecheck
+make build
+make verify
+make docker-up
+make docker-up-full
+make e2e
+make load-test PROFILE=full SOAK_DURATION=<seconds>
+make backup-restore-verify
 ```
 
-## ANTI-PATTERNS (THIS PROJECT)
-- No unauthenticated realtime path; no cross-tenant access (viewers see only `public` records)
-- No silent v1/v2 model routing or mock fallback for safety output — abstain, don't fake
-- No `as any` / `@ts-ignore` in frontend; no `type: ignore` sprawl in backend
-- No test-order coupling: Playwright map suite must run first (freshness tiers derive from seed age)
-- No fabricated metrics: every PASS must have executable evidence with exit code + hashes
+Backend direct:
 
-## NOTES
-- Backend DB is **sync SQLAlchemy** in routes; async only in streaming/realtime/worker (aiokafka/anyio)
-- Alembic migrations 0001–0011 (0002a/0002b sub-numbered); never rewrite history, forward-migrate
-- README worker description is stale ("APScheduler") — actual worker is `python -m app.worker.main` (aiokafka ConsumerManager)
-- `.env` (compose-facing) is git-ignored; host tests use `backend/.env` + process-env fallback
-- See `backend/AGENTS.md` and `frontend/AGENTS.md` for domain-specific rules.
+```bash
+cd backend && .venv/bin/python -m pytest tests/ -q
+```
+
+Frontend direct:
+
+```bash
+cd frontend && npm run test
+cd frontend && npm run build
+cd frontend && npx playwright test
+```
+
+Some integration/E2E/load checks require Docker services, migrations, seeded data, topics, and health waits. See `docs/quality/verification-strategy.md` before interpreting an environment-dependent failure.
+
+## Hazards
+
+- Never commit secrets or copy credentials into documentation/evidence.
+- Never use `create_all()`/`ensure_table()` as production schema authority.
+- Never infer production/field readiness from unit/integration tests alone.
+- Never weaken tenant/RBAC/ABAC/audit/offline safety rules to make a test/demo pass.
+- Never replace a failing safety output with mock/placeholder fallback.
+- Do not introduce mandatory cloud dependencies without a requirement that justifies losing local/self-hosted operation.
+
+## Documentation maintenance
+
+After a meaningful change, update the canonical owner rather than duplicating facts:
+- behavior/rules → product/rules docs;
+- schema/API/event/inference contract → executable source + contract map;
+- architecture → architecture doc/ADR if consequential;
+- implementation completion/gap → current state, gap analysis, implementation plan;
+- verification methodology/result → verification strategy and `evidence/`;
+- deployment/operations → relevant runbook/operations doc.
+
+See `backend/AGENTS.md` and `frontend/AGENTS.md` for scoped implementation rules.
