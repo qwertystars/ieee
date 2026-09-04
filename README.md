@@ -1,197 +1,154 @@
-# Disaster Situational Awareness & Response Platform
+# ResQNet-SAGE
 
-Real-time situational awareness and response coordination for urban flooding (v1 demo
-region: **Rivertown**). Monorepo: FastAPI backend + APScheduler worker + React/Vite
-frontend on PostgreSQL/PostGIS with Apache AGE, TimescaleDB, and h3 extensions.
+ResQNet-SAGE is a software-first disaster situational-awareness and response-support platform for emergency managers, responder coordinators, field responders, and supporting agencies. The active monorepo uses FastAPI, a dedicated aiokafka worker, React/Vite, PostgreSQL/PostGIS/AGE/TimescaleDB/h3, Redpanda, Redis, MinIO, and optional local Ollama.
 
-See [`DESIGN.md`](./DESIGN.md) for the frozen interface contract.
+Start with [`docs/INDEX.md`](docs/INDEX.md) for the documentation router and [`docs/execution/current-state.md`](docs/execution/current-state.md) for the current implementation/verification baseline.
 
-## Quick start (Docker)
+The historical Cloudflare `platform/` implementation is not active and has been removed.
+
+## Quick start with Docker
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-Services:
-- **db** — PostgreSQL 16 + PostGIS + AGE + TimescaleDB + h3 on `localhost:5432`
-- **backend** — FastAPI on http://localhost:8000 (docs at `/docs`, health at `/healthz`)
-- **worker** — APScheduler ingestion loop
-- **frontend** — Vite dev server on http://localhost:5173
-- **redis** — token denylist, rate limiting, caching
+Core services include:
+- **db** — PostgreSQL 16 with PostGIS/AGE/TimescaleDB/h3
+- **backend** — FastAPI on `http://localhost:8000`
+- **worker** — dedicated Kafka consumer (`python -m app.worker.main`)
+- **frontend** — React/Vite PWA on `http://localhost:5173`
+- **redis** — shared ephemeral coordination and credential freshness paths
 - **redpanda** — Kafka-compatible event streaming
-- **minio** — S3-compatible object storage for model weights
-- **ollama** — local LLM inference (llama3.1:8b)
+- **minio** — S3-compatible object storage
 
-The backend runs `alembic upgrade head` on start to create all tables and the PostGIS
-extension. Seed the demo scenario after the stack is up:
+Profiled/optional services include Benthos, Ollama, Prometheus, and Grafana depending on the selected Compose profile.
+
+The backend container runs forward Alembic migrations before Uvicorn startup. Seed the demo after the stack is healthy:
 
 ```bash
 docker compose exec backend python -m app.seed.seed_demo
 ```
 
-## Quick start (local dev)
-
-Prerequisites: PostgreSQL 16 with PostGIS at `localhost:5432` (db: `resqnet`,
-user: `resqnet`, pw: `resqnet123`).
+## Local development
 
 ```bash
-# Bootstrap Python venv + npm deps
 make bootstrap
-
-# Run migrations
 make migrate
-
-# Seed demo data
 make seed
-
-# Start backend (terminal 1)
-cd backend && source .venv/bin/activate && uvicorn app.main:app --reload
-
-# Start frontend (terminal 2)
-cd frontend && npm run dev
 ```
 
-Or use the Makefile shortcuts:
+Backend:
 
 ```bash
-make verify   # migrate + seed + test + build in sequence
-make demo     # run the Phase 1 demo script
+cd backend
+source .venv/bin/activate
+uvicorn app.main:app --reload
 ```
 
-## Demo logins
-
-Password `demo1234` for all accounts. Org ID: `org_demo`.
-
-| Email | Role | Capabilities |
-|---|---|---|
-| `admin@demo.disaster` | admin | Full access, emergency overrides, audit |
-| `emergency_manager@demo.disaster` | emergency_manager | Approve alerts, dispatch tasks, sensitive data |
-| `responder_coordinator@demo.disaster` | responder_coordinator | Dispatch tasks, operational data |
-| `field_responder@demo.disaster` | field_responder | Task execution, exact rescue locations |
-| `shelter_manager@demo.disaster` | shelter_manager | Shelter ops, assigned-person info |
-| `viewer@demo.disaster` | viewer | Ward-level aggregation only, no PII |
-
-## Testing
+Frontend:
 
 ```bash
-# Backend tests (491 tests)
-cd backend && .venv/bin/python -m pytest tests/ -q
+cd frontend
+npm run dev
+```
 
-# Frontend tests (45 tests)
-cd frontend && npm run test
+## Verification
 
-# Lint and typecheck (if tools installed)
+Use the commands below as executable checks, not as evergreen claims about the current HEAD:
+
+```bash
+make test
 make lint
 make typecheck
+make build
+make verify
+make e2e
+make load-test PROFILE=full SOAK_DURATION=<seconds>
+make backup-restore-verify
 ```
+
+Direct suites:
+
+```bash
+cd backend && .venv/bin/python -m pytest tests/ -q
+cd frontend && npm run test
+cd frontend && npm run build
+cd frontend && npx playwright test
+```
+
+Test counts change as the repository evolves, so this README does not hard-code them. See `evidence/`, `.omo/evidence/`, and `docs/execution/current-state.md` for revision-specific recorded results.
 
 ## Architecture
 
-```
-                    ┌─────────────┐
-                    │  Frontend   │  React + Vite + MapLibre
-                    │  (PWA)      │  Service worker + IndexedDB outbox
-                    └──────┬──────┘
-                           │ REST + WebSocket
-                    ┌──────▼──────┐
-                    │   Backend   │  FastAPI + JWT auth + RBAC + ABAC
-                    │  (FastAPI)  │  Progressive precision PII redaction
-                    └──┬──┬──┬──┬─┘
-           ┌───────────┘  │  │  └───────────┐
-           ▼              ▼  ▼              ▼
-     ┌──────────┐  ┌─────────┐ ┌────────┐ ┌──────────┐
-     │PostgreSQL│  │ Redpanda│ │ Redis  │ │  MinIO   │
-     │+PostGIS  │  │ (Kafka) │ │        │ │ (S3)     │
-     │+AGE      │  └────┬────┘ └────────┘ └──────────┘
-     │+Timescale│       │
-     │+h3       │  ┌────▼────┐
-     └──────────┘  │ Benthos │  Normalize + dedup + route
-                   └────┬────┘
-                   ┌────▼────┐
-                   │  Worker │  APScheduler ingestion
-                   └─────────┘
-```
+```text
+Sources / sensors / simulator
+           |
+           v
+      FastAPI ingest
+        /      \
+       v        v
+PostgreSQL    Redpanda/Kafka
+  system           |
+ of record          v
+                Benthos/worker
+                    |
+                    v
+             fusion/derived state
 
-### Backend layout
-
-```
-backend/app/
-  api/routes/    — Hono route handlers (auth, observations, alerts, tasks, simulator, ...)
-  auth/          — JWT, RBAC (6 roles), ABAC engine, emergency overrides
-  middleware/    — request_id, org_context (server-side org_id), error_handler
-  lib/           — ulid, time, audit (hash-chained), privacy (progressive precision)
-  models/        — SQLAlchemy ORM (observation, entities, hypotheses, scenarios, events)
-  simulator/     — rescue-ball digital twin, fault injection, simulation engine
-  perception/    — ML model serving (ONNX), SAR flood mapping, damage assessment, NLP
-  fusion/        — confidence vectors, freshness decay, reliability, calibration, world state
-  knowledge/     — Apache AGE temporal crisis knowledge graph
-  ingestion/     — CAP, SensorThings, OGC Features, STAC, HDX adapters + federation
-  streaming/     — Kafka producer + consumer
-  seed/          — demo scenario data (Rivertown cyclone-flood)
+FastAPI <-> Redis
+   |
+   +-> MinIO / model artifacts
+   +-> optional Ollama
+   |
+   v
+React/Vite PWA -> MapLibre/deck.gl
+   |
+ encrypted offline outbox
 ```
 
-### Frontend layout
+See [`docs/architecture/system-architecture.md`](docs/architecture/system-architecture.md) for responsibilities, consistency boundaries, and failure paths.
 
-```
-frontend/
-  public/        — manifest.json, service worker (sw.js), icons
-  src/
-    lib/outbox.ts     — IndexedDB outbox with conflict-aware replay
-    components/       — MapView, dashboards, forms
-    pages/           — command center, field responder, shelter manager
-```
+## Key safety and data rules
 
-## Key features
+- tenant isolation is enforced through authenticated `org_id` scope;
+- durable domain IDs are uppercase 26-character ULIDs;
+- external geometry is GeoJSON;
+- PostgreSQL is the primary durable system of record;
+- schema changes use forward Alembic migrations;
+- AI/ML/optimization outputs remain non-authoritative until required human review;
+- no autonomous emergency dispatch or public-warning authority is delegated to models;
+- missing required model calibration/domain evidence must abstain rather than fake readiness;
+- protected authorization fails closed when credential revocation/freshness cannot be verified;
+- offline safety-critical conflicts are not silently last-write-wins;
+- simulation, machine tests, physical hardware, and field evidence remain distinct claim classes.
 
-- **Alert-to-task loop**: draft alerts from sensors/simulators, human approval, task dispatch
-- **Rescue-ball simulator**: deterministic digital twin with 10 fault injection types
-- **Progressive precision**: same entity serialized differently per viewer role
-- **Offline-first PWA**: service worker caching + IndexedDB outbox with conflict resolution
-- **Hash-chained audit**: tamper-evident event log with `prev_hash`/`hash` chain
-- **Capabilities endpoint**: `GET /api/capabilities` reports runtime feature availability
-- **Graceful degradation**: every external dependency has a fallback path
+## ML readiness
+
+The repository contains registered pretrained ONNX models and a versioned inference contract. Installed/validated weights do **not** mean operational disaster-response readiness. Current model readiness also depends on calibration, domain/regional validation, and explicit production approval. See:
+
+- [`docs/execution/current-state.md`](docs/execution/current-state.md)
+- [`docs/execution/gap-analysis.md`](docs/execution/gap-analysis.md)
+- [`docs/MODEL_DATA_LICENSING.md`](docs/MODEL_DATA_LICENSING.md)
+- `backend/data/models/manifests.json`
+
+## Hardware and field status
+
+The software contains a rescue-ball simulator and real-sensor integration boundaries through supported source/adapters. Physical rescue-ball hardware and field effectiveness are separate external milestones. Software tests must not be represented as proof of floodwater mobility, sensor calibration, thermal human detection, agency acceptance, or field readiness.
+
+See `docs/HARDWARE_SPECIFICATION.md`, `docs/PHYSICAL_TEST_PLAN.md`, and `docs/FIELD_TRIAL_PROTOCOL.md`.
 
 ## Documentation
 
-| Document | Description |
-|---|---|
-| [docs/PHASE1_DEMO.md](docs/PHASE1_DEMO.md) | Step-by-step demo walkthrough |
-| [docs/SIMULATOR.md](docs/SIMULATOR.md) | Rescue-ball simulator usage and fault injection |
-| [docs/OFFLINE_OPERATION.md](docs/OFFLINE_OPERATION.md) | PWA, service worker, IndexedDB outbox |
-| [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md) | Auth, RBAC, ABAC, tenancy, PII redaction |
-| [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) | Blockers, disclaimers, activation steps |
-| [docs/offline-prep.md](docs/offline-prep.md) | Offline pre-deployment preparation |
-| [docs/db-extensions.md](docs/db-extensions.md) | PostgreSQL extension coexistence notes |
-| [DESIGN.md](DESIGN.md) | Frozen interface contract |
+Use [`docs/INDEX.md`](docs/INDEX.md) instead of loading every document for every task. Important canonical documents are:
 
-## Make targets
+- [`docs/product/product-spec.md`](docs/product/product-spec.md)
+- [`docs/domain/rules-and-invariants.md`](docs/domain/rules-and-invariants.md)
+- [`docs/architecture/system-architecture.md`](docs/architecture/system-architecture.md)
+- [`docs/contracts/contract-map.md`](docs/contracts/contract-map.md)
+- [`docs/execution/current-state.md`](docs/execution/current-state.md)
+- [`docs/execution/gap-analysis.md`](docs/execution/gap-analysis.md)
+- [`docs/execution/implementation-plan.md`](docs/execution/implementation-plan.md)
+- [`docs/quality/verification-strategy.md`](docs/quality/verification-strategy.md)
 
-| Target | Description |
-|---|---|
-| `make bootstrap` | Install Python deps + npm deps |
-| `make migrate` | Run `alembic upgrade head` |
-| `make seed` | Seed demo data (Rivertown scenario) |
-| `make test` | Run pytest (skips pre-existing broken test) |
-| `make build` | Build frontend (`npm run build`) |
-| `make demo` | Run the Phase 1 demo script |
-| `make verify` | migrate + seed + test + build in sequence |
-| `make docker-up` | Start full Docker stack |
-| `make docker-up-full` | Start stack with observability (Prometheus + Grafana) |
-
-## Environment
-
-See [`.env.example`](.env.example) for all configuration variables. Key settings:
-
-- `DATABASE_URL` — PostgreSQL connection string
-- `JWT_SECRET` — must be 32+ chars outside development
-- `CORS_ORIGINS` — comma-separated origins or `*` for dev
-- `OLLAMA_BASE_URL` — local LLM endpoint
-- `PMTILES_PATH` — offline basemap tiles
-- `KAFKA_BOOTSTRAP_SERVERS` — event streaming broker
-- `OTEL_EXPORTER` — set to `none` to disable, or OTLP endpoint
-
-## License
-
-Model weights are downloaded from HuggingFace under the `resqnet` organization.
-See [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for model licensing details.
+Existing detailed security, offline, observability, hardware, field, historical audit, and final-report documents remain part of the repository and are routed from the index.
