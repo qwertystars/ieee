@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: ${{ github.workspace }}/backend
+      DATABASE_URL: postgresql+psycopg://resqnet:resqnet-ci-db@localhost:5432/resqnet
+      REDIS_URL: redis://localhost:6379/0
+      REDPANDA_BOOTSTRAP_SERVERS: localhost:9092
+    services:
+      redis:
+        image: redis:7.2.5-alpine
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build database image (PostGIS + AGE + TimescaleDB + h3)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.db
+          tags: resqnet-db:ci
+          load: true
+          cache-from: type=gha,scope=db
+          cache-to: type=gha,scope=db,mode=max
+
+      - name: Start database and broker
+        run: |
+          docker run -d --name db -p 5432:5432 \
+            -e POSTGRES_USER=resqnet -e POSTGRES_PASSWORD=resqnet-ci-db -e POSTGRES_DB=resqnet \
+            resqnet-db:ci
+          docker run -d --name redpanda -p 9092:9092 docker.redpanda.com/redpandadata/redpanda:v24.3.9 \
+            redpanda start --mode dev-container --smp 1 --memory 1G \
+            --kafka-addr 0.0.0.0:9092 --advertise-kafka-addr localhost:9092
+          until docker exec db pg_isready -U resqnet -d resqnet; do sleep 2; done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          grep -viE '^(gdal|torch|torchvision)==' requirements.lock > /tmp/req.txt
+          pip install --no-deps -r /tmp/req.txt
+          pip install ruff mypy
+
+      - name: Lint
+        working-directory: backend
+        run: ruff check app tests alembic
+
+      - name: Typecheck
+        working-directory: backend
+        run: mypy app
+
+      - name: Migrations apply and match the models
+        working-directory: backend
+        run: |
+          alembic upgrade head
+          alembic check
+          alembic downgrade -1 && alembic upgrade head
+
+      # Excluded here (need services CI does not provide):
+      #   failure/, soak/, test_backup_restore.py drive docker compose services;
+      #   the deselected tests need MinIO and/or ONNX weights (not in git);
+      #   test_seed.py is the long-standing broken import also skipped by `make test`.
+      - name: Tests
+        working-directory: backend
+        run: >-
+          pytest -q
+          --ignore=tests/test_seed.py
+          --ignore=tests/failure
+          --ignore=tests/soak
+          --ignore=tests/test_backup_restore.py
+          --deselect tests/test_model_manifests.py::test_capabilities_returns_available_with_validated_manifests
+          --deselect tests/test_model_manifests.py::test_ml_endpoints_missing_weights_return_unavailable
+          --deselect tests/test_real_input_routes.py::test_sar_real_input_abstains_without_onnx_calibration
+          --deselect tests/test_sota_routes.py::test_get_flood_ensemble_degrades_gracefully
+          --deselect tests/test_sota_routes.py::test_get_flood_map_degrades_gracefully
+          --deselect tests/test_sota_routes.py::test_damage_assessment_degrades_gracefully
+          --deselect tests/test_sota_routes.py::test_nlp_report_degrades_gracefully
+          --deselect tests/test_low_connectivity.py::test_deep_health_check_reports_redis_and_redpanda_down
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  deploy-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate production compose file
+        run: |
+          cp .env.production.example .env
+          sed -i -e 's|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=ci|' \
+                 -e 's|^MINIO_SECRET_KEY=.*|MINIO_SECRET_KEY=ci|' \
+                 -e 's|^JWT_SECRET=.*|JWT_SECRET=ci|' \
+                 -e 's|^MINIO_IMAGE=.*|MINIO_IMAGE=example/minio:ci|' .env
+          docker compose -f docker-compose.prod.yml config -q
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: frontend/Dockerfile.prod
+          tags: resqnet-web:ci
+          load: true
+      - name: Validate Caddyfile
+        run: |
+          for url in https://resq.example.org http://203.0.113.10; do
+            docker run --rm -e PUBLIC_URL="$url" resqnet-web:ci caddy validate --config /etc/caddy/Caddyfile
+          done
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          tags: resqnet-backend:ci
+          load: true
