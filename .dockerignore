@@ -1,0 +1,13 @@
+# Root build context is used by frontend/Dockerfile.prod and Dockerfile.db.
+**/node_modules
+**/.venv
+**/__pycache__
+.git
+.env
+.env.*
+backups
+evidence
+.omo
+backend/data/models/*.onnx
+frontend/dist
+frontend/test-results

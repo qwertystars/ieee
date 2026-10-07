@@ -24,7 +24,7 @@ data/datasets/  dataset registry + benchmark manifest (licensed metadata only)
 evidence/       RPO/RTO, chaos, load, soak, gates, final-verification, sota
 .omo/           work plans (plans/), per-task evidence (evidence/), boulder.json
 docs/           runbooks, security model, field trial protocol, final report
-deploy/         production-parity HAProxy config
+deploy/         production-parity HAProxy config; vm/ Caddyfile for single-VM prod
 ```
 
 ## WHERE TO LOOK
@@ -62,6 +62,7 @@ make build         # frontend vite build
 make verify        # migrate + seed + test + build
 make docker-up     # full stack       make docker-up-full # + observability
 make e2e           # compose up + seed + Playwright (needs fresh seed for freshness tiers)
+make prod-up       # single-VM production stack (docs/DEPLOY_VM.md)
 make load-test     # 2-phase locust    make backup-restore-verify # RPO/RTO proof
 ```
 
@@ -74,7 +75,7 @@ make load-test     # 2-phase locust    make backup-restore-verify # RPO/RTO proo
 
 ## NOTES
 - Backend DB is **sync SQLAlchemy** in routes; async only in streaming/realtime/worker (aiokafka/anyio)
-- Alembic migrations 0001–0011 (0002a/0002b sub-numbered); never rewrite history, forward-migrate
+- Alembic migrations 0001–0012 (0002a/0002b sub-numbered); never rewrite history, forward-migrate
 - README worker description is stale ("APScheduler") — actual worker is `python -m app.worker.main` (aiokafka ConsumerManager)
 - `.env` (compose-facing) is git-ignored; host tests use `backend/.env` + process-env fallback
 - See `backend/AGENTS.md` and `frontend/AGENTS.md` for domain-specific rules.

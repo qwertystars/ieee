@@ -30,6 +30,20 @@ extension. Seed the demo scenario after the stack is up:
 docker compose exec backend python -m app.seed.seed_demo
 ```
 
+## Deploying to a VM
+
+The quick start above is a development stack (Vite dev server, internal ports
+published, demo users). For a real server use the hardened single-VM stack —
+Caddy with automatic HTTPS, only ports 80/443 exposed, production config
+validation, no demo users:
+
+```bash
+scripts/vm/init_env.sh https://resq.example.org   # writes .env with fresh secrets; then set MINIO_IMAGE in it
+docker compose up -d --build                      # uses docker-compose.prod.yml via .env
+```
+
+Full procedure, first-admin creation, backups and upgrades: [docs/DEPLOY_VM.md](docs/DEPLOY_VM.md).
+
 ## Quick start (local dev)
 
 Prerequisites: PostgreSQL 16 with PostGIS at `localhost:5432` (db: `resqnet`,

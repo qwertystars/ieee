@@ -1,0 +1,215 @@
+# ResQNet-SAGE — single-VM production stack.
+#
+# Only the Caddy edge (ports 80/443) is published; every other service is
+# reachable solely on the internal compose network. Configure via .env
+# (start from .env.production.example, or run scripts/vm/init_env.sh) and see
+# docs/DEPLOY_VM.md for the full procedure.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+name: resqnet
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+x-backend-env: &backend_env
+  PYTHONPATH: /app
+  ENVIRONMENT: production
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?set POSTGRES_USER}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:?set POSTGRES_DB}
+  REDIS_URL: redis://redis:6379/0
+  REDPANDA_BOOTSTRAP_SERVERS: redpanda:9092
+  TOPIC_PARTITIONS: "6"
+  MINIO_ENDPOINT: minio:9000
+  MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY}
+  MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY}
+  OLLAMA_BASE_URL: http://ollama:11434
+  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (>= 32 random chars)}
+  CORS_ORIGINS: ${PUBLIC_URL:?set PUBLIC_URL, e.g. https://resq.example.org}
+  PMTILES_PATH: /app/basemaps/mumbai.pmtiles
+  UVICORN_RELOAD: "false"
+  SOURCE_MOUNTS_ENABLED: "false"
+  MOCK_BINDINGS_ENABLED: "false"
+  EXPOSE_INTERNAL_PORTS: "false"
+
+x-backend: &backend
+  build: ./backend
+  image: resqnet-backend:${RESQNET_TAG:-latest}
+  restart: unless-stopped
+  environment: *backend_env
+  volumes:
+    # ONNX weights are not in git; scripts/download_real_models.py writes here.
+    - ./backend/data/models:/app/data/models:ro
+    - ./frontend/public/basemaps:/app/basemaps:ro
+  <<: *logging
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    image: resqnet-db:${RESQNET_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    command: ["postgres", "-c", "shared_preload_libraries=timescaledb,age"]
+    shm_size: 256m
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    <<: *logging
+
+  redis:
+    image: redis:7.2.5-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    <<: *logging
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.9
+    restart: unless-stopped
+    command:
+      - redpanda
+      - start
+      - --mode
+      - dev-container
+      - --smp
+      - "1"
+      - --memory
+      - 1G
+      - --kafka-addr
+      - internal://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - internal://redpanda:9092
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "info"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    <<: *logging
+
+  minio:
+    # MinIO Inc. stopped publishing images in Oct 2025 (minio/minio now 404s on
+    # Docker Hub), so the image is an explicit operator choice. See DEPLOY_VM.md.
+    image: ${MINIO_IMAGE:?set MINIO_IMAGE to a maintained S3-compatible MinIO image}
+    restart: unless-stopped
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    <<: *logging
+
+  migrate:
+    <<: *backend
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+
+  backend:
+    <<: *backend
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command:
+      - uvicorn
+      - app.main:app
+      - --host=0.0.0.0
+      - --port=8000
+      - --workers=${BACKEND_WORKERS:-2}
+      - --proxy-headers
+      - --forwarded-allow-ips=*
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/healthz >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  worker:
+    <<: *backend
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redpanda:
+        condition: service_healthy
+    environment:
+      <<: *backend_env
+      WORKER_CONCURRENCY: "6"
+    command: ["python", "-m", "app.worker.main"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8001/metrics >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.prod
+    image: resqnet-web:${RESQNET_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    <<: *logging
+
+  # Optional local LLM (needs ~8 GB RAM): docker compose --profile llm up -d
+  ollama:
+    image: ollama/ollama:0.3.12
+    profiles: ["llm"]
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    <<: *logging
+
+volumes:
+  pgdata:
+  redis_data:
+  redpanda_data:
+  minio_data:
+  caddy_data:
+  caddy_config:
+  ollama_data:

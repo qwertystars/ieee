@@ -7,3 +7,6 @@ __pycache__/
 models/cache/
 data/sample-sar/
 *.egg-info/
+.env
+.env.*
+*.db

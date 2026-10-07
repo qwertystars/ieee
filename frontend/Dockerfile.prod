@@ -1,0 +1,16 @@
+# Production web tier: static Vite build served by Caddy, which also
+# terminates TLS (automatic Let's Encrypt) and reverse-proxies the API.
+# Build context is the repository root (see docker-compose.prod.yml).
+
+FROM node:20.15.1-slim AS build
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/ ./
+# Leave VITE_API_BASE empty: production bundles call the API on their own origin.
+ENV VITE_API_BASE=""
+RUN npm run build
+
+FROM caddy:2.8.4-alpine
+COPY deploy/vm/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /app/dist /srv

@@ -30,7 +30,7 @@ RTO_TARGET_S ?= 900
 .PHONY: help bootstrap migrate seed test lint typecheck build demo verify e2e \
         docker-build docker-up docker-up-full docker-down clean backup restore \
         backup-restore-verify backup-restore-verify-corrupt \
-        load-test load-test-full load-test-reduced
+        load-test load-test-full load-test-reduced prod-up prod-admin prod-backup
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -146,6 +146,22 @@ docker-up-full: ## Start the full Docker stack with observability (11 services)
 
 docker-down: ## Stop the Docker stack
 	docker compose down
+
+# ── Single-VM production (docs/DEPLOY_VM.md) ─────────────────────────────────
+
+PROD_COMPOSE := docker compose -f docker-compose.prod.yml
+
+prod-up: ## Build + start the production stack (needs .env from scripts/vm/init_env.sh)
+	$(PROD_COMPOSE) up -d --build
+	$(PROD_COMPOSE) ps
+
+prod-admin: ## Create/reset a user (usage: make prod-admin EMAIL=you@org ORG=org_main [ROLE=admin])
+	@test -n "$(EMAIL)" && test -n "$(ORG)" || { echo "usage: make prod-admin EMAIL=... ORG=... [ROLE=admin]"; exit 1; }
+	$(PROD_COMPOSE) run --rm backend python -m app.auth.create_user \
+		--email "$(EMAIL)" --role "$(or $(ROLE),admin)" --org-id "$(ORG)"
+
+prod-backup: ## Back up the production database + MinIO to backups/<stamp>/
+	bash scripts/vm/backup.sh
 
 # ── Clean ────────────────────────────────────────────────────────────────────
 

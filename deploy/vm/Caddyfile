@@ -1,0 +1,37 @@
+# ResQNet-SAGE single-VM edge: TLS termination, static PWA, API reverse proxy.
+#
+# PUBLIC_URL decides the TLS mode:
+#   https://resq.example.org  -> automatic Let's Encrypt certificate (DNS must
+#                                point at this VM and ports 80/443 be open)
+#   http://203.0.113.10       -> plain HTTP on that IP (testing only)
+
+{$PUBLIC_URL} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Prometheus metrics stay on the internal network.
+	@internal path /metrics /metrics/*
+	respond @internal 404
+
+	@backend path /api/* /ws/* /healthz /healthz/* /docs /docs/* /openapi.json
+	handle @backend {
+		reverse_proxy backend:8000
+	}
+
+	handle {
+		root * /srv
+		@revalidate path / /index.html /sw.js /manifest.json
+		header @revalidate Cache-Control "no-cache"
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+}

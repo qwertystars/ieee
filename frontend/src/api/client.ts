@@ -47,7 +47,9 @@ export { clearToken, getToken, setToken }
 
 function baseUrl(): string {
   const env = import.meta.env.VITE_API_BASE
-  return typeof env === 'string' && env.length > 0 ? env : DEFAULT_BASE
+  if (typeof env === 'string' && env.length > 0) return env
+  // Production bundles are served behind the same reverse proxy as the API.
+  return import.meta.env.PROD ? window.location.origin : DEFAULT_BASE
 }
 
 type Query = Record<string, string | number | boolean | undefined | null>
