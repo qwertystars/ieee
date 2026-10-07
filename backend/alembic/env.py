@@ -2,6 +2,18 @@
 
 from sqlalchemy import engine_from_config, pool
 
+# Every module that declares tables, so autogenerate/check see the full schema
+# (several domain modules define tables outside app.models).
+import app.audit.provenance_types
+import app.fusion.reliability
+import app.ingestion.federation
+import app.lib.idempotency
+import app.models
+import app.models.source
+import app.perception.llm_types
+import app.perception.models
+import app.realtime.edge_sync
+import app.realtime.sync  # noqa: F401
 from alembic import context
 from app.config import settings
 from app.db import Base
@@ -12,12 +24,24 @@ config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 target_metadata = Base.metadata
 
 
+# Migrations are hand-written and also create objects the ORM never declares
+# (GiST/composite performance indexes, PostGIS/AGE catalog tables). Autogenerate
+# and `alembic check` must flag model objects missing from the database, never
+# propose dropping database-only objects.
+def include_object(
+    obj: object, name: str | None, type_: str, reflected: bool, compare_to: object | None
+) -> bool:
+    """Skip reflected objects that have no ORM counterpart."""
+    return not (reflected and compare_to is None)
+
+
 def run_migrations_offline() -> None:
     """Run migrations in offline mode (emit SQL to stdout)."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
+        include_object=include_object,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
@@ -36,6 +60,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            include_object=include_object,
         )
         with context.begin_transaction():
             context.run_migrations()

@@ -184,7 +184,8 @@ class Event(Base):
     external_id: Mapped[str | None] = mapped_column(String, nullable=True)
     source_time_ms: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     receipt_time_ms: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    sequence: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # Assigned before flush; NOT NULL since migration 0006.
+    sequence: Mapped[int | None] = mapped_column(BigInteger, nullable=False)
     payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     provenance: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     visibility: Mapped[str | None] = mapped_column(String, nullable=True)

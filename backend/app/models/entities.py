@@ -33,7 +33,7 @@ class Hazard(_EntityMixin, Base):
 
     hazard_type: Mapped[str] = mapped_column(String)
     severity: Mapped[str | None] = mapped_column(String, nullable=True)
-    geometry: Mapped[object] = mapped_column(_GEO)
+    geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
@@ -44,7 +44,7 @@ class Zone(_EntityMixin, Base):
 
     name: Mapped[str] = mapped_column(String)
     zone_type: Mapped[str | None] = mapped_column(String, nullable=True)
-    geometry: Mapped[object] = mapped_column(_GEO)
+    geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
@@ -55,7 +55,7 @@ class Building(_EntityMixin, Base):
 
     name: Mapped[str | None] = mapped_column(String, nullable=True)
     building_type: Mapped[str | None] = mapped_column(String, nullable=True)
-    geometry: Mapped[object] = mapped_column(_GEO)
+    geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
@@ -66,7 +66,7 @@ class RoadSegment(_EntityMixin, Base):
 
     name: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str | None] = mapped_column(String, nullable=True)
-    geometry: Mapped[object] = mapped_column(_GEO)
+    geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
@@ -77,7 +77,7 @@ class Bridge(_EntityMixin, Base):
 
     name: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str | None] = mapped_column(String, nullable=True)
-    geometry: Mapped[object] = mapped_column(_GEO)
+    geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
@@ -88,7 +88,7 @@ class PowerSubstation(_EntityMixin, Base):
 
     name: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str | None] = mapped_column(String, nullable=True)
-    geometry: Mapped[object] = mapped_column(_GEO)
+    geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
@@ -99,7 +99,7 @@ class CellTower(_EntityMixin, Base):
 
     name: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str | None] = mapped_column(String, nullable=True)
-    geometry: Mapped[object] = mapped_column(_GEO)
+    geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
@@ -111,7 +111,7 @@ class Hospital(_EntityMixin, Base):
     name: Mapped[str] = mapped_column(String)
     status: Mapped[str | None] = mapped_column(String, nullable=True)
     capacity: Mapped[int | None] = mapped_column(nullable=True)
-    geometry: Mapped[object] = mapped_column(_GEO)
+    geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
@@ -124,7 +124,7 @@ class Shelter(_EntityMixin, Base):
     status: Mapped[str | None] = mapped_column(String, nullable=True)
     capacity: Mapped[int | None] = mapped_column(nullable=True)
     occupancy: Mapped[int | None] = mapped_column(nullable=True)
-    geometry: Mapped[object] = mapped_column(_GEO)
+    geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
@@ -136,7 +136,7 @@ class Responder(_EntityMixin, Base):
     name: Mapped[str | None] = mapped_column(String, nullable=True)
     role: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str | None] = mapped_column(String, nullable=True)
-    geometry: Mapped[object] = mapped_column(_GEO)
+    geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
@@ -148,7 +148,7 @@ class Vehicle(_EntityMixin, Base):
     name: Mapped[str | None] = mapped_column(String, nullable=True)
     vehicle_type: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str | None] = mapped_column(String, nullable=True)
-    geometry: Mapped[object] = mapped_column(_GEO)
+    geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
@@ -160,7 +160,7 @@ class Sensor(_EntityMixin, Base):
     name: Mapped[str | None] = mapped_column(String, nullable=True)
     sensor_type: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str | None] = mapped_column(String, nullable=True)
-    geometry: Mapped[object] = mapped_column(_GEO)
+    geometry: Mapped[object | None] = mapped_column(_GEO, nullable=True)
     properties: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 

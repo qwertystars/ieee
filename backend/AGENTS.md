@@ -22,7 +22,7 @@ on start) or locally via `backend/.env` + venv.
 - Hash-chained audit via `lib/audit.py` + `lib/canonical_json.py`; write_audit on every state change
 - Idempotency via `lib/idempotency.py` keyed `(org_id, source, external_id)`
 - `*_types.py` split per domain module (fusion, optimizer, twin, sensing, eval, audit)
-- Alembic migrations 0001–0011, forward-only; `downgrade()` raises for 0006+
+- Alembic migrations 0001–0012, forward-only; `downgrade()` raises for 0006+
 
 ## ANTI-PATTERNS
 - No raw `dict[str, Any]` request bodies on new routes — use pydantic schemas

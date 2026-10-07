@@ -7,7 +7,7 @@ import json
 import logging
 from typing import Any
 
-from sqlalchemy import BigInteger, Integer, String, and_, func, select
+from sqlalchemy import BigInteger, Index, Integer, String, and_, func, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Mapped, Session, mapped_column
@@ -28,10 +28,20 @@ class EdgeSyncApplied(Base):
     """Append-only receipt ledger for idempotent edge mutations."""
 
     __tablename__ = "edge_sync_applied"
+    __table_args__ = (
+        Index(
+            "uq_edge_sync_applied_org_incident_hash",
+            "org_id",
+            "incident_id",
+            "content_hash",
+            unique=True,
+        ),
+        Index("uq_edge_sync_applied_org_idempotency", "org_id", "idempotency_key", unique=True),
+    )
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     item_id: Mapped[str] = mapped_column(String(26), unique=True, index=True)
-    idempotency_key: Mapped[str] = mapped_column(String(26), index=True)
-    content_hash: Mapped[str] = mapped_column(String(64), index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(26))
+    content_hash: Mapped[str] = mapped_column(String(64))
     item_type: Mapped[str] = mapped_column(String)
     sequence: Mapped[int] = mapped_column(Integer)
     payload: Mapped[dict] = mapped_column(JSONB)
