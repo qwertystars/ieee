@@ -166,6 +166,16 @@ frontend/
 - **Capabilities endpoint**: `GET /api/capabilities` reports runtime feature availability
 - **Graceful degradation**: every external dependency has a fallback path
 
+## Field modules and hardware
+
+Beyond the platform, the repo carries the field team's modules and the drone firmware:
+
+- [`modules/`](modules/README.md) holds the BLE mesh localization service, the Flutter mesh app,
+  the AI route engine and thermal drone server, and thermal image analysis. The mesh
+  service feeds the frontend's **Rescue** page (`/rescue`).
+- [`hardware/drone/`](hardware/drone) is the ESP32 flight controller (PlatformIO). Build it with
+  `cd hardware/drone && pio run -e flight`, or `-e esc_test` for the ESC bench tool.
+
 ## Documentation
 
 | Document | Description |
@@ -204,6 +214,7 @@ See [`.env.example`](.env.example) for all configuration variables. Key settings
 - `PMTILES_PATH` — offline basemap tiles
 - `KAFKA_BOOTSTRAP_SERVERS` — event streaming broker
 - `OTEL_EXPORTER` — set to `none` to disable, or OTLP endpoint
+- `VITE_MESH_API_BASE` — BLE mesh localization service for the Rescue page (default `http://<host>:8001`)
 
 ## License
 

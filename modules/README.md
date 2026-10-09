@@ -10,8 +10,18 @@ Responsible for calculating the shortest and safest route for responders and sur
 ### 2. BLE Localization Backend (`ble_localization/`)
 The backend localization service. It requires at least two mobile phones running the ResQnet Mesh app to be connected to it in order to accurately triangulate and track positions.
 
-### 3. Frontend Dashboard (`dashboard_next/`)
-A Next.js-based interactive dashboard where all detection events and statuses are visible in real-time. It acts as the command center to visualize hazards and routes.
+Run it from this `modules/` directory (it imports `ble_localization.*`). Use port
+8001 so it doesn't collide with the platform backend on 8000:
+
+```bash
+uvicorn ble_localization.main:app --host 0.0.0.0 --port 8001
+```
+
+### 3. Rescue Dashboard (`../frontend`, route `/rescue`)
+The live mesh command center: survivor map, triage list, mesh status and command log.
+It was a standalone Next.js app (`dashboard_next/`) and now lives in the platform
+frontend. Point it at the BLE service with `VITE_MESH_API_BASE` (default:
+`http://<same host>:8001`).
 
 ### 4. ResQnet Mesh (`mesh_app/`)
 The Flutter mobile application. It acts as a node in the Bluetooth Low Energy (BLE) mesh network, streaming live location data and connecting to the localization backend.
