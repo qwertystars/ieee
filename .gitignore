@@ -51,3 +51,19 @@ backend/models/
 # committed at backend/data/models/manifests.json
 *.onnx
 *.onnx.placeholder.bak
+
+# Next.js (modules)
+.next/
+out/
+.eslintcache
+
+# Flutter / Dart (modules/mesh_app)
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+modules/mesh_app/build/
+
+# PlatformIO (hardware/drone)
+.pio/

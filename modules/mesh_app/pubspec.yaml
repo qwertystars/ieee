@@ -1,0 +1,45 @@
+name: resqnet_mesh
+description: "ResQnet - Bluetooth Mesh Disaster Recovery Network"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Nearby Connections mesh (Android)
+  nearby_connections: ^4.3.0
+
+  # Permissions handling
+  permission_handler: ^11.3.1
+
+  # Location for lat/long capture
+  geolocator: ^13.0.2
+
+  # Unique device ID generation
+  uuid: ^4.5.1
+
+  # HTTP client for syncing mesh table to FastAPI backend
+  http: ^1.4.0
+
+  # State management
+  provider: ^6.1.2
+
+  # Local storage for mesh table persistence
+  shared_preferences: ^2.5.3
+
+  # Google Fonts for premium typography
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

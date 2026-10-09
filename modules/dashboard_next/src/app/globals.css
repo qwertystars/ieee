@@ -1,0 +1,80 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+:root {
+  --background: #05070f;
+  --foreground: #e2e8f0;
+  --hud-panel: rgba(15, 23, 42, 0.7);
+  --hud-stroke: rgba(148, 163, 184, 0.18);
+  --accent-blue: #60a5fa;
+  --accent-cyan: #22d3ee;
+  --accent-red: #ef4444;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+body {
+  background: radial-gradient(circle at top, #0f172a 0%, #05070f 60%);
+  color: var(--foreground);
+  font-family: var(--font-space-grotesk), system-ui, sans-serif;
+}
+
+.leaflet-container {
+  background: #020617 !important;
+}
+
+.bg-hud {
+  background-image: radial-gradient(circle at 15% 20%, rgba(96, 165, 250, 0.18), transparent 55%),
+    radial-gradient(circle at 85% 20%, rgba(34, 211, 238, 0.12), transparent 50%),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.9), rgba(2, 6, 23, 0.4));
+}
+
+.hud-panel {
+  border-radius: 20px;
+  border: 1px solid var(--hud-stroke);
+  background: var(--hud-panel);
+  padding: 20px;
+  box-shadow: 0 20px 60px rgba(2, 6, 23, 0.6);
+  backdrop-filter: blur(16px);
+}
+
+.hud-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.hud-eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.hud-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.survivor-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.33); opacity: 0.8; }
+  80%, 100% { transform: scale(1.5); opacity: 0; }
+}
