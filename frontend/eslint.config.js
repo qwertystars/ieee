@@ -21,6 +21,7 @@ export default [
         navigator: 'readonly',
         localStorage: 'readonly',
         fetch: 'readonly',
+        WebSocket: 'readonly',
         console: 'readonly',
         URL: 'readonly',
         URLSearchParams: 'readonly',

@@ -12,6 +12,7 @@ const FieldPage = lazy(() => import('./pages/FieldPage'))
 const HypothesesPage = lazy(() => import('./pages/HypothesesPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const PlanningPage = lazy(() => import('./pages/PlanningPage'))
+const RescuePage = lazy(() => import('./pages/RescuePage'))
 const SimulationPage = lazy(() => import('./pages/SimulationPage'))
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -70,6 +71,14 @@ export default function App() {
           element={
             <Suspense fallback={<LoadingState />}>
               <SimulationPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/rescue"
+          element={
+            <Suspense fallback={<LoadingState />}>
+              <RescuePage />
             </Suspense>
           }
         />

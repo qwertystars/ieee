@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: '/hypotheses', label: 'Hypotheses' },
   { to: '/planning', label: 'Planning' },
   { to: '/simulation', label: 'Simulation' },
+  { to: '/rescue', label: 'Rescue' },
   { to: '/field', label: 'Field' },
   { to: '/audit', label: 'Audit' },
 ] as const
