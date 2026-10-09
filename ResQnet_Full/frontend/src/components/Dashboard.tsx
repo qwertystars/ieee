@@ -21,9 +21,9 @@ const fallbackState: RouteState = {
     { x: 20, y: 4, z: 0.4 },
   ],
   survivors: [
-    { id: "S-14", position: { x: -8, y: 10, z: 1.1 }, urgency: "high", lat: 17.452, lng: 78.381 },
-    { id: "S-22", position: { x: 6, y: -4, z: 0.8 }, urgency: "medium", lat: 17.448, lng: 78.385 },
-    { id: "S-31", position: { x: 18, y: 14, z: 1.2 }, urgency: "low", lat: 17.455, lng: 78.389 },
+    { id: "S-14", position: { x: -8, y: 10, z: 1.1 }, urgency: "high", lat: 12.8406, lng: 80.1534 },
+    { id: "S-22", position: { x: 6, y: -4, z: 0.8 }, urgency: "medium", lat: 12.8420, lng: 80.1550 },
+    { id: "S-31", position: { x: 18, y: 14, z: 1.2 }, urgency: "low", lat: 12.8390, lng: 80.1520 },
   ],
   hazards: [
     { id: "HZ-01", position: { x: -16, y: 6, z: 0.5 } },

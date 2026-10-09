@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Hazard, RouteState, Survivor, Vec3 } from "@/types/route";
 
-const DEFAULT_URL = "ws://172.45.1.133:8000/ws/route";
+const DEFAULT_URL = "ws://127.0.0.1:8000/ws/route";
 
 const emptyState: RouteState = {
   path: [],

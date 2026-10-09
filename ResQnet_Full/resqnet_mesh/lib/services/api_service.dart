@@ -10,8 +10,7 @@ import 'package:http/http.dart' as http;
 import '../models/survivor_data.dart';
 
 class ApiService {
-  /// Command Center backend URL (local network or when internet is restored)
-  static const String _defaultBaseUrl = 'http://172.45.1.133:8000';
+  static const String _defaultBaseUrl = 'http://127.0.0.1:8000';
 
   final String baseUrl;
 
@@ -59,7 +58,7 @@ class ApiService {
     } catch (e) {
       return SyncResult(
         success: false,
-        message: 'No connection to Command Center. Data saved locally.',
+        message: 'Sync failed: $e. Saved locally.',
       );
     }
   }

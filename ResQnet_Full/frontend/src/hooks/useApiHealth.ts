@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const DEFAULT_API_URL = "http://172.45.1.133:8000";
+const DEFAULT_API_URL = "http://127.0.0.1:8000";
 
 export type ApiHealthStatus = "checking" | "online" | "offline";
 

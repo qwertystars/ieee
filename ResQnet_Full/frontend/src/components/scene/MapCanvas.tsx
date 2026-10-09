@@ -65,7 +65,7 @@ export default function MapCanvas({ path, survivors, hazards }: MapCanvasProps) 
 
   if (!isMounted) return <div className="h-full w-full bg-slate-950" />;
 
-  const defaultCenter: [number, number] = [17.45, 78.38]; // Default to some fallback or center of detected items
+  const defaultCenter: [number, number] = [12.8406, 80.1534]; // Default to some fallback or center of detected items
 
   return (
     <div className="h-full w-full">

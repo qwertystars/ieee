@@ -1,17 +1,111 @@
 """Utilities for handling backend functions."""
+import os
 import pickle
+import subprocess
+import sys
 import threading
-from tkinter import Tk, filedialog, messagebox, ttk
-from tkinter.constants import S
 
 import numpy as np
 import pandas as pd
 import pygame
-from matplotlib import figure
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
-                                               NavigationToolbar2Tk)
 from PIL import Image
 
+try:
+    from tkinter import Tk, filedialog, messagebox, ttk
+    from tkinter.constants import S
+    from matplotlib import figure
+    from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
+                                                   NavigationToolbar2Tk)
+except Exception:
+    pass
+
+def _mac_open_file(title="Open Thermal Image"):
+    script = f'''
+    try
+        set chosen to (choose file with prompt "{title}" of type {{"public.image", "public.data", "public.item"}})
+        return POSIX path of chosen
+    on error
+        return ""
+    end try
+    '''
+    try:
+        proc = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+        return proc.stdout.strip()
+    except Exception:
+        return ""
+
+def _mac_save_file(prompt="Save current image", default_name="thermal_output.png"):
+    script = f'''
+    try
+        set chosen to (choose file name with prompt "{prompt}" default name "{default_name}")
+        return POSIX path of chosen
+    on error
+        return ""
+    end try
+    '''
+    try:
+        proc = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+        return proc.stdout.strip()
+    except Exception:
+        return ""
+
+def _mac_ask_question(title, message):
+    escaped_msg = message.replace('"', '\\"')
+    script = f'''
+    try
+        set resp to button returned of (display dialog "{escaped_msg}" buttons {{"No", "Yes"}} default button "Yes")
+        if resp is "Yes" then
+            return "yes"
+        else
+            return "no"
+        end if
+    on error
+        return "no"
+    end try
+    '''
+    try:
+        proc = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+        return proc.stdout.strip()
+    except Exception:
+        return "no"
+
+def _mac_show_warning(title, message):
+    escaped_msg = message.replace('"', '\\"')
+    escaped_title = title.replace('"', '\\"')
+    script = f'''
+    try
+        display dialog "{escaped_msg}" with title "{escaped_title}" buttons {{"OK"}} default button "OK" with icon caution
+    on error
+    end try
+    '''
+    try:
+        subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+    except Exception:
+        pass
+
+def _mac_show_info(title, message):
+    escaped_msg = message.replace('"', '\\"')
+    escaped_title = title.replace('"', '\\"')
+    script = f'''
+    try
+        display dialog "{escaped_msg}" with title "{escaped_title}" buttons {{"OK"}} default button "OK"
+    on error
+    end try
+    '''
+    try:
+        subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+    except Exception:
+        pass
+
+def showwarning(title="Warning", message=""):
+    if sys.platform == "darwin":
+        _mac_show_warning(title, message)
+    else:
+        try:
+            from tkinter import messagebox
+            messagebox.showwarning(title=title, message=message)
+        except Exception:
+            print(f"[{title}] {message}")
 
 class SaveData:
     """Empty data class."""
@@ -25,16 +119,18 @@ class TableView(threading.Thread):
     def __init__(self):
         """Initializer for table thread."""
         threading.Thread.__init__(self)
-        self.start()
         self.initialized = False
         self.data = []
+        self.start()
 
     def addRow(self, entry):
         """Add row to table."""
-        while not self.initialized:
-            pass
         entry[1:] = [round(ent, 3) for ent in entry[1:]]
-        self.treev.insert("", "end", text="L1", values=entry)
+        if hasattr(self, 'treev'):
+            try:
+                self.treev.insert("", "end", text="L1", values=entry)
+            except Exception:
+                pass
         self.data.append(entry)
 
     def getDF(self):
@@ -45,41 +141,48 @@ class TableView(threading.Thread):
 
     def killTable(self):
         """Kill table thread."""
-        self.root.quit()
-        self.root.update()
+        if hasattr(self, 'root'):
+            try:
+                self.root.quit()
+                self.root.update()
+            except Exception:
+                pass
 
     def run(self):
         """Run."""
-        self.root = Tk()
-        self.root.protocol("WM_DELETE_WINDOW", lambda: None)
-        self.root.title("Table")
+        try:
+            self.root = Tk()
+            self.root.protocol("WM_DELETE_WINDOW", lambda: None)
+            self.root.title("Table")
 
-        self.treev = ttk.Treeview(self.root, selectmode="browse")
-        self.treev.pack(side="right")
-        self.treev.pack(side="right")
+            self.treev = ttk.Treeview(self.root, selectmode="browse")
+            self.treev.pack(side="right")
+            self.treev.pack(side="right")
 
-        verscrlbar = ttk.Scrollbar(
-            self.root, orient="vertical", command=self.treev.yview
-        )
-        verscrlbar.pack(side="right", fill="x")
+            verscrlbar = ttk.Scrollbar(
+                self.root, orient="vertical", command=self.treev.yview
+            )
+            verscrlbar.pack(side="right", fill="x")
 
-        self.treev.configure(xscrollcommand=verscrlbar.set)
-        self.treev["columns"] = ("1", "2", "3", "4")
-        self.treev["show"] = "headings"
+            self.treev.configure(xscrollcommand=verscrlbar.set)
+            self.treev["columns"] = ("1", "2", "3", "4")
+            self.treev["show"] = "headings"
 
-        self.treev.column("1", width=100, anchor="c")
-        self.treev.column("2", width=100, anchor="se")
-        self.treev.column("3", width=100, anchor="se")
-        self.treev.column("4", width=100, anchor="se")
+            self.treev.column("1", width=100, anchor="c")
+            self.treev.column("2", width=100, anchor="se")
+            self.treev.column("3", width=100, anchor="se")
+            self.treev.column("4", width=100, anchor="se")
 
-        self.treev.heading("1", text="Element")
-        self.treev.heading("2", text="min")
-        self.treev.heading("3", text="max")
-        self.treev.heading("4", text="average")
+            self.treev.heading("1", text="Element")
+            self.treev.heading("2", text="min")
+            self.treev.heading("3", text="max")
+            self.treev.heading("4", text="average")
 
-        self.initialized = True
-
-        self.root.mainloop()
+            self.initialized = True
+            self.root.mainloop()
+        except Exception as e:
+            print(f"[Info] Tkinter Table GUI window skipped in secondary thread ({e}). Data recorded in background.")
+            self.initialized = True
 
 
 class Figure(threading.Thread):
@@ -93,36 +196,44 @@ class Figure(threading.Thread):
 
     def killFigure(self):
         """Kill figure thread."""
-        self.root.quit()
-        self.root.update()
+        if hasattr(self, 'root'):
+            try:
+                self.root.quit()
+                self.root.update()
+            except Exception:
+                pass
 
     def saveFig(self, filename):
         """Save figure."""
-        self.fig.savefig(filename)
+        if hasattr(self, 'fig'):
+            self.fig.savefig(filename)
 
     def run(self):
         """Run."""
-        self.root = Tk()
-        self.root.protocol("WM_DELETE_WINDOW", lambda: None)
-        self.root.title("Plot")
+        try:
+            self.root = Tk()
+            self.root.protocol("WM_DELETE_WINDOW", lambda: None)
+            self.root.title("Plot")
 
-        self.fig = figure.Figure()
-        plot = self.fig.add_subplot(111)
+            self.fig = figure.Figure()
+            plot = self.fig.add_subplot(111)
 
-        for x, y, label in self.plots:
-            plot.plot(x, y, label=label)
-        plot.legend()
+            for x, y, label in self.plots:
+                plot.plot(x, y, label=label)
+            plot.legend()
 
-        canvas = FigureCanvasTkAgg(self.fig, master=self.root)
-        canvas.draw()
-        canvas.get_tk_widget().pack()
+            canvas = FigureCanvasTkAgg(self.fig, master=self.root)
+            canvas.draw()
+            canvas.get_tk_widget().pack()
 
-        toolbar = NavigationToolbar2Tk(canvas, self.root)
-        toolbar.update()
+            toolbar = NavigationToolbar2Tk(canvas, self.root)
+            toolbar.update()
 
-        canvas.get_tk_widget().pack()
+            canvas.get_tk_widget().pack()
 
-        self.root.mainloop()
+            self.root.mainloop()
+        except Exception as e:
+            print(f"[Info] Tkinter Figure GUI window skipped in secondary thread ({e}).")
 
 
 class WindowHandler:
@@ -144,10 +255,12 @@ class WindowHandler:
         """Kill all running threads."""
         if self.mainTable:
             self.mainTable.killTable()
-            self.mainTable.join()
+            if self.mainTable.is_alive():
+                self.mainTable.join(timeout=1.0)
         if self.mainFigure:
             self.mainFigure.killFigure()
-            self.mainFigure.join()
+            if self.mainFigure.is_alive():
+                self.mainFigure.join(timeout=1.0)
         self.killed = True
 
     def addRects(self, rects):
@@ -210,29 +323,50 @@ def saveImage(window):
     imageSurface = window.imsurf
     overlays = window.overlays
     exthandler = window.exthandler
-    Tk().withdraw()
-    file = filedialog.asksaveasfilename(
-        filetypes=[("PNG Image", "*.png"),("TIFF Image", "*.tiff"),("CSV File", "*.csv")]
-    )
 
-    if file:
-        filename = file.split("/")[-1]
+    if sys.platform == "darwin":
+        file = _mac_save_file("Save Thermal Image", "thermal_analysis.png")
+    else:
+        try:
+            from tkinter import Tk, filedialog
+            root = Tk()
+            root.withdraw()
+            file = filedialog.asksaveasfilename(
+                filetypes=[("PNG Image", "*.png"), ("TIFF Image", "*.tiff"), ("CSV File", "*.csv")]
+            )
+            root.destroy()
+        except Exception:
+            file = ""
 
-        if filename.endswith('.tiff'):
-            if (messagebox.askquestion("Before we proceed",f"Are you sure you want to export image as {filename} with Kelvin values and not a false colour mapping?") == "yes"):
-                tiffExport(window, file)
-            else:
-                messagebox.showinfo("Export Cancelled", f"You have cancelled the process of exporting {filename}")
+    if not file:
+        return
 
-        elif filename.endswith('.csv'):
-            if (messagebox.askquestion("Before we proceed",f"Are you sure you want to export image as {filename} with Kelvin values and not a false colour mapping?") == "yes"):
-                csvExport(window, file)
-            else:
-                messagebox.showinfo("Export Cancelled", f"You have cancelled the process of exporting {filename}")
+    filename = file.split("/")[-1]
 
+    if filename.endswith(".tiff"):
+        ask = _mac_ask_question if sys.platform == "darwin" else messagebox.askquestion
+        if ask("Before we proceed", f"Are you sure you want to export image as {filename} with Kelvin values and not a false colour mapping?") == "yes":
+            tiffExport(window, file)
         else:
-            print(file)
-            pngExport(window, file, imageSurface, overlays, exthandler)
+            if sys.platform == "darwin":
+                _mac_show_info("Export Cancelled", f"You have cancelled the process of exporting {filename}")
+            else:
+                messagebox.showinfo("Export Cancelled", f"You have cancelled the process of exporting {filename}")
+
+    elif filename.endswith(".csv"):
+        ask = _mac_ask_question if sys.platform == "darwin" else messagebox.askquestion
+        if ask("Before we proceed", f"Are you sure you want to export image as {filename} with Kelvin values and not a false colour mapping?") == "yes":
+            csvExport(window, file)
+        else:
+            if sys.platform == "darwin":
+                _mac_show_info("Export Cancelled", f"You have cancelled the process of exporting {filename}")
+            else:
+                messagebox.showinfo("Export Cancelled", f"You have cancelled the process of exporting {filename}")
+
+    else:
+        print(file)
+        pngExport(window, file, imageSurface, overlays, exthandler)
+
 
 def pngExport(window, filename, imageSurface, overlays, exthandler):
     """Function to export image as .PNG format
@@ -244,12 +378,8 @@ def pngExport(window, filename, imageSurface, overlays, exthandler):
         overlays ([type]): [description]
         exthandler ([type]): [description]
     """
-    if (
-        messagebox.askquestion(
-            "Save options", "Do you want to save with the annotations?"
-        )
-        == "yes"
-    ):
+    ask = _mac_ask_question if sys.platform == "darwin" else messagebox.askquestion
+    if ask("Save options", "Do you want to save with the annotations?") == "yes":
         imageSurface.blit(overlays, (0, 0))
 
         data = SaveData()
@@ -293,7 +423,8 @@ def pngExport(window, filename, imageSurface, overlays, exthandler):
     imgdata = np.swapaxes(imgdata, 0, 1)
     Image.fromarray(imgdata).save(filename)
     print("Saved successfully")
-        
+
+
 def tiffExport(window, filename):
     """Function to export as .tiff File
 
@@ -304,6 +435,7 @@ def tiffExport(window, filename):
     imgKelvin = Image.fromarray(window.thermalData)
     imgKelvin.save(filename)
     print(f"Sucessfully saved {filename} as tiff file")
+
 
 def csvExport(window, filename):
     """Function to export as .csv File
@@ -318,6 +450,14 @@ def csvExport(window, filename):
 
 def openImage():
     """Open new image."""
-    Tk().withdraw()
-    filename = filedialog.askopenfilename(title="Open Thermal Image")
-    return filename
+    if sys.platform == "darwin":
+        return _mac_open_file("Open Thermal Image")
+    try:
+        from tkinter import Tk, filedialog
+        root = Tk()
+        root.withdraw()
+        filename = filedialog.askopenfilename(title="Open Thermal Image")
+        root.destroy()
+        return filename
+    except Exception:
+        return ""
