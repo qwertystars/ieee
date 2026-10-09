@@ -1,7 +1,8 @@
-// Self-levelling flight controller for the ESP32 quad (4x ESC + 2212 motors, MPU6050).
+// Manual flight controller for the ESP32 quad (4x ESC + 2212 motors, MPU6050 telemetry).
 //
 // The flight loop runs at 250 Hz in its own high-priority task:
-//   MPU6050 -> complementary filter (roll/pitch angles) -> angle P -> rate PID -> mixer -> ESCs.
+//   Phone throttle + manual roll/pitch motor offsets -> mixer -> ESCs.
+// MPU6050 angles are used only for telemetry and tilt cutoffs, never motor corrections.
 // The phone connects to the "esp32-drone" WiFi network and opens http://192.168.4.1/.
 //
 // Safety: arming needs throttle at 0 and the drone roughly level. The motors cut if the phone
@@ -11,11 +12,9 @@
 // Serial commands (115200 baud):
 //   s              disarm immediately
 //   imu            toggle a 10 Hz stream of angles, gyro rates and accel (for checking the IMU orientation)
-//   gains          print the PID gains
-//   gain NAME VAL  change a gain, e.g. "gain rateP 0.0012" (not saved across reboots)
 //   level          redo gyro + level calibration (disarmed, drone still on a level surface)
 //   bench PCT      arm without the phone and hold a base throttle of PCT % (17..50), PROPS OFF;
-//                  self-levelling corrections are live. Stops after BENCH_MAX_MS or on 's'.
+//                  all motors receive equal throttle. Stops after BENCH_MAX_MS or on 's'.
 
 #include <Arduino.h>
 #include <WebServer.h>
@@ -38,8 +37,6 @@ struct Control {
 };
 Control ctl;
 portMUX_TYPE ctlMux = portMUX_INITIALIZER_UNLOCKED;
-
-Gains gains;
 
 // Written by the flight task, read elsewhere for telemetry.
 volatile bool armed = false;
@@ -67,34 +64,7 @@ void motorsOff() {
   for (int m = 0; m < NUM_MOTORS; m++) writeMotor(m, 0);
 }
 
-// ---- Rate PID (D on measurement, so stick moves don't kick) ----
-struct RatePid {
-  float integral = 0, dFiltered = 0, prevMeas = 0;
-  bool first = true;
-
-  void reset() {
-    integral = dFiltered = 0;
-    first = true;
-  }
-
-  float update(float setpoint, float measured, float dt, float kp, float ki, float kd, bool integrate,
-               float outLimit) {
-    const float err = setpoint - measured;
-    if (integrate) integral = constrain(integral + ki * err * dt, -gains.iLimit, gains.iLimit);
-    float d = 0;
-    if (!first) {
-      const float raw = -(measured - prevMeas) / dt;
-      dFiltered += 0.43f * (raw - dFiltered);  // ~30 Hz low-pass at 250 Hz; D amplifies gyro noise
-      d = kd * dFiltered;
-    }
-    first = false;
-    prevMeas = measured;
-    return constrain(kp * err + integral + d, -outLimit, outLimit);
-  }
-};
-
 // ---- Flight task ----
-RatePid pidRoll, pidPitch, pidYaw;
 float roll = 0, pitch = 0;          // degrees; + = right side down / nose up
 float levelRoll = 0, levelPitch = 0; // accelerometer angles when sitting level, subtracted out
 float baseThrottle = 0;
@@ -140,10 +110,7 @@ void disarm(const char *why) {
   motorsOff();
 }
 
-void resetControllers() {
-  pidRoll.reset();
-  pidPitch.reset();
-  pidYaw.reset();
+void resetThrottle() {
   baseThrottle = 0;
 }
 
@@ -196,7 +163,7 @@ void flightStep(float dt) {
     } else if (!linkOk) {
       lastEvent = "arm refused: no link";
     } else {
-      resetControllers();
+      resetThrottle();
       armed = true;
       lastEvent = "armed";
       Serial.println("ARMED");
@@ -213,7 +180,7 @@ void flightStep(float dt) {
 
   if (c.throttle < THROTTLE_DEADBAND) {
     // Armed on the ground: spin at idle, no corrections, nothing winding up.
-    resetControllers();
+    resetThrottle();
     for (int m = 0; m < NUM_MOTORS; m++) writeMotor(m, IDLE_THROTTLE);
     telBase = IDLE_THROTTLE;
     return;
@@ -224,20 +191,13 @@ void flightStep(float dt) {
   baseThrottle = target > baseThrottle ? min(target, baseThrottle + THROTTLE_RISE_PER_S * dt) : target;
   telBase = baseThrottle;
 
-  // Outer loop: angle error -> wanted rotation rate. Pad forward = nose down.
-  const float rollRateSet = gains.angleP * (c.roll * MAX_ANGLE_DEG - roll);
-  const float pitchRateSet = gains.angleP * (-c.pitch * MAX_ANGLE_DEG - pitch);
-
-  // Inner loop: rotation rate error -> motor differences.
-  const bool integrate = baseThrottle >= gains.iThrottle;
-  const float outRoll = pidRoll.update(rollRateSet, s.gyro[0], dt, gains.rateP, gains.rateI, gains.rateD,
-                                       integrate, gains.outLimit);
-  const float outPitch = pidPitch.update(pitchRateSet, s.gyro[1], dt, gains.rateP, gains.rateI, gains.rateD,
-                                         integrate, gains.outLimit);
-  const float outYaw = pidYaw.update(0, s.gyro[2], dt, gains.yawP, gains.yawI, 0, integrate, gains.yawLimit);
+  // Manual motor offsets only: sensor readings never feed the mixer.
+  // Pad forward = nose down; centred pad gives equal throttle on all motors.
+  const float outRoll = c.roll * MANUAL_MIX_LIMIT;
+  const float outPitch = -c.pitch * MANUAL_MIX_LIMIT;
 
   for (int m = 0; m < NUM_MOTORS; m++) {
-    const float out = baseThrottle + MIX[m].roll * outRoll + MIX[m].pitch * outPitch + MIX[m].yaw * outYaw;
+    const float out = baseThrottle + MIX[m].roll * outRoll + MIX[m].pitch * outPitch;
     writeMotor(m, constrain(out, IDLE_THROTTLE, MAX_THROTTLE));
   }
 }
@@ -315,17 +275,6 @@ void handleStop() {
 }
 
 // ---- Serial commands ----
-struct GainEntry {
-  const char *name;
-  float *value;
-};
-GainEntry gainTable[] = {
-    {"angleP", &gains.angleP}, {"rateP", &gains.rateP},       {"rateI", &gains.rateI},
-    {"rateD", &gains.rateD},   {"yawP", &gains.yawP},         {"yawI", &gains.yawI},
-    {"iLimit", &gains.iLimit}, {"iThrottle", &gains.iThrottle}, {"outLimit", &gains.outLimit},
-    {"yawLimit", &gains.yawLimit},
-};
-
 bool streamImu = false;
 
 // ---- Bench mode: arm from serial and hold a throttle, standing in for the phone ----
@@ -340,6 +289,7 @@ void startBench(float pct) {
   benchStick = (pct / 100 - IDLE_THROTTLE) / (MAX_THROTTLE - IDLE_THROTTLE);
   portENTER_CRITICAL(&ctlMux);
   ctl.throttle = 0;  // arming needs zero throttle; benchService raises it once armed
+  ctl.roll = ctl.pitch = 0;  // bench mode always drives equal motor throttle
   ctl.armRequest = true;
   ctl.lastMsgMs = millis();
   portEXIT_CRITICAL(&ctlMux);
@@ -370,10 +320,6 @@ void benchService() {
   portEXIT_CRITICAL(&ctlMux);
 }
 
-void printGains() {
-  for (auto &g : gainTable) Serial.printf("  %-10s %.5f\n", g.name, *g.value);
-}
-
 void handleSerialCommand(String cmd) {
   cmd.trim();
   if (cmd.isEmpty()) return;
@@ -381,7 +327,6 @@ void handleSerialCommand(String cmd) {
     streamImu = !streamImu;
     return;
   }
-  if (cmd == "gains") return printGains();
   if (cmd.startsWith("bench ")) return startBench(cmd.substring(6).toFloat());
   if (cmd == "level") {
     if (armed) return (void)Serial.println("disarm first");
@@ -391,22 +336,7 @@ void handleSerialCommand(String cmd) {
     Serial.println("Recalibrating: keep the drone still and level...");
     return;
   }
-  if (cmd.startsWith("gain ")) {
-    const int sp = cmd.indexOf(' ', 5);
-    const String name = cmd.substring(5, sp);
-    if (sp > 0) {
-      for (auto &g : gainTable) {
-        if (name == g.name) {
-          *g.value = cmd.substring(sp + 1).toFloat();
-          Serial.printf("%s = %.5f\n", g.name, *g.value);
-          return;
-        }
-      }
-    }
-    Serial.println("usage: gain NAME VALUE (see 'gains' for names)");
-    return;
-  }
-  Serial.println("commands: s, imu, gains, gain NAME VALUE, level, bench PCT");
+  Serial.println("commands: s, imu, level, bench PCT");
 }
 
 void pollSerial() {
