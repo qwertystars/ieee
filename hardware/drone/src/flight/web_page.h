@@ -6,9 +6,11 @@
 //
 // A Bluetooth gamepad paired with the phone works too, read through the browser Gamepad API
 // (use Chrome; press any button so the page sees it):
-//   left stick up/down   nudges throttle (it stays put when the stick is released)
-//   right stick          roll / pitch (springs back to centre)
-//   Start                ARM          B / Circle   STOP
+//   right trigger (RT/R2)  climb: throttle rises, harder press = faster; stays when released
+//   left trigger (LT/L2)   descend: throttle falls the same way; stays when released
+//   left stick             move: forward / back / left / right (springs back to centre)
+//   right stick left/right spin (yaw)
+//   Start                  ARM          B / Circle   STOP
 // If the gamepad disconnects while armed, the page sends STOP.
 static const char WEB_PAGE[] PROGMEM = R"HTML(<!doctype html>
 <html><head><meta charset="utf-8">
@@ -45,7 +47,7 @@ static const char WEB_PAGE[] PROGMEM = R"HTML(<!doctype html>
   <div id="pad"><div id="dot"></div></div>
 </div>
 <script>
-let thr = 0, rx = 0, py = 0, busy = false, padHeld = false;
+let thr = 0, rx = 0, py = 0, yw = 0, busy = false, padHeld = false;
 const $ = id => document.getElementById(id);
 
 function drag(el, onMove, onUp) {
@@ -102,10 +104,10 @@ function arm() {
 $('stop').addEventListener('pointerdown', stop);
 $('arm').addEventListener('click', arm);
 
-// ---- Bluetooth gamepad (standard mapping: axes LX LY RX RY, button 1 = B, 9 = Start) ----
-const DEADZONE = 0.12, THR_RATE = 0.5;  // full stick moves throttle 50% per second
-const BTN_STOP = 1, BTN_ARM = 9;
-let gpIndex = null, lastFrame = 0, prevButtons = [];
+// ---- Bluetooth gamepad (standard mapping: axes LX LY RX RY; buttons 1 = B, 6/7 = LT/RT, 9 = Start) ----
+const DEADZONE = 0.12, TRIGGER_DEADZONE = 0.05, THR_RATE = 0.5;  // fully pressed trigger: 50% per second
+const BTN_STOP = 1, BTN_LT = 6, BTN_RT = 7, BTN_ARM = 9;
+let gpIndex = null, lastPoll = performance.now(), prevButtons = [];
 const dz = v => Math.abs(v) < DEADZONE ? 0 : (v - Math.sign(v) * DEADZONE) / (1 - DEADZONE);
 
 addEventListener('gamepadconnected', e => {
@@ -116,22 +118,29 @@ addEventListener('gamepadconnected', e => {
 addEventListener('gamepaddisconnected', e => {
   if (e.gamepad.index !== gpIndex) return;
   gpIndex = null;
-  rx = 0; py = 0; drawPad();
+  rx = 0; py = 0; yw = 0; drawPad();
   $('gp').textContent = 'gamepad: disconnected';
   if (isArmed) stop();
 });
 
-function pollGamepad(now) {
-  const dt = lastFrame ? Math.min((now - lastFrame) / 1000, 0.1) : 0;
-  lastFrame = now;
+// Polled on a fixed timer rather than animation frames, which can stall or slow down.
+function pollGamepad() {
+  const now = performance.now();
+  const dt = Math.min((now - lastPoll) / 1000, 0.1);
+  lastPoll = now;
   const gp = gpIndex !== null && navigator.getGamepads ? navigator.getGamepads()[gpIndex] : null;
   if (gp) {
     const pressed = i => gp.buttons[i] && gp.buttons[i].pressed;
     const edge = i => pressed(i) && !prevButtons[i];
+    // Analog trigger travel 0..1; small resting values count as released.
+    const trigger = i => {
+      const v = gp.buttons[i] ? gp.buttons[i].value : 0;
+      return v < TRIGGER_DEADZONE ? 0 : (v - TRIGGER_DEADZONE) / (1 - TRIGGER_DEADZONE);
+    };
     if (pressed(BTN_STOP)) { if (!prevButtons[BTN_STOP]) stop(); }
     else {
       if (edge(BTN_ARM)) arm();
-      const lift = -dz(gp.axes[1] || 0);  // stick up = negative axis
+      const lift = trigger(BTN_RT) - trigger(BTN_LT);
       if (lift) {
         thr = clamp(thr + lift * THR_RATE * dt, 0, 1);
         if (thr < 0.03 && lift < 0) thr = 0;
@@ -139,21 +148,21 @@ function pollGamepad(now) {
       }
     }
     if (!padHeld) {
-      rx = clamp(dz(gp.axes[2] || 0), -1, 1);
-      py = clamp(-dz(gp.axes[3] || 0), -1, 1);
+      rx = clamp(dz(gp.axes[0] || 0), -1, 1);
+      py = clamp(-dz(gp.axes[1] || 0), -1, 1);  // stick up = negative axis = forward
       drawPad();
     }
+    yw = clamp(dz(gp.axes[2] || 0), -1, 1);
     prevButtons = gp.buttons.map(b => b.pressed);
   }
-  requestAnimationFrame(pollGamepad);
 }
-requestAnimationFrame(pollGamepad);
+setInterval(pollGamepad, 20);
 
 setInterval(async () => {
   if (busy) return;
   busy = true;
   try {
-    show(await get(`/c?t=${thr.toFixed(3)}&r=${rx.toFixed(3)}&p=${py.toFixed(3)}`));
+    show(await get(`/c?t=${thr.toFixed(3)}&r=${rx.toFixed(3)}&p=${py.toFixed(3)}&y=${yw.toFixed(3)}`));
   } catch (e) {
     $('status').textContent = 'NO LINK';
   }
