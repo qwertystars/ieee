@@ -288,4 +288,3 @@ See [`.env.example`](.env.example) for all configuration variables. Key settings
 - `KAFKA_BOOTSTRAP_SERVERS` — event streaming broker
 - `OTEL_EXPORTER` — set to `none` to disable, or OTLP endpoint
 - `VITE_MESH_API_BASE` — BLE mesh localization service for the Rescue page (default `http://<host>:8001`)
-
