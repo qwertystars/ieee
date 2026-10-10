@@ -35,7 +35,7 @@ const IMAGERY_STYLE: StyleSpecification = {
   ],
 }
 
-const DEFAULT_CENTER: [number, number] = [78.38, 17.45]
+const DEFAULT_CENTER: [number, number] = [80.1534, 12.8406]
 const DEFAULT_ZOOM = 13
 // Keeps fitted markers clear of the HUD panels overlaid on the map.
 const FIT_PADDING = { top: 100, bottom: 200, left: 380, right: 440 }

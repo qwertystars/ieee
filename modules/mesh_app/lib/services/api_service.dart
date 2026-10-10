@@ -10,7 +10,7 @@ import 'package:http/http.dart' as http;
 import '../models/survivor_data.dart';
 
 class ApiService {
-  /// Command Center backend URL (local network or when internet is restored)
+  /// Mesh service URL configured when building the phone app.
   static const String _defaultBaseUrl = String.fromEnvironment('MESH_API_BASE');
 
   final String baseUrl;
@@ -68,7 +68,7 @@ class ApiService {
     } catch (e) {
       return SyncResult(
         success: false,
-        message: 'No connection to Command Center. Data saved locally.',
+        message: 'Sync failed: $e. Saved locally.',
       );
     }
   }

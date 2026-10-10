@@ -7,11 +7,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 
 import '../services/mesh_service.dart';
 import '../services/api_service.dart';
 import '../widgets/signal_pulse.dart';
 import 'mesh_table_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -54,6 +56,22 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
             actions: [
+              // Simulate detection button (visible only in rescue mode)
+              if (mesh.mode == MeshMode.rescue)
+                IconButton(
+                  icon: Icon(Icons.bug_report, color: _accent),
+                  onPressed: () {
+                    mesh.simulateDetection();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Simulated detection added')),
+                    );
+                  },
+                ),
+              // Settings button
+              IconButton(
+                icon: Icon(Icons.settings, color: _textDim),
+                onPressed: () => _showSettingsDialog(context),
+              ),
               // Mesh table badge
               Stack(
                 children: [
@@ -364,7 +382,14 @@ class HomeScreen extends StatelessWidget {
 
   Future<void> _syncToCommand(BuildContext context, MeshService mesh) async {
     await mesh.refreshLocation();
-    final api = ApiService();
+    final prefs = await SharedPreferences.getInstance();
+    var baseUrl = prefs.getString('command_center_url') ?? 'http://192.168.1.3:8000';
+    if (baseUrl == 'http://10.0.2.2:8000' || baseUrl == 'http://127.0.0.1:8000') {
+      baseUrl = 'http://192.168.1.3:8000';
+      await prefs.setString('command_center_url', baseUrl);
+    }
+    
+    final api = ApiService(baseUrl: baseUrl);
     final result = await api.syncMeshTable(
       meshTable: mesh.meshTable,
       deviceId: mesh.deviceId,
@@ -385,6 +410,54 @@ class HomeScreen extends StatelessWidget {
 
     // Persist locally regardless
     await mesh.persistMeshTable();
+  }
+
+  Future<void> _showSettingsDialog(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    String currentUrl = prefs.getString('command_center_url') ?? 'http://192.168.1.3:8000';
+    if (currentUrl == 'http://10.0.2.2:8000' || currentUrl == 'http://127.0.0.1:8000') {
+        currentUrl = 'http://192.168.1.3:8000';
+    }
+    final controller = TextEditingController(text: currentUrl);
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: _card,
+          title: Text('Command Center Settings', style: TextStyle(color: _textPrimary)),
+          content: TextField(
+            controller: controller,
+            style: TextStyle(color: _textPrimary),
+            decoration: InputDecoration(
+              labelText: 'Command Center URL',
+              labelStyle: TextStyle(color: _textDim),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: _textDim),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: _accent),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('CANCEL', style: TextStyle(color: _textDim)),
+            ),
+            TextButton(
+              onPressed: () async {
+                await prefs.setString('command_center_url', controller.text);
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: Text('SAVE', style: TextStyle(color: _accent)),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 
