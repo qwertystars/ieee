@@ -1,0 +1,13 @@
+
+> resqnet-sage-frontend@0.1.0 test:dashboard-live
+> node scripts/check-dashboard-live.cjs
+
+Loaded: Situation map
+Loaded: Survivor map
+Loaded: Planning & dispatch
+Loaded: Route sandbox
+Loaded: Digital twin
+Loaded: Field operations
+Loaded: AI hypotheses
+Loaded: Audit trail
+PASS: all 8 workspaces, mobile layouts, real simulator controls/telemetry/device details, audit verification, mesh WebSocket and thermal API.

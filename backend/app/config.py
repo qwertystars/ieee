@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Sequence
-from typing import Final, Self
+from typing import Final, Literal, Self
 from urllib.parse import urlparse
 
 from pydantic import model_validator
@@ -92,6 +92,7 @@ class Settings(BaseSettings):
 
     # Environment
     ENVIRONMENT: str = "development"
+    SIMULATOR_TRANSPORT: Literal["kafka", "database"] = "kafka"
 
     def production_violations(self) -> tuple[str, ...]:
         """Return names of unsafe controls without exposing configured values."""
@@ -99,6 +100,8 @@ class Settings(BaseSettings):
             return ()
 
         violations: list[str] = []
+        if self.SIMULATOR_TRANSPORT != "kafka":
+            violations.append("SIMULATOR_TRANSPORT")
         secret = self.JWT_SECRET.lower()
         development_secret = secret in _DEVELOPMENT_SECRET_MARKERS or any(
             marker in secret

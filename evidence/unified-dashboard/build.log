@@ -1,0 +1,32 @@
+
+> resqnet-sage-frontend@0.1.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 987 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                0.86 kB │ gzip:   0.41 kB
+dist/assets/index-BdSpDurs.css                28.21 kB │ gzip:   5.66 kB
+dist/assets/maplibre-gl-CuCRB34y.css          65.48 kB │ gzip:   9.22 kB
+dist/assets/useClock-C7frrcK1.js               0.22 kB │ gzip:   0.18 kB
+dist/assets/OfflineState-DNYRmWpU.js           0.62 kB │ gzip:   0.43 kB
+dist/assets/NotFoundPage-C3RZ3J4r.js           0.73 kB │ gzip:   0.43 kB
+dist/assets/StaleState-DchIqY83.js             2.59 kB │ gzip:   1.04 kB
+dist/assets/useMeshHealth-CG2yZ-Ud.js          2.72 kB │ gzip:   1.26 kB
+dist/assets/RouteSandbox-BcQD6ylD.js           3.18 kB │ gzip:   1.59 kB
+dist/assets/HypothesesPage-BnWW1uM1.js         4.98 kB │ gzip:   1.69 kB
+dist/assets/DeviceDetailPage-DBXz6_Bo.js       6.35 kB │ gzip:   2.24 kB
+dist/assets/AuditPage-DO7UqNCf.js              8.72 kB │ gzip:   2.47 kB
+dist/assets/RescuePage-Cp_7tjQl.js             9.10 kB │ gzip:   3.41 kB
+dist/assets/FieldPage-Bmg7e3vD.js             10.96 kB │ gzip:   3.49 kB
+dist/assets/DashboardPage-CHS4C--z.js         12.09 kB │ gzip:   4.35 kB
+dist/assets/SimulationPage-DPbO1hgE.js        12.22 kB │ gzip:   3.72 kB
+dist/assets/PlanningPage-C_ew7cLH.js          12.47 kB │ gzip:   3.93 kB
+dist/assets/index-Q2GheJO3.js                 25.49 kB │ gzip:   8.52 kB
+dist/assets/vendor-query-B0U5l-ll.js          42.21 kB │ gzip:  12.77 kB
+dist/assets/IncidentDashboard-CC2HIHL6.js     60.82 kB │ gzip:  20.18 kB
+dist/assets/vendor-react-DNb7tI9p.js         164.18 kB │ gzip:  53.57 kB
+dist/assets/vendor-map-CEtQdWRg.js         1,549.12 kB │ gzip: 431.60 kB
+✓ built in 5.47s

@@ -1,0 +1,3332 @@
+{
+  "status": "PASS",
+  "source_commit": "c36dccb",
+  "preserved_field_files": 656,
+  "missing": [],
+  "files": [
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/.github/workflows/qualitycheck.yml",
+      "target": "modules/thermal/.github/workflows/qualitycheck.yml",
+      "sha256": "8606f1813c7af006943459d1bfc82d5218578e30d4fa67b0fb7a68033861b444"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/.gitignore",
+      "target": "modules/thermal/.gitignore",
+      "sha256": "32dae3052f331ee34d628ef535709b301259a45df7c7522c4d35dcf49873f00b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/LICENSE",
+      "target": "modules/thermal/LICENSE",
+      "sha256": "9e782078e4b4f8195b29d29d062e664ae2ce06626b4fac0905839edb79ffdb89"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/README.md",
+      "target": "modules/thermal/README.md",
+      "sha256": "f8218b4fd6ff2d2a37fabe82d4e01b89198febe6e1bc74085d6277015eebfd4a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/TEST.mp4",
+      "target": "modules/thermal/TEST.mp4",
+      "sha256": "87ff46007b62876aa60b5c49f4dd8a262b10d67a41795f730487793e45f0adc2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/ai_segmented_heatmap.py",
+      "target": "modules/thermal/ai_segmented_heatmap.py",
+      "sha256": "8a042cb5c5e0008b765d31e2f689564a3b0780e7d7c7cacf62f2eccb47ae45bb"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/assets/DTlogo.png",
+      "target": "modules/thermal/assets/DTlogo.png",
+      "sha256": "22e2357893a308e8224e044efb4665426c725c6dd7b875bc6881d7c3c28d94ac"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/assets/cursors/crosshair.png",
+      "target": "modules/thermal/assets/cursors/crosshair.png",
+      "sha256": "fcea1f5135f617dab0dbe4e0708815698555f137d6ebb89986886a8be46faa07"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/assets/cursors/pointer.png",
+      "target": "modules/thermal/assets/cursors/pointer.png",
+      "sha256": "cfbb2f871b021bcf49b287b27d4da1f1ba014cfa641f449c37cd32a52b666789"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/assets/icon_gray.png",
+      "target": "modules/thermal/assets/icon_gray.png",
+      "sha256": "79f91509eb9bec123d2bd190c98b51f7c0a5c8e93bcf027031a772598bbe3489"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/assets/images/cmap.gif",
+      "target": "modules/thermal/assets/images/cmap.gif",
+      "sha256": "5418d11f01b79cf3052d8231e741edea7df929b271e43671264b2519e8816daa"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/assets/images/emm.png",
+      "target": "modules/thermal/assets/images/emm.png",
+      "sha256": "22e3f969e74f94938702eb26a8d001e85f630f5c05f4d3d7ae70abb26c5c934c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/assets/images/graph.png",
+      "target": "modules/thermal/assets/images/graph.png",
+      "sha256": "4915bbffb47452ad4a82ab94a5712381c02c41f0cd251a9776c68d3eff507971"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/assets/images/main.gif",
+      "target": "modules/thermal/assets/images/main.gif",
+      "sha256": "4adb5e25d783835e6baa2d12879bf5f09361c2ebe63de8e544ab071abb6b26d7"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/assets/images/markings.png",
+      "target": "modules/thermal/assets/images/markings.png",
+      "sha256": "188a0523d65f4203662be331a23ba849cb2274ebf854663d6a09eec0c710c7a8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/assets/images/roi.png",
+      "target": "modules/thermal/assets/images/roi.png",
+      "sha256": "b891f6f192ff6c50f0ca2e88f894616a72f378c0742fbc334bdc5bd6d1d5feff"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/assets/images/saveProcess.gif",
+      "target": "modules/thermal/assets/images/saveProcess.gif",
+      "sha256": "0b855e2c7c431c115364d9d493949ce0597be217b3ffda5ed02b80ee6d0582df"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/assets/images/table.png",
+      "target": "modules/thermal/assets/images/table.png",
+      "sha256": "29d576be26cee1e7376a4adeddea29300ea8c1124a0f3d6fe35df6a5000ce48f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/depth_hand_heatmap.py",
+      "target": "modules/thermal/depth_hand_heatmap.py",
+      "sha256": "4852e6621e8418f46aff9628ab7952735ee3d94736755dc0b9c284ac128f0692"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/dji_executables/linux/release_x64/dji_irp",
+      "target": "modules/thermal/dji_executables/linux/release_x64/dji_irp",
+      "sha256": "8b93642b3cf9ba1aa43de0a071bcbe06f7a49a6bc7a959a944ed7d2780e9460d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/dji_executables/linux/release_x64/libdirp.so",
+      "target": "modules/thermal/dji_executables/linux/release_x64/libdirp.so",
+      "sha256": "fd647409cb3c9f25e9216e78432b5c873d3348637de1e5ca63c3c6037f7a911f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/dji_executables/linux/release_x86/dji_irp",
+      "target": "modules/thermal/dji_executables/linux/release_x86/dji_irp",
+      "sha256": "5a2156b23355de193537b56fd086c731c26eae916aaf6a3ccf62781fdd250ba0"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/dji_executables/linux/release_x86/libdirp.so",
+      "target": "modules/thermal/dji_executables/linux/release_x86/libdirp.so",
+      "sha256": "8542242bf59ea0bbcaad9a25f3dff0a6dd7fa35c0ee201b80d4f0fe5e404428c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/dji_executables/windows/release_x64/dji_irp.exe",
+      "target": "modules/thermal/dji_executables/windows/release_x64/dji_irp.exe",
+      "sha256": "6d69f89f7d7e1b60ebdf0e66d081f635ae4f17b69db151787e5351c2593ffa40"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/dji_executables/windows/release_x64/libdirp.dll",
+      "target": "modules/thermal/dji_executables/windows/release_x64/libdirp.dll",
+      "sha256": "d56452e5d8c920a8236e47f375c63fc8f8b665cc3b5c0545b3094e54127905d8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/dji_executables/windows/release_x64/libdirp.lib",
+      "target": "modules/thermal/dji_executables/windows/release_x64/libdirp.lib",
+      "sha256": "78e3c35fff788a8627feb7678ce6165f9b8029397c866d3c3d8a57738688b9be"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/dji_executables/windows/release_x86/dji_irp.exe",
+      "target": "modules/thermal/dji_executables/windows/release_x86/dji_irp.exe",
+      "sha256": "8f7416f567af344f43dc7fc863ec6f35c11ab54a2ae582d9f9497e5318f3e7ab"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/dji_executables/windows/release_x86/libdirp.dll",
+      "target": "modules/thermal/dji_executables/windows/release_x86/libdirp.dll",
+      "sha256": "7e05d9a4d0449859b1eb8344a2347a0becacfc882dfeb28a801b42d06a3559bf"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/dji_executables/windows/release_x86/libdirp.lib",
+      "target": "modules/thermal/dji_executables/windows/release_x86/libdirp.lib",
+      "sha256": "3c26bfecc4b7f8562d35a2e4cfe2195075f7e5f7dfc3114bee6e961f44514268"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool-13.58_32/README.txt",
+      "target": "modules/thermal/exiftool-13.58_32/README.txt",
+      "sha256": "5941c73c0a60b6bfaeffbc1f093686bb98d3fcbd0998048b5d1f9f6cbb6f6819"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool.exe",
+      "target": "modules/thermal/exiftool.exe",
+      "sha256": "84a84a8092064ee785e472d78c84356c898c425aea6f9d735c45cd436d524c65"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/LICENSE",
+      "target": "modules/thermal/exiftool_files/LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/Licenses_Strawberry_Perl.zip",
+      "target": "modules/thermal/exiftool_files/Licenses_Strawberry_Perl.zip",
+      "sha256": "8bc2499dd54399d8bbca3cc08d8927a3fbdaa55cf75230eab8f1ba504902d1f8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/exiftool.pl",
+      "target": "modules/thermal/exiftool_files/exiftool.pl",
+      "sha256": "3112752ca5329aa80c4aea1325ab7ff14e7223dc328b855559ddc1e8b2ca013d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Archive/Zip.pm",
+      "target": "modules/thermal/exiftool_files/lib/Archive/Zip.pm",
+      "sha256": "2025ab80c717e8b4cbdc393ee36aaf3c18edf53e4105f6626ef08c8e563a3db9"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Archive/Zip/Archive.pm",
+      "target": "modules/thermal/exiftool_files/lib/Archive/Zip/Archive.pm",
+      "sha256": "77b1f447970ea0aed5152a20309e3c8c30d8fe50ad4c5a1148d44bce94d6eb27"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Archive/Zip/DirectoryMember.pm",
+      "target": "modules/thermal/exiftool_files/lib/Archive/Zip/DirectoryMember.pm",
+      "sha256": "f459d4f366519ec6542aaaeeefba6d269f02296e9ad3f55d489b6f68650d06c7"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Archive/Zip/FileMember.pm",
+      "target": "modules/thermal/exiftool_files/lib/Archive/Zip/FileMember.pm",
+      "sha256": "33e67636caa38c1dc32e6b6d1828027f759a620ea105d867419ac1c848c098de"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Archive/Zip/Member.pm",
+      "target": "modules/thermal/exiftool_files/lib/Archive/Zip/Member.pm",
+      "sha256": "9f903935348393eeaf47be3e95d5a039943a4cdba0ef8676de6667f6d1276e7a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Archive/Zip/NewFileMember.pm",
+      "target": "modules/thermal/exiftool_files/lib/Archive/Zip/NewFileMember.pm",
+      "sha256": "ddb18a6f26e62072f466fedd894db02e2ad5efbe65f176e7ed0b277ab8b54f2b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Archive/Zip/StringMember.pm",
+      "target": "modules/thermal/exiftool_files/lib/Archive/Zip/StringMember.pm",
+      "sha256": "61da4281d833a1620b88ddc34a21ecf4a4e36892c6c649613abd0dfad031a982"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Archive/Zip/ZipFileMember.pm",
+      "target": "modules/thermal/exiftool_files/lib/Archive/Zip/ZipFileMember.pm",
+      "sha256": "3c030c75d318925265aa04720d947f80701bdd2dd5b07122d702d05c9fd6eaf9"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/AutoLoader.pm",
+      "target": "modules/thermal/exiftool_files/lib/AutoLoader.pm",
+      "sha256": "9a3bd486186b8a4a910b88bd8a503ee4f077b3c36fdc8e450fda74f899bacbc8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/B.pm",
+      "target": "modules/thermal/exiftool_files/lib/B.pm",
+      "sha256": "d9d2008a1e0bb35a353c8740a745e555d86b8e5c1d01bc9f6c4d2b9d05c1e52a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/B/Deparse.pm",
+      "target": "modules/thermal/exiftool_files/lib/B/Deparse.pm",
+      "sha256": "099ab82c3cbec8d2c60e755c4bb72b75482c7c64ba13918111f86ceaab08c21f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Benchmark.pm",
+      "target": "modules/thermal/exiftool_files/lib/Benchmark.pm",
+      "sha256": "4d0a4cb8fe54efa4f5e4d842e73ed6fe7a31e5a0d5d0f995c720144e60941b9a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/CPAN/Config.pm",
+      "target": "modules/thermal/exiftool_files/lib/CPAN/Config.pm",
+      "sha256": "e8899ca1418c990dca0d1d6856c870eace143b21fb4a2ba94f1344433606dc3e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Carp.pm",
+      "target": "modules/thermal/exiftool_files/lib/Carp.pm",
+      "sha256": "89ce58db6934387bcbab17a4972b75c0d0153335291cd8a762f8341af0bef5ae"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Class/Struct.pm",
+      "target": "modules/thermal/exiftool_files/lib/Class/Struct.pm",
+      "sha256": "1a7d8e92492d3fb7efbe4eadcb275691bdee70d74ed8c89b3b49b9c710a1ed12"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Compress/Raw/Bzip2.pm",
+      "target": "modules/thermal/exiftool_files/lib/Compress/Raw/Bzip2.pm",
+      "sha256": "fe96044cd77d60b2400ba5112e11384ab5f80a47304340219d1c3578db4fba02"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Compress/Raw/Lzma.pm",
+      "target": "modules/thermal/exiftool_files/lib/Compress/Raw/Lzma.pm",
+      "sha256": "d6596e6cd406ab0338fe8f695da560086db1898f482e21f293c1bb68bc7ea5ee"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Compress/Raw/Zlib.pm",
+      "target": "modules/thermal/exiftool_files/lib/Compress/Raw/Zlib.pm",
+      "sha256": "90d1885cd4f0e91017e1392f0b164e88c4c254c89168bfcec3debf1c7380366e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Compress/Zlib.pm",
+      "target": "modules/thermal/exiftool_files/lib/Compress/Zlib.pm",
+      "sha256": "423cef2b8e47b60426c51c6d2e49ab2762f62725cacded7eb39f8dc5395ecd5e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Config.pm",
+      "target": "modules/thermal/exiftool_files/lib/Config.pm",
+      "sha256": "5fbb285f2aaae49592de343295dc5a4b4f576c2f74c5fa4f794ada87a937f3f0"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Config_git.pl",
+      "target": "modules/thermal/exiftool_files/lib/Config_git.pl",
+      "sha256": "09c5e2ee35ee18d9043d95273f1cd37bc82e80567fd1372a1eb134c809c39504"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Config_heavy.pl",
+      "target": "modules/thermal/exiftool_files/lib/Config_heavy.pl",
+      "sha256": "6b05b8847985e8a79779a591dcf2ef200d4106fe810f33a737fa0d60f3a0a147"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/CryptX.pm",
+      "target": "modules/thermal/exiftool_files/lib/CryptX.pm",
+      "sha256": "15364dbbf62acddf42672034994b1035c830244b95bb60dfc9dd3d627aaf508c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Cwd.pm",
+      "target": "modules/thermal/exiftool_files/lib/Cwd.pm",
+      "sha256": "692c30595c2e11e9276d816133972a08a2b4cf50a772b6f5b8f646147aeeff00"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Data/Dumper.pm",
+      "target": "modules/thermal/exiftool_files/lib/Data/Dumper.pm",
+      "sha256": "fa21074814598d34519ee83d4bbd66bca64b9b7291ff4d36a7453122bc21333f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Digest/MD5.pm",
+      "target": "modules/thermal/exiftool_files/lib/Digest/MD5.pm",
+      "sha256": "368b6f3003ef61705e7b7d462db1fec5ab7d2c4e30f39937819a53a40af0caad"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Digest/Perl/MD5.pm",
+      "target": "modules/thermal/exiftool_files/lib/Digest/Perl/MD5.pm",
+      "sha256": "2332e3500d52bca8536d5b80f7b1862f66d84bbd6f4d107a6c61db7ce2c64b1d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Digest/SHA.pm",
+      "target": "modules/thermal/exiftool_files/lib/Digest/SHA.pm",
+      "sha256": "15efed6020da9028a7a5b2d41d7e6d8e6b1719aeae365bc592ffb4025f76d33d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Digest/base.pm",
+      "target": "modules/thermal/exiftool_files/lib/Digest/base.pm",
+      "sha256": "06367faa5fb46a5794d3d7603d52075ab1533ad848184a5309a1cfac1058281a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/DynaLoader.pm",
+      "target": "modules/thermal/exiftool_files/lib/DynaLoader.pm",
+      "sha256": "7eb4a27603c1dc3b0ab458d360fbe3d715cc10e4e791795c6be00cce4fbf88fe"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Encode.pm",
+      "target": "modules/thermal/exiftool_files/lib/Encode.pm",
+      "sha256": "1a4417338fb360ea847148571ee90e7eb7b115e431d3596bd1b7109dffae46b1"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Encode/Alias.pm",
+      "target": "modules/thermal/exiftool_files/lib/Encode/Alias.pm",
+      "sha256": "9ec57c436578d4c67b269c53dcb70db64bf845b7ba294da2b8fb998bc00a45ea"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Encode/Config.pm",
+      "target": "modules/thermal/exiftool_files/lib/Encode/Config.pm",
+      "sha256": "a15072cf84ac4a431b91b1a893a7c8d4c4dd48adefa077cd3a9b271cf0aba3bf"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Encode/Encoding.pm",
+      "target": "modules/thermal/exiftool_files/lib/Encode/Encoding.pm",
+      "sha256": "1daaf4400c4462c24d785b7eb91fbebc6eb868192aad410df48019fe7af6e39d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Encode/MIME/Name.pm",
+      "target": "modules/thermal/exiftool_files/lib/Encode/MIME/Name.pm",
+      "sha256": "1cabed37ee26cfd763999649f9ac9a5f1e5a81cbc5125b8d85ff19d60b72f906"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Errno.pm",
+      "target": "modules/thermal/exiftool_files/lib/Errno.pm",
+      "sha256": "04d597f01a1ffb4a020d51717836e7cd9492bf70f8fd22cf2c86eed563b59537"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Exporter.pm",
+      "target": "modules/thermal/exiftool_files/lib/Exporter.pm",
+      "sha256": "f089e9898900df4d0f4901d8c1a2e5ae6fed990ecdf724f7ea5654791ef891f3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Exporter/Heavy.pm",
+      "target": "modules/thermal/exiftool_files/lib/Exporter/Heavy.pm",
+      "sha256": "3f85172a45788d079fd08451fb47f71bf0648c94a7eebc198661d83d1f9b59b8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/ExtUtils/Command.pm",
+      "target": "modules/thermal/exiftool_files/lib/ExtUtils/Command.pm",
+      "sha256": "414f1dd3c493783b94112a26d9ddd0cdc62702c5d96eefaf1dc00c988e35c290"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/ExtUtils/Command/MM.pm",
+      "target": "modules/thermal/exiftool_files/lib/ExtUtils/Command/MM.pm",
+      "sha256": "bbf2a19234dd24193315abedcde99f303f0ae161c5ac703dc050f7976d9b23fc"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Fcntl.pm",
+      "target": "modules/thermal/exiftool_files/lib/Fcntl.pm",
+      "sha256": "02cce578326ffb0393234fd16f4d4d2ce62deec827a6e62454df27e5a2d3d22a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/Basename.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/Basename.pm",
+      "sha256": "43b664feca2c9d14cfc90d3527fc0bf6931c75000cf941d1f8c914e83dfb21ba"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/Copy.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/Copy.pm",
+      "sha256": "ce385b06148312ae21687857667c828367f5291580e41793826655c35564cb95"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/Find.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/Find.pm",
+      "sha256": "ab0f497bb24790ec6e667831ffc8bde9ba1ef4f01ffd16338390fe34929b69d2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/Glob.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/Glob.pm",
+      "sha256": "ff854e2cccfcd78e6c22278c843ea61fda1d0164704b1aa8941fe05ff9dbbfe8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/GlobMapper.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/GlobMapper.pm",
+      "sha256": "1fc0b84c8fa4fc5b3cad7ae0a638a8fd3736efd5416c31afcc8ae58a03d525b3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/HomeDir.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/HomeDir.pm",
+      "sha256": "57acc5cd6b572e8b29587f22e4fbfc67e067659af1ce72866cf649d4a475d900"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/HomeDir/Darwin.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/HomeDir/Darwin.pm",
+      "sha256": "2a806b212aaac4801b41be570e9fe1db6b4a7e24f432652629ee5f955092ef81"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/HomeDir/Darwin/Carbon.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/HomeDir/Darwin/Carbon.pm",
+      "sha256": "d8b11e9c77373b6edc5db43e9fd8543a03db5140a408a88217f89e86346c31a4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/HomeDir/Darwin/Cocoa.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/HomeDir/Darwin/Cocoa.pm",
+      "sha256": "0b702a4fc751f597baf5c95fe1cf2e49cd2c72208eafba179e2968a8c26e7736"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/HomeDir/Driver.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/HomeDir/Driver.pm",
+      "sha256": "b0f4bade612069a5216d9407e58408800ad425d5502841eeed4784a51069bdfe"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/HomeDir/FreeDesktop.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/HomeDir/FreeDesktop.pm",
+      "sha256": "74b9a8e3b8009cb9d83e521fb1a93b80bc8d35e98a90e3a577e8ab8bc730876b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/HomeDir/MacOS9.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/HomeDir/MacOS9.pm",
+      "sha256": "514ca682c4f7ab99d156439612b2b9824fd25db516f87e74c0fbbc1d22a0c56b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/HomeDir/Test.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/HomeDir/Test.pm",
+      "sha256": "aca21f3c4298dabacf99001e06d6efac42213644f9903bab8dd2de4f36a31931"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/HomeDir/Unix.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/HomeDir/Unix.pm",
+      "sha256": "9c3fb63137a98d773ae309af367b0541eb22d735e6acefb2bf3527b4f7c46113"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/HomeDir/Windows.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/HomeDir/Windows.pm",
+      "sha256": "6498b3004471c3fb3562a495b307408fc89e1714c03ca8597eef6e990e8f12c3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/Path.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/Path.pm",
+      "sha256": "a1aa35a2f08a57e1b2684733c32e435cadbcac7be6652b0a5a528a6a122211aa"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/RandomAccess.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/RandomAccess.pm",
+      "sha256": "f3756e1ce25f20cabd776c4b8f05d79ccba04e664ec79de55a66fbe5e6ae8de6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/RandomAccess.pod",
+      "target": "modules/thermal/exiftool_files/lib/File/RandomAccess.pod",
+      "sha256": "77ff6d1afe4a8d4c9789379a47262eb0668c0c1a3f07bda224bdfc6658bb57a6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/Spec.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/Spec.pm",
+      "sha256": "b5d318dd22fee9c82313bb5ed5e183c1ee07422bc4839cea6726c4e083765b90"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/Spec/Unix.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/Spec/Unix.pm",
+      "sha256": "a8450ef045de09ea86053f6940d100655109493ce1eb55eeccceb760f6d5ab9a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/Spec/Win32.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/Spec/Win32.pm",
+      "sha256": "d9185351ff4e0d1259c4573db77ad46f5d2fe3be094af5236fd16f9975421ff4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/Temp.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/Temp.pm",
+      "sha256": "6d8149ddd738ccf19b694f5d8efb6ba5d85a943b6ee4de7a96c1991f3ac089c1"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/Which.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/Which.pm",
+      "sha256": "e979fe0607368e1981d39a34134d55d98a705a0c044d5d8fccaa7fbae7e4373b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/File/stat.pm",
+      "target": "modules/thermal/exiftool_files/lib/File/stat.pm",
+      "sha256": "f948a9536c09e2bed3472c23b940cdec1907c9e695d041bc53320e1144562c8e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/FileHandle.pm",
+      "target": "modules/thermal/exiftool_files/lib/FileHandle.pm",
+      "sha256": "7a3643abdef1bba6bd7f41d47dec02402b5a0136b84f7c782de93ad9fc1fc063"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO.pm",
+      "sha256": "fcd37074a677be88768f400f04d6d66a7e9797d48cbf78a26a472df5896d5ae3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Compress/Adapter/Bzip2.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Compress/Adapter/Bzip2.pm",
+      "sha256": "3ec38a0b2db5bc9d9e5ba9b227d08b716fa3465b9669bcec793ae269062cba4c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Compress/Adapter/Deflate.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Compress/Adapter/Deflate.pm",
+      "sha256": "99dfb2bd6e4ff9705d1570bed1c37776a3ede90f085b33ca37e9eecbd433fd55"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Compress/Base.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Compress/Base.pm",
+      "sha256": "729ebaa5527cca3ee9a234dce2aef0c7e2991bea83ed8d297ca65d75ad8b1b26"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Compress/Base/Common.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Compress/Base/Common.pm",
+      "sha256": "bd2b124b1d8f71be1b295421eee7d40b70dde9e7bf32ad2b5887b75956d37d24"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Compress/Brotli.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Compress/Brotli.pm",
+      "sha256": "17e532d793cba0158af32dd3e1be132db42e67a79a910c2f82607dfc570548d7"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Compress/Bzip2.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Compress/Bzip2.pm",
+      "sha256": "8bf20117fa4079ab1baa954a720ae10f8e081acedc6e114af0cccc6bfbcceaf5"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Compress/Gzip.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Compress/Gzip.pm",
+      "sha256": "14e2a1bb28068bec7c99cbe79c447b192b6b0b2d3b5bf3638805ad796adfab08"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Compress/Gzip/Constants.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Compress/Gzip/Constants.pm",
+      "sha256": "6cb5febcf22a0d6ababd9db5bf562d605935c901b58e0f79ea8d7819819c1f99"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Compress/RawDeflate.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Compress/RawDeflate.pm",
+      "sha256": "ef0d517f54ebae860e741438b0c2d422639100a5cf7c63ec6d379ec7936adf95"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Compress/Zlib/Extra.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Compress/Zlib/Extra.pm",
+      "sha256": "67587e1cef0793aa27b29c35d8b061a71279d8f4e366fecc8f943ad80a464cf3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Dir.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Dir.pm",
+      "sha256": "2b0617bc261954c37f54133afa694ba47063937114f20d83e4fec9835c64490b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/File.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/File.pm",
+      "sha256": "997417bcda6ba4fb23ec8038c3d844bf2417c1681c354e90b09242d4ddd2a8aa"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Handle.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Handle.pm",
+      "sha256": "ba0cc59021f01c16c15225bea01603270b8b7dc318ac4c13751e499f2ab8a982"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Pipe.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Pipe.pm",
+      "sha256": "30c2a6cdaba7b560ee3d2589187c1908b8498f8a69c6067072639d179a8cc511"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Seekable.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Seekable.pm",
+      "sha256": "27d7071cd0daaef64ea3b7890719dec0301a6fe8de2bca2ad3bd247797b31230"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Select.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Select.pm",
+      "sha256": "be68d9d9a1694c26bb3f0e64a11fd1123f304afdb639b499e3fbf9e5b8986078"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Socket.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Socket.pm",
+      "sha256": "d8a2953fc9fadaf58d6c9c4e3288c6bceea2a96712c10c178b6815ee91ef6083"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Socket/INET.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Socket/INET.pm",
+      "sha256": "1a5c9fcc761b518aaf58b01edb337803e2062bece2342e15819cad5dc6e63966"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Socket/UNIX.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Socket/UNIX.pm",
+      "sha256": "7b6dc231293f108e86cc58a1a18c2addded3a34284be645a6a252b8e5e3b3406"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/String.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/String.pm",
+      "sha256": "1ab64bb458aff8fa644ef8b89ffdf28b7e76f647ecc130032ee25df4b95ca993"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Uncompress/Adapter/Inflate.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Uncompress/Adapter/Inflate.pm",
+      "sha256": "f2820ebcde81b35d34aa96e060ec72ce87cf1c24bfea83a2d7204c93f1e5322e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Uncompress/Base.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Uncompress/Base.pm",
+      "sha256": "9f229d9467a12165ac6a0962ce2aa09969b0b9f43b809f6caf0a563a4338ebfd"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Uncompress/Brotli.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Uncompress/Brotli.pm",
+      "sha256": "e5236b28d5dee30e99fee9d4cdd4379ed34c91872ca388aef7b33704abc8c24a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Uncompress/Gunzip.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Uncompress/Gunzip.pm",
+      "sha256": "cab56049a7e88a4919189a82089f38e341892a3fc1ef09be11dc98e8884211b8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/IO/Uncompress/RawInflate.pm",
+      "target": "modules/thermal/exiftool_files/lib/IO/Uncompress/RawInflate.pm",
+      "sha256": "bc37f9ccc51077a2c048d32f64631896bcc7cec6931c4190f39c647ecddc9775"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool.pm",
+      "sha256": "778923662287a65d531c38abafe05f760f82ba9429cbb8255494dbb45df36fa8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool.pod",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool.pod",
+      "sha256": "b270d5af165ae91d3e807e4e4a3290b06dcc8526eaf06c045be526085d6d5a96"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/7Z.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/7Z.pm",
+      "sha256": "241e0bae7f6f4122d1c4c5b5c47a8b698957834d50815a88308a9b0807bcf9c2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/AAC.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/AAC.pm",
+      "sha256": "60f57e2183007936b709de6db1fbf7b77e0364988a3998b420299ca39a497150"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/AES.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/AES.pm",
+      "sha256": "c97dc2d7fccd8ae4049acb9248ad24ca9255687767bbee561a6bff4903dc3aa0"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/AFCP.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/AFCP.pm",
+      "sha256": "382ebbcb9d0de58c73e651e6c96c06fb49b1025f49a7725102f4674eb6803061"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/AIFF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/AIFF.pm",
+      "sha256": "45f52c43e4a6c4dc353604ad11091bf401e5d03b21ab6c55c42274be441bc7ab"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/APE.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/APE.pm",
+      "sha256": "df6e5f04e5ec3e0b48384b29aec3ca69816be9681e8480824327b28abecdb417"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/APP12.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/APP12.pm",
+      "sha256": "8cf439b5db9d494b7f68f69b8d5ae98048cc681f462c96c27faa3952904318e3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/ASF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/ASF.pm",
+      "sha256": "7a1591338c13a8e03c40dfc78064711c5ef53ff152e3fa0ff11d462d5e2bbf1c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Apple.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Apple.pm",
+      "sha256": "c4fc860e3216907e3fb2a063fcd64093410a70d18ecb1d30beeeccbfab15b0b7"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Audible.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Audible.pm",
+      "sha256": "c1a45afc5e02e8af8487099e8b98405b9bb9b152b297a85ba37eb4aeb06a0969"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/BMP.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/BMP.pm",
+      "sha256": "503698454e2edec457083e712b577108790e97b6c6e1a08a037faac9155c5e41"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/BPG.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/BPG.pm",
+      "sha256": "d600627e4c90dd5079d82ab09915a68a29ac640d0aea5f6991635948a7739ec3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/BZZ.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/BZZ.pm",
+      "sha256": "02482621ff7e37bb53a4a5cf98950dd9767e4daed0b4e861f23a86549113b073"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/BigTIFF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/BigTIFF.pm",
+      "sha256": "290b1cbd50238f83161ca3ee0c9a193516d810500574467c52e606d90024fe06"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/BuildTagLookup.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/BuildTagLookup.pm",
+      "sha256": "f831b4cc269152dcbfaf9019b0dde4c860b3ea64500dd84df5d700463be21163"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/CBOR.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/CBOR.pm",
+      "sha256": "4651c9d684e2b2b98ca4b691a941166a79dace75ebd8ea895f4614dfc4f25505"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Canon.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Canon.pm",
+      "sha256": "d4642eb3590a454bd92183ac54ccd56d4111d1dc203288a85a57dc725194e683"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/CanonCustom.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/CanonCustom.pm",
+      "sha256": "e461b9b1e0d8f24565b36feb2032412814754c8f46094a44d3beef800d9ccbf9"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/CanonRaw.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/CanonRaw.pm",
+      "sha256": "30a326b19ce5ea502abe1632a9a999969b73dc33e7d8937fddee332d312a5440"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/CanonVRD.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/CanonVRD.pm",
+      "sha256": "307ca4500b39ac35a78a3463610b49ba49b862cc73d26e4e05314c3c3d6630e6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/CaptureOne.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/CaptureOne.pm",
+      "sha256": "ffed00eab470b7e102ad28910744918b103081eb6a8686f3e82272c4643fbd59"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Casio.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Casio.pm",
+      "sha256": "3bfa03d6bef4f8e865a13a29154bf8c2a0c7b4eb7a76ce1a4d4b6bea05269eda"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset.pm",
+      "sha256": "2017febff0262d7e0d7ea2325482ed62f9c9461e2331a36ef8fda7c723865e0e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/Arabic.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/Arabic.pm",
+      "sha256": "90625d5c7ff09c976f9768ae36dd19d99f66faf742a6d9cef35b1c1af16348bf"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/Baltic.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/Baltic.pm",
+      "sha256": "c02c01046099116a116780de5ca822c69cdf986a83d75eaf3603911241ce21a3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/Cyrillic.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/Cyrillic.pm",
+      "sha256": "39bf8e08e3ba0f6e63fe42eb07a4df28cddbaf8559c6b16f38252fd6d3f00f13"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/DOSCyrillic.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/DOSCyrillic.pm",
+      "sha256": "09a00893c948759aa2807e9b23503f535aa3b7e7e2de68cade5557630b98bc11"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/DOSLatin1.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/DOSLatin1.pm",
+      "sha256": "ce2bca149aeb40d376a5d3e596ad3acc7fa5ce1244736a827de6521a05dcc089"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/DOSLatinUS.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/DOSLatinUS.pm",
+      "sha256": "55d28e289e3b10bbd60dde97e72d8baa54cfbdae55f21c80722a9b3842b3e55d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/Greek.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/Greek.pm",
+      "sha256": "5200b436582e79eab7a6424124e4481ec619c1784ae48265f90d8421cc9a6b9b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/Hebrew.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/Hebrew.pm",
+      "sha256": "b43457e1b50a7180592fc627eb5dd84e415d3e5c28e7e4ce74ea2fee4c210bcd"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/JIS.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/JIS.pm",
+      "sha256": "1094fb6d5bc9ea792f9d68ddab277e6aa80b3f5335d2c1c6bfd8c1c5babe5411"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/Latin.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/Latin.pm",
+      "sha256": "2112fc60915466d29e54afba64bf3ffb586158a5cda6339b5e2f89f5216e9d7e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/Latin2.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/Latin2.pm",
+      "sha256": "52f17a32169da0141f9a653d6b81e08eb697d238fd026a5b390be70d44e8ef1d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacArabic.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacArabic.pm",
+      "sha256": "15aedb3d69b0770bfd8b0322b31985adb0488506cccd24e060a17ed3f52ae951"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacChineseCN.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacChineseCN.pm",
+      "sha256": "42af87d918a3eece920344be0b2f4bb97cd236860e2debd3224f664a8e089075"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacChineseTW.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacChineseTW.pm",
+      "sha256": "d1b6d89e0f6c102132fc5b5183506c777b3b3500f9b2d3e28a0f674125b7ba15"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacCroatian.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacCroatian.pm",
+      "sha256": "2a573cf416ce3282a6dc1960103f9d4600726cf3db02e56ed603335c69c37381"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacCyrillic.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacCyrillic.pm",
+      "sha256": "ec49c4e79bf7fc5a18f5a4eb77d48fad40209f92c4e5f3d167c61d3f9587bbde"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacGreek.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacGreek.pm",
+      "sha256": "d0833ab250f51f99d2c7d172a7628c98537117a3dca22a4fe980c85ed824bdd0"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacHebrew.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacHebrew.pm",
+      "sha256": "bb3229736d486a4614ccd3be57afa29728dca939b51073eac85773fa8c253a85"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacIceland.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacIceland.pm",
+      "sha256": "28f0ac1102478079afb329096ac317954febdb120c924147b033ad28d2db98ba"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacJapanese.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacJapanese.pm",
+      "sha256": "36b9819d02c5aafd1fc4ab5616dadf7a6e3d5de8d026bdbdf3d46cd1189fa4e1"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacKorean.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacKorean.pm",
+      "sha256": "f90c20ebacae587e8e9c8b57b95f64c10053da5afd2d83e0a3527232c412c676"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacLatin2.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacLatin2.pm",
+      "sha256": "1e216c769557eb927cd6eee2ac4121f5df5caf052fdc058c08719b4a16484d3d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacRSymbol.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacRSymbol.pm",
+      "sha256": "9d8bd0c20775120c71c5e3b5996c6a076e0b62b96f84038964fb407c73eca58d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacRoman.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacRoman.pm",
+      "sha256": "243a84e50839abbcee96ce4b72c115fbf8d6f0fd755d2e7ff796da6dcf42c1be"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacRomanian.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacRomanian.pm",
+      "sha256": "14d9d15c357acc6388bb95bcb08d00d9cc12895c73378d2351a50200074466f5"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacThai.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacThai.pm",
+      "sha256": "6f11db69e246cfc46df92af3f5f4280da07e2b8831a7b311c8f00894c42e194b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/MacTurkish.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/MacTurkish.pm",
+      "sha256": "9bfc65e53ed2666feecfe0cb27b1e940f836b64fd79e02ebd752ebd78a5ee6a3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/PDFDoc.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/PDFDoc.pm",
+      "sha256": "5571e74cd68b89afbf47dda2fd59da90d86fd026477383d41b5db51aacf0d4a6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/ShiftJIS.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/ShiftJIS.pm",
+      "sha256": "757bc7e41b0b9f8db6ac31c4e9cb99964dda73a84ec9e10c9f63ac5990502001"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/Symbol.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/Symbol.pm",
+      "sha256": "463b9e12e4736fee4fbe504111251b2c90f0ff77afb832f37f3996a22201c916"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/Thai.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/Thai.pm",
+      "sha256": "71ac8d56facacd91d3a3ac0cba11ebc11944dd3e10a95373e4a22fd505a7b4c1"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/Turkish.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/Turkish.pm",
+      "sha256": "97a40026b0cfe77f8186470085d8e51c2cee956f3d1719ae8151c35ce021cba5"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Charset/Vietnam.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Charset/Vietnam.pm",
+      "sha256": "8ed317390f76295db70067231020a176d9c85f29e9030662ef7ed3de4665a4cc"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/DICOM.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/DICOM.pm",
+      "sha256": "b0fec72102220d05076a1d8557e1b1999d751e97e45bb87da66122131d64e9f4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/DJI.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/DJI.pm",
+      "sha256": "08447003672e3d623e30740894533306475543a5598cd866e3981a9c7d8303d3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/DNG.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/DNG.pm",
+      "sha256": "b99cf06aa6706ccc18995a96b8730a1a8e1eefb37623d28cf4cdbf4627139e18"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/DPX.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/DPX.pm",
+      "sha256": "d857013002ccaa88dcd6d4d6df8fcd0db9c206e17817838b85670eea3dce8558"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/DSF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/DSF.pm",
+      "sha256": "53c067df4be365dda84ff1f2689719b6211ff7e5b8e620ad56aaf70382f78156"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/DV.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/DV.pm",
+      "sha256": "d0fe561b190b1be282f89b7c914987d52066995d687ac8cf0eb388114973b916"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/DarwinCore.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/DarwinCore.pm",
+      "sha256": "b553eea2b25414cabd568bbb01b076940b99df582f62c91f06fbc97508c6d0a4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/DjVu.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/DjVu.pm",
+      "sha256": "4cbf233e2fb0c13a54502802ddaa11340e5fd246f53f996a9d782024d5328598"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/EXE.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/EXE.pm",
+      "sha256": "d4bf95f93c0f91b74e2c38c191eef0e4babdc69fc1c7bb90ff25f928eb845621"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Exif.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Exif.pm",
+      "sha256": "9cf5950a90b987db00f6a19118d13ba882745d8df8781dae5d61ef80e32202f6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/FITS.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/FITS.pm",
+      "sha256": "b953d116015912d44607ffe64cdd3c48d130cae0c800a4b59c1b4a52a18833bf"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/FLAC.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/FLAC.pm",
+      "sha256": "8763a5bfc129bdaaf8453be7e191f50eac0ac3eee771180d74a741cd60bf0802"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/FLIF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/FLIF.pm",
+      "sha256": "623029af045d994956a3238c9e2e08f249fc132d828a3871dd8b9d9c5cfe39d2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/FLIR.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/FLIR.pm",
+      "sha256": "2e6a323dc97dc77525fc16c08c8a533eb987f7dda7c746f424c1391723905e1c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Fixup.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Fixup.pm",
+      "sha256": "05b45c0efa372cda6fd5f08919e54b3dec8929dec351d48d736775b4f67660a4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Flash.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Flash.pm",
+      "sha256": "67a3c20a7d873ab34a1bbe3c35a68317126aa4b5fcb5c939b797d749287dcb13"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/FlashPix.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/FlashPix.pm",
+      "sha256": "a76b43f308d37e9c9567fdb1190f4f23cd9a0d7a0509ea440070491afbf55cb1"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Font.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Font.pm",
+      "sha256": "445331268b67afc3c3900917f9fd678c3cf7ecc515892128783543cd2d7c9f46"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/FotoStation.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/FotoStation.pm",
+      "sha256": "fed735cad126f0f788b783715a8c4c15db55a2ebd66d1d6efe7ec2a8c3694430"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/FujiFilm.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/FujiFilm.pm",
+      "sha256": "a642702396d77a05e01c4f47b7618f16152b67b69093c775db88313867db6531"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/GE.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/GE.pm",
+      "sha256": "e11aab00a264e1ba421efb5c70b2667d442d81e6a1fbeea274ee8381915cab7a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/GIF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/GIF.pm",
+      "sha256": "b885564bbb0c7e9770a811b45ea12b1f5eea2f7160eec6b3f3e79e7894a4f24d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/GIMP.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/GIMP.pm",
+      "sha256": "53b7c54241db8ae73818c82973ebdbe7e5bd54242acce5a5dcb2c6307f10db1a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/GM.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/GM.pm",
+      "sha256": "1599e5530a3d0f90088049ccdcf1cc2def5e952607c0e8d9c3e5ac3d353cf777"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/GPS.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/GPS.pm",
+      "sha256": "f62c9576a405a636585340b9358202cdb0b2a926368609716764b2e05a337443"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Garmin.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Garmin.pm",
+      "sha256": "0550d3dd603bf9430879a0d880e61e37d78eeffeea0764b69f74e6563f9ce6e3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/GeoTiff.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/GeoTiff.pm",
+      "sha256": "064b737a93d0df4721ca3ea077a2e11df7ac6283bdb996f45de1dc19c8c43047"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Geolocation.dat",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Geolocation.dat",
+      "sha256": "0126e8de2b4f5cab4ebc42a46dbeeeb171830f168ade7e433d4c3a18c4ca900f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Geolocation.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Geolocation.pm",
+      "sha256": "c3a5c462fdf672342649b9febc3a497dd3c855aa4163a709f13d786630346eb6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Geotag.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Geotag.pm",
+      "sha256": "e405d4bac1824001709d80270cc1feab96f034f0c89af85362ae4542a09d00e2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/GoPro.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/GoPro.pm",
+      "sha256": "dbac3cf5e96bc768adae595ef43821216fe65fb4330ff8548a4c2a3dc81920d5"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Google.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Google.pm",
+      "sha256": "912f129d2f1db85cf114fc336f1a68a87c48bff8b90991add2f30b797b0ca8a7"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/H264.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/H264.pm",
+      "sha256": "4b014b83c67f3ae04a081cdc79ae0b1fc361084e971489559c8432756e8b47be"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/HP.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/HP.pm",
+      "sha256": "d51558abafdca4114aead896e889487fc0b5d494852dd41d72701ffbd2399d5c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/HTML.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/HTML.pm",
+      "sha256": "8e1c4f875f14f37b899fd082efe7f5c77c0ec38f47be1761190d1e748dbb539d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/HtmlDump.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/HtmlDump.pm",
+      "sha256": "a02dd96f159a4a96ee649efdb6a1a43bd289cd5912f7da150b08e488ff5a249a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/ICC_Profile.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/ICC_Profile.pm",
+      "sha256": "d336975767bc1a64919b31a09ceaea40b0d424c5206277c52491dd2194ffcaed"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/ICO.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/ICO.pm",
+      "sha256": "3fadc07ebf61f8be31aa9ce568de785f0350e931ad8e5a4cb0c39977744c8986"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/ID3.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/ID3.pm",
+      "sha256": "92a3c9fa73094191c2000923bd07527504c1d8573a094556628d8de8e57ca43b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/IPTC.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/IPTC.pm",
+      "sha256": "07508467219121f9552215f715439716fca94825c3e96eafe1363d8009072ffa"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/ISO.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/ISO.pm",
+      "sha256": "521fcdcb9e9577909905f541b4037342f846651453a80df0396ed9d8a95960f2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/ITC.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/ITC.pm",
+      "sha256": "250205b73a64d599244f87f6f5b00daea99c175c2c3249d8550d772d6859403a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Import.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Import.pm",
+      "sha256": "98fcaed9eabd249f551e1c7cd2b6c3a645ef58a4b9c7282e6bf4fe9a6bbf1adf"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/InDesign.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/InDesign.pm",
+      "sha256": "5b6a2bcee1e325c0f3507d1eca9d53cc44f498c30066de720d4816c9ddc9eb42"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/InfiRay.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/InfiRay.pm",
+      "sha256": "086a19bb4439180500f5bd10aa2a45a078f197060cfc05126cd0762ed184ef4c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/JPEG.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/JPEG.pm",
+      "sha256": "68e0c147af20bbb29be1a8816f415a8a013b961ec79feba7127627a1906272fa"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/JPEGDigest.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/JPEGDigest.pm",
+      "sha256": "6e8b756ff10154212d96bf6a9b19fd53c39309c02d096a8fe3d221d2f9496777"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/JSON.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/JSON.pm",
+      "sha256": "4e547461a178259822a6709b4ee33b897499a8e959a67cd95701192ae0349b26"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/JVC.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/JVC.pm",
+      "sha256": "1dce83261222d96b402e310c3854738972804fda8541063b6a5199ad61ec10b5"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Jpeg2000.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Jpeg2000.pm",
+      "sha256": "6d5647c841f5cb4c088d88ae9b0904bc62ab34d31f3f2b74819f5f846fb7b088"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Kandao.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Kandao.pm",
+      "sha256": "955b55680e6a45ee2cd7a99dc50c573df2c99ca219dd25c9290c500371251ad6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Kodak.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Kodak.pm",
+      "sha256": "eb598c404be1f7d718e98cddeee2d45173d0caeaaf7f97a97a995e986ed47610"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/KyoceraRaw.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/KyoceraRaw.pm",
+      "sha256": "78ca03a23b477924c3ae5017bd70ca010e0206c9022325de6472067a3ca3f600"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/LIF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/LIF.pm",
+      "sha256": "55a2c47ebd196f95c3c8d9c54c0e9fa482454dda29680c68298eb00d7e369439"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/LNK.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/LNK.pm",
+      "sha256": "effa4cc69018fdd8ea7541af1b5fa6156c51155c9a3af3925fe0fcc16412790c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/cs.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/cs.pm",
+      "sha256": "8dab229992546a9b2abcd5cba7fb0897f4c6a6ce5666d8e35f11a5e65c55bc53"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/de.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/de.pm",
+      "sha256": "636ff2fbd53d7c1cfad458f30661f535993c4a8a173619dbc2c5425caafd5dfe"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/en_ca.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/en_ca.pm",
+      "sha256": "602e320bcf6ea795fa4dcc3d5230a768c809ca134ab86d8f296b04e55d620fff"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/en_gb.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/en_gb.pm",
+      "sha256": "97d4a0da172331a2e8be053d0c2ddde8ab94ad62d23c04cce394b343096257c4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/es.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/es.pm",
+      "sha256": "234851d45a50bf9993368da5881ac1ac78205ba6431022316068884820503319"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/fi.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/fi.pm",
+      "sha256": "59876d0dc06a51ba79fe7b2ec955035a6e0580bc4a1e73df73f0d421227047fa"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/fr.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/fr.pm",
+      "sha256": "b5b5b1f44ce6dc896c3bd51cb689ff4c6d6307b8de972931b28fa4e404bbe3a5"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/it.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/it.pm",
+      "sha256": "c157144cc2a11bdf6478880dfd53c5941e2d423a6590aecb4f5419ea5801af8c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/ja.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/ja.pm",
+      "sha256": "4452fb4a68eb86c0dac5cd8599e41a525c5c738e16cd81a9bbc9339a447276b4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/ko.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/ko.pm",
+      "sha256": "bd9129b298b483224e72c731536da47105e62c87c3df29e9991447e4aeba1c5d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/nl.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/nl.pm",
+      "sha256": "ed66a369df62c16a81293db4b17de658b33778fde999ada34b4dcdfa25472620"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/pl.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/pl.pm",
+      "sha256": "502683f64ce9c6f9a922c9c0c35ff699c67007dee097f5df40b06788229d5fba"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/ru.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/ru.pm",
+      "sha256": "081cefe50e8bef0be9efdccb8c465e2df066c2ea85c8ce47094e876ade970715"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/sk.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/sk.pm",
+      "sha256": "751137ca19ee54b0bd4a4b9f4ef12039be8d58f27dfaac7255455191230760bf"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/sv.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/sv.pm",
+      "sha256": "b901e34c5cf6b73c8cba271c653b5b8409b55008759424437f94953fc7c2072d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/tr.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/tr.pm",
+      "sha256": "5540f0aab93152dbe0b46b90272e5ca686f50969997b3fce7fdba9e5e8ef7d73"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/zh_cn.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/zh_cn.pm",
+      "sha256": "897586aaaf0722948f9ac870c9b8a256e7c17020677a741ffb0cd2d46be5de8c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lang/zh_tw.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lang/zh_tw.pm",
+      "sha256": "47048bf7575ccff4293a0a325de7b32721162c0fce96aeb4c88ce40393770658"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Leaf.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Leaf.pm",
+      "sha256": "e8893668613666ba22c289a9822ac44cdb616a1f884b1a9cc0657374b64971b9"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/LigoGPS.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/LigoGPS.pm",
+      "sha256": "8a4c46c580d2e1abc94894308a443c236a993f1c87f3a50caeea57a0c2f88ce2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Lytro.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Lytro.pm",
+      "sha256": "950cf7528fd63f8b9ac9e599c34d78877e9aceb32e897b8fdb616ab9aebc3af8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/M2TS.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/M2TS.pm",
+      "sha256": "0c1b8fc327bb09f83ad1ee65b5ee898af2152adb81527ccf0e3b3c9b3111cdda"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MIE.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MIE.pm",
+      "sha256": "14686ad47aca97b23cf9f10c9ac78a5b9f7e5ed52081a01a046511e18cb3b207"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MIEUnits.pod",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MIEUnits.pod",
+      "sha256": "f5ebcbcde33166114002378a62ba1acc2991fdb334b202310b9cbb4482c31d22"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MIFF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MIFF.pm",
+      "sha256": "1556ef8924bd0ed1fd61e71905fb1a80347ca61f8665b800b11bb0eecc3f13c8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MISB.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MISB.pm",
+      "sha256": "075955833bc239b75d716fd3e798d30cbe3757e3bcb56a494695f5675633fd7f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MNG.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MNG.pm",
+      "sha256": "14c62cf5c2223743ec6b07f9983c0e6bd239ebc599e59b53824ff3a35fe90475"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MOI.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MOI.pm",
+      "sha256": "20308d81671e6abbe09832ba44d40dd0c9f81fbd037e1d5e1a336c957ab53b4a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MPC.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MPC.pm",
+      "sha256": "a0c48140e931700f2e19441951f26d1d22a38e7e96e7bdfd55b79727df476a1f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MPEG.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MPEG.pm",
+      "sha256": "0ee4aaa6ba891e43cf264dcd6d1de11e47461bf64e017d5bc7f17612143e3b7a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MPF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MPF.pm",
+      "sha256": "b5f7038b52f4b6a2e2934eb356385fab443a9f4a328bd0c9c178ca23ae7ca68e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MRC.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MRC.pm",
+      "sha256": "a0266d5cf0b3265c9c88559c9cd8b461bfdc5bd7f6802f843aa2730cbb70613f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MWG.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MWG.pm",
+      "sha256": "f46d2a5afb7d6cfa174ac28ef855809499630f7d32107e3babee3711f68be96c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MXF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MXF.pm",
+      "sha256": "ba1e605ec93a14cc60e4b519a072215ae639b11904ca3646c82a86a2271b6982"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MacOS.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MacOS.pm",
+      "sha256": "5acee1a0a387d2e3ac9f6304d5e6ac1c59b3155c54676f06af026a60373275c4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MakerNotes.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MakerNotes.pm",
+      "sha256": "5c78d72ce8f07142ce4e9e400616725480495c3c85514b2861cadd18077c119c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Matroska.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Matroska.pm",
+      "sha256": "279750340c26cf50ab9eed709863707770a900c3c7cc6111674d48a7077ef33e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Microsoft.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Microsoft.pm",
+      "sha256": "53835d4afcd5292e21f04986fe57445ff825de72d855e548bfff90a87815f40b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Minolta.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Minolta.pm",
+      "sha256": "e4f77a975e9465ea23c430125d12e53c54d68a4f042e10b23d6cae97758b0f4b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/MinoltaRaw.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/MinoltaRaw.pm",
+      "sha256": "6033123d2c22995ff7dc27613b948ecb59c7a8356416d899444634ca07ef32ad"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Motorola.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Motorola.pm",
+      "sha256": "8bc6272ec47e64ed2784903d9524a8c3e618ab07f324c3f454b9230dadfc4974"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Nikon.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Nikon.pm",
+      "sha256": "9410b783cc5e591ec28d6bff66880adc8d9b056a545244bfd244d995a4422298"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/NikonCapture.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/NikonCapture.pm",
+      "sha256": "fdd137023f6eba06fdfce881331cd478abced2beab3b008802b7e142d45b52b5"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/NikonCustom.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/NikonCustom.pm",
+      "sha256": "d04722583fe379dd406880391a195f5e9c3ca04326d819924445755126f81ab3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/NikonSettings.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/NikonSettings.pm",
+      "sha256": "1470761764101e233247064ab15897d2fd5d8f4d14719d227b37691c2ec2de11"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Nintendo.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Nintendo.pm",
+      "sha256": "6b424ebe1e2ea8bad888ff9c24800b0f115f8d2b6266c241a2e8759ce04d6982"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/OOXML.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/OOXML.pm",
+      "sha256": "444bd30f969adb4718e9c20a10785c6764b7ebd9977a1e3ff9a5c3e669bc594f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Ogg.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Ogg.pm",
+      "sha256": "365e93cc445f0011ec8ac7a190a737d399feeaa8c21547fb3eb4b0b065065e91"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Olympus.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Olympus.pm",
+      "sha256": "f974dc7c82b5e187148e0defc8d733734445df2121175097f001fe551ae08651"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/OpenEXR.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/OpenEXR.pm",
+      "sha256": "7f17acad20a1d253647bd6f26716f439cabc1cab1606aa4e1dea6c3e57fca759"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Opus.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Opus.pm",
+      "sha256": "757d33def564acab6203501919a1e87f95df960c76506b0b4886cb4b040dab9e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Other.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Other.pm",
+      "sha256": "f6b7c2ed3d99a0e4f79b0b953c46eff8b5f9c41d1bbcf7fd5a30fbeba31b579f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PCAP.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PCAP.pm",
+      "sha256": "3cee781be73f99513280fe2b68341347bfb91a9b76dd567de9d62f2a0939e416"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PCX.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PCX.pm",
+      "sha256": "3d911e4f3412546ec25230156bde2f45a89dcb9e9fd96b099cb2e6825432d12c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PDF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PDF.pm",
+      "sha256": "6e7eb122e329227abcc931c7590563c760e3435251fec803eb8e21bdec6a9eb6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PGF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PGF.pm",
+      "sha256": "72c4cd5d4fd80ac0f45b88973eb2ef62123d5c51d6005828c8e85c9a3596f97d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PICT.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PICT.pm",
+      "sha256": "71618f76baef30dd2e2b8b97e2db0a6e6a9135838c59ade01905918fbb0da382"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PLIST.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PLIST.pm",
+      "sha256": "10320b671694cba444c6d48911fc75ca37f19810ef7a2f49bd9c68e1e02875fa"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PLUS.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PLUS.pm",
+      "sha256": "674eb09aff7c187b15e8e43939473fbeb9212a29b5a2e50eb17d0268baaa7ad4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PNG.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PNG.pm",
+      "sha256": "69a54cfc08cb67e210158c148ab439fbdd3f9a021e362b1379a1e080c2c7a0f5"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PPM.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PPM.pm",
+      "sha256": "873d7a83d8f9f0eeab831b203eb11ff6f856e701cab5626c2b8778489e96e571"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PSP.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PSP.pm",
+      "sha256": "c406c4336ac400e4cadea41f2002490581a358d7e3ec3cc9e9822bcc3285f42a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Palm.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Palm.pm",
+      "sha256": "bc158f6d2bbb887c49e7b4ea5dde36c377f28cb0306f5f85e11bd0a11044cef4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Panasonic.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Panasonic.pm",
+      "sha256": "b99cedc10429748d75330d85417b4993907204ab19da0f0b5f9110403e663be7"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PanasonicRaw.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PanasonicRaw.pm",
+      "sha256": "bd204b732aa68f0b099d798699f149a4579a815748e9ddde6236ac585b5747d7"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Parrot.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Parrot.pm",
+      "sha256": "e133e94265a94540ac893a8d3f9c4c9cf99343a21275761b0d0a01bfcdd15eff"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Pentax.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Pentax.pm",
+      "sha256": "53bfb3da4b4b8fad0711729dd131b1fb41819c284541667c665f3133f919bc0d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PhaseOne.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PhaseOne.pm",
+      "sha256": "930c3c36b053937ad6db15c4f011532858377d78026d164d0fe1f481386874b2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PhotoCD.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PhotoCD.pm",
+      "sha256": "960e187f7ccedca07f85cb5d33c59dc86a146437127c1a36a8da57cc6166e5ed"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PhotoMechanic.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PhotoMechanic.pm",
+      "sha256": "d1d12610e7cbfdf3a5839b5727a091e5fe6901bd9121901a0cc4ade45c01330c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Photoshop.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Photoshop.pm",
+      "sha256": "637a47fce42b53c7177518cba25e9081848f21c95db529506f0dd1a149910786"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Plot.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Plot.pm",
+      "sha256": "96c85956b600156fdc2bd16caea992bec8d1c1c4a6c569123876fbbff439854c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PostScript.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PostScript.pm",
+      "sha256": "f2c8104025c03f859723ff068dc55f3f5c73c0f8013c5f8d5f04f8c7190d5e27"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/PrintIM.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/PrintIM.pm",
+      "sha256": "c65e29ccb3bbabbcf8eda485bf7997853e610bc3296885b1b682d431695bfb0f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Protobuf.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Protobuf.pm",
+      "sha256": "d7eeb82d764a3d728635cdfc9bfe4c83baba12530922d860b21857035f869aa9"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Qualcomm.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Qualcomm.pm",
+      "sha256": "9c92dc2ca6de9fd8943c2fd59300a813e13b6fac62fb74b5ec661a95db7fe320"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/QuickTime.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/QuickTime.pm",
+      "sha256": "329172a5558d8b75b535d5120d01ed5ce8aaa865b5d5de9ce1b81f3b09cdec5e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/QuickTimeStream.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/QuickTimeStream.pl",
+      "sha256": "1f940a7fe3b11f53d729bc405370812e13129e4d533cafea4d3bdb57c72806ec"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/README",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/README",
+      "sha256": "8db4cfe8234464da5bc9c7878825a3b6b47dab95cda833a212c166e1ed09707a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/RIFF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/RIFF.pm",
+      "sha256": "af3a9278fbf7078c61fe53113cc236c7edc43e4bbdd5da86c5d9a6aa2522214d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/RSRC.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/RSRC.pm",
+      "sha256": "458fec455fb2345e8d3f815a3a1e73d48a3c2efdda9040d589865c4b1bd1c62f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/RTF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/RTF.pm",
+      "sha256": "36b2be702d896eb970a12c36de0d0740ab5d099aca465b609cb127bbd6c0fe7a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Radiance.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Radiance.pm",
+      "sha256": "b2d49162144a1da988416dcdbe0c2aa3f64ac145d7073f23c6e9919e92e8506f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Rawzor.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Rawzor.pm",
+      "sha256": "4e7892702e52f0e4ab00c2f43a43da00a9d1c59291b6fc56bb8d7a7884988ef9"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Real.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Real.pm",
+      "sha256": "a53c3014d5eaa0d5744aa4843f25658053d6dc47c1f5423980222bfbb9591780"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Reconyx.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Reconyx.pm",
+      "sha256": "e14afdcaaecfb4acad77aa970d533cc069ddda28b5d7a2b87611886fd5325b2a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Red.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Red.pm",
+      "sha256": "439744cf113593522245084dec4e159e2bc8a5b78078aa96938be454bc8c815f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Ricoh.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Ricoh.pm",
+      "sha256": "24d66890e5ac4ddaae0864f0386f524a19b54e9e289588a62345c686b3934049"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Samsung.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Samsung.pm",
+      "sha256": "06112be5b4a34e9706a4c31a0c401cdf6ed41a5caa87da9290ab6b3a8b275b00"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Sanyo.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Sanyo.pm",
+      "sha256": "1a335cda97fb0c414aa53bf8e44c1464650a8a330eb2fe16e09a5a746d870c58"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Scalado.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Scalado.pm",
+      "sha256": "87f61789be49ff02f901f16928790de5f8bd65c0df0d867952b100808c0d0786"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Shift.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Shift.pl",
+      "sha256": "e83155e59d4a7e8d015f91211a8a590883467ce619d4c7198b4b10aaa39954db"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Shortcuts.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Shortcuts.pm",
+      "sha256": "ca795f420517162cd80b776795b50d5cf0317851530bda1cbca133a38ce8362d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Sigma.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Sigma.pm",
+      "sha256": "e20ab05420ae05e87da7f61c5021412b1ea994bebf9e6666b731cc0189460ef6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/SigmaRaw.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/SigmaRaw.pm",
+      "sha256": "3ad6c2fd920c9c82e785e43f651cb6dc5d42fde535539c58633f0984749c8d09"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Sony.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Sony.pm",
+      "sha256": "41e853b172270aaca6edb84f329184214f4945688fb2a01af72cfa0baa1c1717"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/SonyIDC.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/SonyIDC.pm",
+      "sha256": "3f6faf1b0273ca8456145a53ab80586033ae14e0741a2c9ec89a6de36f898bc4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Stim.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Stim.pm",
+      "sha256": "06de73a1e6a4f72db5e809285ddffcac9b911ca6489cc1d0bacffba2cc9aaa72"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/TNEF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/TNEF.pm",
+      "sha256": "4178a50bec9bebee20b62750ae18483d508c43a9185db71b6e03b7232d67c60e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/TagInfoXML.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/TagInfoXML.pm",
+      "sha256": "8ac0396ffc87e69433aae543c785fb1893763688f07b42ef3912519a6b83a7e6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/TagLookup.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/TagLookup.pm",
+      "sha256": "d4b3743766e7031c5a40e0682fa63e0899bb72a3e2a6bc36eca9b704aad2707a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/TagNames.pod",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/TagNames.pod",
+      "sha256": "ebca98cb98e50376c98a5f7a5ade187fe8526c9052460f6e3a6f8a5696e754d2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Text.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Text.pm",
+      "sha256": "b8eed4a87b452813c8e146812e48df5ee8a24f1d9713fa2e4137d7d929b7c57d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Theora.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Theora.pm",
+      "sha256": "f611c33a96dca1be5c96dd6456fadf7b747c6e75ba4117f8055864b9e55683a9"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Torrent.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Torrent.pm",
+      "sha256": "0e4ca12e9ae1bc73f9d3e52d198af13703214321297aa9c426bf67b466b435ea"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Trailer.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Trailer.pm",
+      "sha256": "71dd33f64d2126a3e14e0354d5ca540ccb83d1b7ed833788fc92e54b6b4948e9"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Unknown.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Unknown.pm",
+      "sha256": "e28eca4bad26436e79201ea73a9cf7a24749648959a0c02e024cd9a20cb98aa8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/VCard.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/VCard.pm",
+      "sha256": "47f4c57a2dde6b2650a7e88751f5cf75392a7591ceae2752e44937e0196083c5"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Validate.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Validate.pm",
+      "sha256": "74d649b10597f153c4553e9e697a69adde151e75628188169e4e49ac57298a41"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Vorbis.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Vorbis.pm",
+      "sha256": "39f27e7f564468da63f73e8e67af8c9568e18d39b804b6680f932dbd016c5e44"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WPG.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WPG.pm",
+      "sha256": "717a7bb129eca8e1897a695cd0860f237726fea55843d9ac19ce05876a55d48b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WTV.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WTV.pm",
+      "sha256": "269940ac9be0d8b4b570d7d2daa046911a7c609f4f8a03916f768c7c07a49cc0"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WavPack.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WavPack.pm",
+      "sha256": "26df649e5db7f0111ae7673c848f204bef6ca4993e9e48f322e5a4ab6bc2455e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WriteCanonRaw.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WriteCanonRaw.pl",
+      "sha256": "38f9a795ceae9d19740b111aef86c96ee70a25bdfd63708c69dad4614f924478"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WriteExif.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WriteExif.pl",
+      "sha256": "7ea2e8af8f17ebfef5979146bdc6b793392f39da9fc3ea15c6ba0326e1321533"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WriteIPTC.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WriteIPTC.pl",
+      "sha256": "8e7cc493b07abf91ecdcab9270770e5eec18f9579f00b4ae223f6a2310cf5ea8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WritePDF.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WritePDF.pl",
+      "sha256": "e22db8caf967f47dff9b2b79f36cf68bf79cc57398506e8e0b7e523b39c21d13"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WritePNG.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WritePNG.pl",
+      "sha256": "21f83b39cfd05422ba219e911a88506bb17c7c8d733aa14377fad461d7093a31"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WritePhotoshop.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WritePhotoshop.pl",
+      "sha256": "7299edfab3923f664ed3f190fab3df9190dd17e44ec20e8cf96f13eb06ca1f56"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WritePostScript.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WritePostScript.pl",
+      "sha256": "e0d822a9c49e9a3c2157198e3f4b1047e99411cfd21402051344d2c84e3dad64"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WriteQuickTime.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WriteQuickTime.pl",
+      "sha256": "93213228286b13115f90a6441d96b8a37f2f939e4c7520a61be32c081c634bc0"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WriteRIFF.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WriteRIFF.pl",
+      "sha256": "ea5b2c2cc18ceb4529059c6d7c827c3bffccbca27e134ca5bfbb8e890952154a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/WriteXMP.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/WriteXMP.pl",
+      "sha256": "cd253002388c455c44791b1852d0b2bb663c2931fee3940fb9e78c2b1fa1cfb8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/Writer.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/Writer.pl",
+      "sha256": "a53bb01becd64b92d4bb68eb4d7130d1bdb0681f2b8ce65822a7ddc17cc5992b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/XISF.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/XISF.pm",
+      "sha256": "bcfa3345a66482bf280e899fe4e060e820867d08aa25022cbdba4034143360eb"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/XMP.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/XMP.pm",
+      "sha256": "9ee546d11d5f4f587b65f810a3618c4ad6ff8c1fdfcbbd1a15d6177a5337d3c6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/XMP2.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/XMP2.pl",
+      "sha256": "c499607ebedf902fb60610d0b7cbf901189067e109cc33b7fabb2dd035c0f92d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/XMPStruct.pl",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/XMPStruct.pl",
+      "sha256": "74c2efa124a1fdf9e5ba19ec50ebe6bcc4795c974c416953375f251d2bea50af"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/ZIP.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/ZIP.pm",
+      "sha256": "f59769721010311f055eefc91aa4deeb7adaf9ab13080254db0a1769afc2fe70"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/ZISRAW.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/ZISRAW.pm",
+      "sha256": "963c9cc07fa9e1daa066a07be318ea1fe435554e0d32536a762894d523161c9c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Image/ExifTool/iWork.pm",
+      "target": "modules/thermal/exiftool_files/lib/Image/ExifTool/iWork.pm",
+      "sha256": "4d07ff283e4e9f98bf50ef09e66bf3e37dd384c3ebb54aa5b2b3641adb156ee1"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/List/Util.pm",
+      "target": "modules/thermal/exiftool_files/lib/List/Util.pm",
+      "sha256": "0d3135c14b4d4156a0de8156f2d33f54c6f0b6233b2f6fe5d4b9122e9fef1a5a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/MIME/Base64.pm",
+      "target": "modules/thermal/exiftool_files/lib/MIME/Base64.pm",
+      "sha256": "dfb1e3876b3e7f3cf9a3f23123c37464617e551802e618e54cabd7890c986cc8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/MIME/Charset.pm",
+      "target": "modules/thermal/exiftool_files/lib/MIME/Charset.pm",
+      "sha256": "906c39d7641644551bf995aeca673530c387c6854ca2d664a15f25eb87666175"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/MIME/Charset/_Compat.pm",
+      "target": "modules/thermal/exiftool_files/lib/MIME/Charset/_Compat.pm",
+      "sha256": "a21d8963b81203ea0db0caf51f539590d8a59902063168c711e47ac321f7565e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Math/BigFloat.pm",
+      "target": "modules/thermal/exiftool_files/lib/Math/BigFloat.pm",
+      "sha256": "7ad595a24c18e5e83c8f98f24bf452611dd5b78829af56df1236fcbe4e7b849d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Math/BigFloat/Trace.pm",
+      "target": "modules/thermal/exiftool_files/lib/Math/BigFloat/Trace.pm",
+      "sha256": "785045d2f3b1251d71b65021f04c5c013a99d2baf276c3606e3608064ef6f134"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Math/BigInt.pm",
+      "target": "modules/thermal/exiftool_files/lib/Math/BigInt.pm",
+      "sha256": "41ec57f420ae6a9da9cc9536585581d8163e790efade6bcd2339facc0a81e14a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Math/BigInt/Calc.pm",
+      "target": "modules/thermal/exiftool_files/lib/Math/BigInt/Calc.pm",
+      "sha256": "d6833448f33582bcc736558b07e5a72541780cdc740e3e8a2e09e84a3b536e23"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Math/BigInt/FastCalc.pm",
+      "target": "modules/thermal/exiftool_files/lib/Math/BigInt/FastCalc.pm",
+      "sha256": "ba4c6959b14456116641dd5f91c73f8aa6071a469f5cdce03a60b2c7c83c17d3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Math/BigInt/GMP.pm",
+      "target": "modules/thermal/exiftool_files/lib/Math/BigInt/GMP.pm",
+      "sha256": "c9805590d7faa58376776758fa42e1be8b185391ba87238bab1b165bf0d9736b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Math/BigInt/LTM.pm",
+      "target": "modules/thermal/exiftool_files/lib/Math/BigInt/LTM.pm",
+      "sha256": "41836defbee879c011f57a78bc876983b8140daff5f3fa007e8b969ee5742611"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Math/BigInt/Lib.pm",
+      "target": "modules/thermal/exiftool_files/lib/Math/BigInt/Lib.pm",
+      "sha256": "f97917769970f72ab0e72f96580ee9cee76a0a3ba1622cda1b033ff4ad1bfefe"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Math/BigInt/Trace.pm",
+      "target": "modules/thermal/exiftool_files/lib/Math/BigInt/Trace.pm",
+      "sha256": "aa299dac386f4b79d2c242361e4fde7490e1c7b8d33e7da63de09e8b0715b3da"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Math/Complex.pm",
+      "target": "modules/thermal/exiftool_files/lib/Math/Complex.pm",
+      "sha256": "eccc422301a14b62a75fbb63978e80fb57f693ea5d4ff5d2dea347f891f9ce82"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/POSIX.pm",
+      "target": "modules/thermal/exiftool_files/lib/POSIX.pm",
+      "sha256": "c3ac3494b7f7e61396e4d500c93032dc00631a6d0cba6b36ab35af564740d83c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/PerlIO.pm",
+      "target": "modules/thermal/exiftool_files/lib/PerlIO.pm",
+      "sha256": "183d8cc5992cd8197bd0621f0ac1c2346104327ecc4e7ccb53c26145481822b6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/PerlIO/scalar.pm",
+      "target": "modules/thermal/exiftool_files/lib/PerlIO/scalar.pm",
+      "sha256": "d633e2e16110bd09fa6e261b5f5f653f3bdadb729691590de40b28b6d5317406"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Portable.pm",
+      "target": "modules/thermal/exiftool_files/lib/Portable.pm",
+      "sha256": "23ae7ba6f89de9cd72540b352ca65f01ab228fc3b7f77722641ad8a7d21e4569"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Portable/CPAN.pm",
+      "target": "modules/thermal/exiftool_files/lib/Portable/CPAN.pm",
+      "sha256": "4a5bc2cf9cb536a880286b73b6d2b1fe49488aeebb8d1b4b11959890095da555"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Portable/Config.pm",
+      "target": "modules/thermal/exiftool_files/lib/Portable/Config.pm",
+      "sha256": "56386d5b362aff25fa68554e8b33520d8fa2439c55a57ff954c476180e832b37"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Portable/FileSpec.pm",
+      "target": "modules/thermal/exiftool_files/lib/Portable/FileSpec.pm",
+      "sha256": "e7297a7527f32605025d4d685d505bc3f0cc9f1842a619b97de001456d8428a3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Portable/HomeDir.pm",
+      "target": "modules/thermal/exiftool_files/lib/Portable/HomeDir.pm",
+      "sha256": "03d5be559e9727c4f983ef7998e59a4cd0280edff09cf9515ba8e0a1e92a6f71"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Portable/LoadYaml.pm",
+      "target": "modules/thermal/exiftool_files/lib/Portable/LoadYaml.pm",
+      "sha256": "af6638600e39df46dd6fa1455798fffbc18a73010e625763b3bfd90bbae12935"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Portable/minicpan.pm",
+      "target": "modules/thermal/exiftool_files/lib/Portable/minicpan.pm",
+      "sha256": "ff8960ba5017eab8e31bd5cf7dc6ff327f9524eb0b79a776b9a268931f68bfe3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Scalar/Util.pm",
+      "target": "modules/thermal/exiftool_files/lib/Scalar/Util.pm",
+      "sha256": "9ba58fcbefc535a73d3fc0da949d0fb1e524411dea4e8bee97529700607a98a4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/SelectSaver.pm",
+      "target": "modules/thermal/exiftool_files/lib/SelectSaver.pm",
+      "sha256": "b951b99c894f701eac08b79265ff2ccbede0954f97a537d03fb78801ed645861"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Socket.pm",
+      "target": "modules/thermal/exiftool_files/lib/Socket.pm",
+      "sha256": "700800decc75e5ed003ec3832846bf4fd69416089109d74ed337e23d1d0099ed"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Storable.pm",
+      "target": "modules/thermal/exiftool_files/lib/Storable.pm",
+      "sha256": "b1c10d3135bbbbb967a9594056cdd5e908b3577ca06e77c12d83603d3af81799"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Symbol.pm",
+      "target": "modules/thermal/exiftool_files/lib/Symbol.pm",
+      "sha256": "219ec21cc059ecfeb3bc7c6e349734dd0344a06a724781a54c17811d69ed77da"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Base.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Base.pm",
+      "sha256": "6c7a868589f2547c68e1542606729eb510b2a5091663ae3a2c00a486b062673a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Formatter/Base.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Formatter/Base.pm",
+      "sha256": "2f3a2306725283f3fb3eb299565a8534b29d52fe9495870c0fc98ad3e2b1ad76"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Formatter/Color.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Formatter/Color.pm",
+      "sha256": "6528e3b11f157fb8803ab9499894e368224174ebbbf3abc02c3d5494e4479bcf"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Formatter/Console.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Formatter/Console.pm",
+      "sha256": "a4ae4ddf50298c9e00115f0ecbe7977c34171941226f8e28b35e5500d341ad30"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Formatter/Console/ParallelSession.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Formatter/Console/ParallelSession.pm",
+      "sha256": "2ad00543a66e4ba0eeb2cb8deb8cd0af5080c9a37e43d28f3a7df43fa56edc0c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Formatter/Console/Session.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Formatter/Console/Session.pm",
+      "sha256": "2fb36a942462f0d7e4e01f8dcd457e560a88f1c61b678d654c945cc7ff03733a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Formatter/File.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Formatter/File.pm",
+      "sha256": "8624178af78141eb4c10dc465f4574188223dd0fcd70c2ada1e1fff2cb0754d1"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Formatter/File/Session.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Formatter/File/Session.pm",
+      "sha256": "64b6348dd3f5c24710694eb79d022cf1d95e599dd60e048a6157461661e6fec2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Formatter/Session.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Formatter/Session.pm",
+      "sha256": "af5a8b29350bddc35c187b0529804468a048bd3db6a478104e619a21a116d6ef"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Harness.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Harness.pm",
+      "sha256": "4097e5f4cfa71e7a7860ca830895a5d4963bcf92362fcb89ecc67a7f2dc56b88"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Harness/Beyond.pod",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Harness/Beyond.pod",
+      "sha256": "da2dedd348b7747c5ca2cf106b0eb87390324ceab00df7948e98d7ff18bc17f0"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Harness/Env.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Harness/Env.pm",
+      "sha256": "16c31b12a380ef5b83d85723f0795ca13142dd25bbb96eb2841de2722e9afe62"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Object.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Object.pm",
+      "sha256": "121dddea3c7df21a51303c793bd919d1f1a8706c281256ff8218d60a2a93546b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser.pm",
+      "sha256": "bc5da1b719684d0aa54ab974b27a08465b9251038c544113095429c7d7aebbe6"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Aggregator.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Aggregator.pm",
+      "sha256": "7af8c5bfe2b275bdb71e3d6706cf419ba06c1dfc14055422db2505c97867acdc"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Grammar.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Grammar.pm",
+      "sha256": "a4cfb237b2ba5985ba350c069738989c4c4f8d0887dcde9bc401faa1e8f9b79a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Iterator.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Iterator.pm",
+      "sha256": "ab47673c49170fce89e4a4527ada166a1c6041633da252afcb60cda75823e64c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Iterator/Array.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Iterator/Array.pm",
+      "sha256": "193aaa5c0da3202614a6148919ba333b7262a4e00854752da9859acaca3b9098"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Iterator/Process.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Iterator/Process.pm",
+      "sha256": "898391be1b2c994d4980894f07476f03d414b9f4c39d38d3dda47aeb7375a00b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Iterator/Stream.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Iterator/Stream.pm",
+      "sha256": "32a3bdbd55340c2ba65d7a0caaa2b4a817209949cefe54955a91392699775fac"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/IteratorFactory.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/IteratorFactory.pm",
+      "sha256": "1c5901a52e8bbe245e9992f5cf0be234c1f2ab618149e40d3bd5a34b9336e6af"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Multiplexer.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Multiplexer.pm",
+      "sha256": "7bf4129bd7ba393e001ef9b4ef60563f30bfdf8256681ce819a16d98c89dd034"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Result.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Result.pm",
+      "sha256": "3d4739c3e504851cff6ee1fefb1db4aaca99ee9063d1bce20cb1fbbabe6bf613"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Result/Bailout.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Result/Bailout.pm",
+      "sha256": "6d28cbe3a94fdff329567d89cce52a0e1b30ca3f59245903c20d64c910c20831"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Result/Comment.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Result/Comment.pm",
+      "sha256": "fe043357510e64550cc72b7a6618a43e4e74ee33d980dc332660105ec4ef91a2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Result/Plan.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Result/Plan.pm",
+      "sha256": "1fb1f58610b8d71b4735f95d9748936b0f52e85d014517d3a6425c84a25d9296"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Result/Pragma.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Result/Pragma.pm",
+      "sha256": "14609bc970407dae154098439bf44e1d102b66afd4b8a5a0ced7f3199656699a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Result/Test.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Result/Test.pm",
+      "sha256": "7f5629a4d514c2f52a901ad45d8c828d68689bda55e455e2091be51b1263c729"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Result/Unknown.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Result/Unknown.pm",
+      "sha256": "a65b97e1499df488828b62547154b0eff53d8c6549b72b3df80145a3493e7f61"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Result/Version.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Result/Version.pm",
+      "sha256": "21ec38f085d83a9a583672e46a0d9c74050dd6e7ac8ef0aaad25baa96d0cb54b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Result/YAML.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Result/YAML.pm",
+      "sha256": "96e7dae598bf749642c1faf675e1009649bd3f5bd0d85d8f46797f44866f0ca1"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/ResultFactory.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/ResultFactory.pm",
+      "sha256": "9ab0de32fec9429b0ad2bbc6181d1cd8bb9fec3ff851a8987843b98e53c8c880"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Scheduler.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Scheduler.pm",
+      "sha256": "6e9dce1b4aee701e6182117273f9b850d617483e32ae6f9ef5ed548ba646c612"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Scheduler/Job.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Scheduler/Job.pm",
+      "sha256": "15fd7e093c58e199c602f45a3a82be7189094070c31ac298a8bfa8f916d6547b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Scheduler/Spinner.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Scheduler/Spinner.pm",
+      "sha256": "fb072da532ebb5df2eadb188058f9f3aea7235609a674ae9c6093150127dc19f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/Source.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/Source.pm",
+      "sha256": "bb897086e55d3c5b7abc36660a0465fd7d3305dc086d4b771d7d8f1af8c65925"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/SourceHandler.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/SourceHandler.pm",
+      "sha256": "5039d0b877ad31acd17fbce2afacd4e87315325738e2d39f2a5f5d4931b182ca"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/SourceHandler/Executable.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/SourceHandler/Executable.pm",
+      "sha256": "4ddee089d5d9172fb43de35e4574eeae02d5818a4711a56caf8f3c9babb8e6a2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/SourceHandler/File.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/SourceHandler/File.pm",
+      "sha256": "6287b80e6e9263a744e0954f3bbde7498267723aa630d23a0d39082265813ff0"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/SourceHandler/Handle.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/SourceHandler/Handle.pm",
+      "sha256": "30ec25cf2b5878dd8cbe44e1212a606e1d8b94ceabafbe4dfd58847870c1a353"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/SourceHandler/Perl.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/SourceHandler/Perl.pm",
+      "sha256": "09e8afc6fc8e07cd1ff2c6242d5db495520dfdd1b35c49172156eb6ca3dc5df0"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/SourceHandler/RawTAP.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/SourceHandler/RawTAP.pm",
+      "sha256": "019eee578f770da6b503247954390580e47ff4eee772ad9d933e703389ec91da"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/YAMLish/Reader.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/YAMLish/Reader.pm",
+      "sha256": "43f6fa1ee45644044d546bd8163b0be1353cedd3b84ba51475c7f1ff25285d44"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/TAP/Parser/YAMLish/Writer.pm",
+      "target": "modules/thermal/exiftool_files/lib/TAP/Parser/YAMLish/Writer.pm",
+      "sha256": "c5ba1f0fa70212262c2ddbce739fcb22086cf055f6a7ea29b4e63e3c0f553a7f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Term/Cap.pm",
+      "target": "modules/thermal/exiftool_files/lib/Term/Cap.pm",
+      "sha256": "7d12f7d11646fe7a6cf76aa6d090e90769752573222bc3a331df371657cdeb92"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Builder.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Builder.pm",
+      "sha256": "18fecec89482d91104ddc27f61a30076ba00c95dac7fe670d25572541e9ea39b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Builder/Formatter.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Builder/Formatter.pm",
+      "sha256": "6dff97cdd3f8b2634bf1cbd3fd27a58e7f537d0a51377f135362a42c680b00c0"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Builder/IO/Scalar.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Builder/IO/Scalar.pm",
+      "sha256": "256e5f5393ff2e1d74531878207f265421fcab42dff41fa187e4113c90c181af"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Builder/Module.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Builder/Module.pm",
+      "sha256": "24f760abf8cc78be974300f51e1915a4b9c00251c01c49d7e003ba4ae5a1e2cd"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Builder/Tester.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Builder/Tester.pm",
+      "sha256": "b21b6213fe9489b32dd7373e7f6b38ea12abe9212f23c7ec07e7171e53cd5c61"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Builder/Tester/Color.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Builder/Tester/Color.pm",
+      "sha256": "1f95ed24054149d365fd5e1380fb8d2aa85ef6c5955656e83574d625f913b80d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Builder/TodoDiag.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Builder/TodoDiag.pm",
+      "sha256": "83855bd511d32db788f1b1604f3757dadea8fea9d2f83317b1cfcc7ae41cfe2d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Harness.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Harness.pm",
+      "sha256": "a1e5aff43ff7571d06e00ae751fc0e8115a12d250fb08fcee64ced04f9bfc1bc"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/More.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/More.pm",
+      "sha256": "b34e7d0f41c1bfd186d745abf7d87b51b29c55d08a7cded88ea20779c7c0eaf3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Simple.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Simple.pm",
+      "sha256": "1817f63c44acfce66ebb0438a632f8ee8d2de2863c7161a4006e77cf6bc3cb5e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Tester.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Tester.pm",
+      "sha256": "2539fcbe58f3a775cec9db594c798cd8107a1b4ba6d7d9304ee8e0cf4592b55b"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Tester/Capture.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Tester/Capture.pm",
+      "sha256": "599d83aab70329f77b5ed8dce479777df44e51bee3fcbe42af406dcb75c8dd4a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Tester/CaptureRunner.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Tester/CaptureRunner.pm",
+      "sha256": "bdfe923b0b15d78ba583fff6560c9172697c236a65f80175bb326f5d50a878e1"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Tester/Delegate.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/Tester/Delegate.pm",
+      "sha256": "e87f5bec156b53d30fcdd98e5458c1a11e5d80134abccd586a2f8d962533b51a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/Tutorial.pod",
+      "target": "modules/thermal/exiftool_files/lib/Test/Tutorial.pod",
+      "sha256": "c75ca5da3e428bc9ffd1a520d559cde2762dd275244be7924d2b819d30fe8c89"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Test/use/ok.pm",
+      "target": "modules/thermal/exiftool_files/lib/Test/use/ok.pm",
+      "sha256": "94dc00825ce4f68d67b079c4d1dba0f036543793ffbbeb36b022c0d91e2b46fe"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Text/ParseWords.pm",
+      "target": "modules/thermal/exiftool_files/lib/Text/ParseWords.pm",
+      "sha256": "8a33df070a25ea3fe4e1decc3de808e6c186805fd068b02792ee01523bc9df57"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Tie/Handle.pm",
+      "target": "modules/thermal/exiftool_files/lib/Tie/Handle.pm",
+      "sha256": "a15263f2fbaab6927932fbdf5dc7be936cc2e577120783a36a4992c15314f0aa"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Tie/Hash.pm",
+      "target": "modules/thermal/exiftool_files/lib/Tie/Hash.pm",
+      "sha256": "12e565ea59a4a3a332d8fefa40a654f9482014c145f165bef3d065a59daee55a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Tie/StdHandle.pm",
+      "target": "modules/thermal/exiftool_files/lib/Tie/StdHandle.pm",
+      "sha256": "fdeb719785a2e0213af711681c21ba9f2c9067a531fece87386ea1ff3d3f8ec0"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Time/HiRes.pm",
+      "target": "modules/thermal/exiftool_files/lib/Time/HiRes.pm",
+      "sha256": "e2a8fac68a3dd894c5876b1aebe4eacf5d7c58e5b1156ac627622a542d61db66"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Time/Local.pm",
+      "target": "modules/thermal/exiftool_files/lib/Time/Local.pm",
+      "sha256": "277be62ed2520a35e94a5acb8f8e4cadd6fff682b8fbcefc34648884988d3a7c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Time/Piece.pm",
+      "target": "modules/thermal/exiftool_files/lib/Time/Piece.pm",
+      "sha256": "fa366587ed15038e0717adb0a30584035fb906133d2f03281942b722975f29cc"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Time/Seconds.pm",
+      "target": "modules/thermal/exiftool_files/lib/Time/Seconds.pm",
+      "sha256": "fe05c1e5e516859d6d32354db8afb9b9aaf1ca38d179ca1c51a355218439fe95"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/UNIVERSAL.pm",
+      "target": "modules/thermal/exiftool_files/lib/UNIVERSAL.pm",
+      "sha256": "899d9399b809be16d0797decabe63cc647f7985a605ae60de860be1a439c3056"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Unicode/GCString.pm",
+      "target": "modules/thermal/exiftool_files/lib/Unicode/GCString.pm",
+      "sha256": "2442c349e9808be07d007d7c1a7be98f9690d5726446d1eee9f60db94179c2fe"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Unicode/LineBreak.pm",
+      "target": "modules/thermal/exiftool_files/lib/Unicode/LineBreak.pm",
+      "sha256": "93c0f47c958521f9a2d634a9b4faac25fe0cb89a28b06dcd01a2e011dfa01032"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Unicode/LineBreak/Constants.pm",
+      "target": "modules/thermal/exiftool_files/lib/Unicode/LineBreak/Constants.pm",
+      "sha256": "bb11b9d586bda231dfdfb17f1a5132c61078e9af7b354faa2ec1072dd7491daa"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Win32.pm",
+      "target": "modules/thermal/exiftool_files/lib/Win32.pm",
+      "sha256": "ce8ebdc60b1a2f74602101b9067122d0e960cb07e535b0fe039b17f6cc5b3eee"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Win32/API.pm",
+      "target": "modules/thermal/exiftool_files/lib/Win32/API.pm",
+      "sha256": "133ef34b20bebc593a4245b6138af3a8539e05be229142594f0119281496c979"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Win32/API/Struct.pm",
+      "target": "modules/thermal/exiftool_files/lib/Win32/API/Struct.pm",
+      "sha256": "3ad5e93a4138b734eb3c3311c43c9890403b20790ecb24450be62ee0e920d494"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Win32/API/Type.pm",
+      "target": "modules/thermal/exiftool_files/lib/Win32/API/Type.pm",
+      "sha256": "c7acf6d17a918e650aaf0ffee988fdea9405c9d502ecc479e1399ab039853711"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Win32/FindFile.pm",
+      "target": "modules/thermal/exiftool_files/lib/Win32/FindFile.pm",
+      "sha256": "060b9d60b69d48edf660b8694b019f39025625e7fa4d67219927c84128343ce5"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Win32API/File.pm",
+      "target": "modules/thermal/exiftool_files/lib/Win32API/File.pm",
+      "sha256": "96366abaf7a7a666a2d96690700c919324c8eb2142f4e9edfde6a0496b139d43"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/Win32API/File/cFile.pc",
+      "target": "modules/thermal/exiftool_files/lib/Win32API/File/cFile.pc",
+      "sha256": "a6eeb11dd37af408d02961fcf6ede9664fca7cff08661ac01db1c36bb3347bba"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/XSLoader.pm",
+      "target": "modules/thermal/exiftool_files/lib/XSLoader.pm",
+      "sha256": "e7aefe1027715cceebeae94b212146ea67c1512dac457dec1ff927d6fda98f6a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/B/B.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/B/B.xs.dll",
+      "sha256": "b2e387f3165db585b2aa78b0076cf7d9c540fd2c8d2f1e35cb20e0bded7c2eb8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Compress/Raw/Bzip2/Bzip2.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Compress/Raw/Bzip2/Bzip2.xs.dll",
+      "sha256": "f0c2ace60fc8b39e445f11af5ff5c1c4d28b6450632f91fd67e60c3a9e3e0baf"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Compress/Raw/Lzma/Lzma.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Compress/Raw/Lzma/Lzma.xs.dll",
+      "sha256": "b2e2b79029be82bbd6ac060dda1dae730e25d1b3c6f29ddd31139174010d1b97"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Compress/Raw/Lzma/autosplit.ix",
+      "target": "modules/thermal/exiftool_files/lib/auto/Compress/Raw/Lzma/autosplit.ix",
+      "sha256": "60952f5005bc10f42683da0530fe6ec7a3eef461c1c66fb06add42f0f0a60bc5"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Compress/Raw/Zlib/Zlib.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Compress/Raw/Zlib/Zlib.xs.dll",
+      "sha256": "4b8d56a3c64508d979d74ce28290c1c1fd812091e9f41fb02456fee21f6c9ab2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/CryptX/CryptX.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/CryptX/CryptX.xs.dll",
+      "sha256": "97c08cb11b59a3c43ebb096f49cacbf334289db0ee56fe55e6ef9262f9f5a57f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Cwd/Cwd.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Cwd/Cwd.xs.dll",
+      "sha256": "c1863ed47b5f83e77964e9b2931755a68cea4ffd831ca3d9258c928a087e7d30"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Data/Dumper/Dumper.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Data/Dumper/Dumper.xs.dll",
+      "sha256": "7d5276a41ff053779b864e56b4b5866dba02dc6d206e21699595d5152724aed7"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Digest/MD5/MD5.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Digest/MD5/MD5.xs.dll",
+      "sha256": "0f21e148e63f27347471b7698129013268817b99ae715dcf332b6c2067655339"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Digest/SHA/SHA.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Digest/SHA/SHA.xs.dll",
+      "sha256": "c75446a7c5e9b0d3441de57b3e3c9d914be4ab0842f0dcf1429e45fc829615fe"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Encode/Encode.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Encode/Encode.xs.dll",
+      "sha256": "d9ec8aa90e3ef3994b8bd53060c07f09f5abadcbc124fab5af873779d2575eae"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Fcntl/Fcntl.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Fcntl/Fcntl.xs.dll",
+      "sha256": "56154b6558ff95253757e83f1bb879a6f073fbb83d2b19bccb17bf803e3f766d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/File/Glob/Glob.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/File/Glob/Glob.xs.dll",
+      "sha256": "e0012e71870d3581b47abfc58636aab527a14b8f293744fb82165f749b56fbaa"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/IO/Compress/Brotli/Brotli.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/IO/Compress/Brotli/Brotli.xs.dll",
+      "sha256": "a6728b7c7b88f8875140f1b8febc4693e7590d6d1e933d3361520b5dffc9d468"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/IO/IO.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/IO/IO.xs.dll",
+      "sha256": "504a6b67f904d1b2dbf776d130cccbb771f5eb1fdbef7077c2de856010d647a2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/List/Util/Util.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/List/Util/Util.xs.dll",
+      "sha256": "5bcd87bc182ff6c465400afc5a1930d4d8ba64b1ddb656fca2e323b2cf2a56d3"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/MIME/Base64/Base64.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/MIME/Base64/Base64.xs.dll",
+      "sha256": "12b8761913cbdcce8cfc12dddc55866b223a3c38581149b42ab596178d7562f8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Math/BigInt/FastCalc/FastCalc.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Math/BigInt/FastCalc/FastCalc.xs.dll",
+      "sha256": "f025a12eadef0ce40767558dcf88d5b9081ec89f819fcf30921172dd9e53636c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Math/BigInt/GMP/GMP.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Math/BigInt/GMP/GMP.xs.dll",
+      "sha256": "1551461991d69a07eb3f7a3bebfbb104a7ae3856d44225d559cae2f598bb58d7"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/POSIX/POSIX.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/POSIX/POSIX.xs.dll",
+      "sha256": "e250ce81332cf7484f374efbb3efba66c87e06b6daf9c48bc9397244561701a8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/PerlIO/scalar/scalar.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/PerlIO/scalar/scalar.xs.dll",
+      "sha256": "db7e0645746f3e1b5940d7ff4685a2d9025e6dc3fe80e8572046c4d1b47e723c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Socket/Socket.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Socket/Socket.xs.dll",
+      "sha256": "6b8b274f90125eac36384c88365263359085509607229575e26684bc1189e4be"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Storable/Storable.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Storable/Storable.xs.dll",
+      "sha256": "7120c36cffe805f3ad56f7aa630238c9da44747442ee52ac02e1ee49c030920a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Time/HiRes/HiRes.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Time/HiRes/HiRes.xs.dll",
+      "sha256": "d44852ccda0cd4d5c75dd871c811af8b9ec127dfaa1b16941e81c076999f6b84"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Time/Piece/Piece.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Time/Piece/Piece.xs.dll",
+      "sha256": "f248bd313533f0ed272bc0d5c0fe7f408e521f6c742e5648315665af87e6aa38"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Unicode/LineBreak/LineBreak.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Unicode/LineBreak/LineBreak.xs.dll",
+      "sha256": "fe48e4e0ace0ed30f302236fa9db51f050a9488979bbfb639fb61f57f3752bda"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Win32/API/API.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Win32/API/API.xs.dll",
+      "sha256": "c3e28adb18bcf58882375d6e6958d2f6612fa94f7bd7377eabd1fca7496119db"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Win32/FindFile/FindFile.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Win32/FindFile/FindFile.xs.dll",
+      "sha256": "34bb27448fd132af3fbad20f8af629fc1e9157c62149ec152f67cdce35f7f78e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Win32/Win32.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Win32/Win32.xs.dll",
+      "sha256": "6a48676acf0543055dbd9f0525362cd235a0539503e07afdeba887e3c03c2db4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/Win32API/File/File.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/Win32API/File/File.xs.dll",
+      "sha256": "f38093ba9875131b62a1389abe0f034a58efa506eb1e8f290d451512c1d1fa6c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/mro/mro.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/mro/mro.xs.dll",
+      "sha256": "605e76c19e7324f32042336a5c3b23f6ec202ed38d8c7fb122b60aed1fa15693"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/auto/re/re.xs.dll",
+      "target": "modules/thermal/exiftool_files/lib/auto/re/re.xs.dll",
+      "sha256": "920496dd9b29c8e4cb057eebe92584776dee4f2a37dc7c4a0fccb37de9c08cf4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/autouse.pm",
+      "target": "modules/thermal/exiftool_files/lib/autouse.pm",
+      "sha256": "338a7e39931d89ed0c77ee2240b158badc06fd47e6506da2edb72625c3ba62f2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/base.pm",
+      "target": "modules/thermal/exiftool_files/lib/base.pm",
+      "sha256": "4f8b2f1898bbcc9c481481798d113617d46a9f73d87bcdcbef5fe26044b2fa6c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/bytes.pm",
+      "target": "modules/thermal/exiftool_files/lib/bytes.pm",
+      "sha256": "808eaaa305c6a0c64026b1ae824f39c5ad75a451e8c178a934bd86d1360fdbf8"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/bytes_heavy.pl",
+      "target": "modules/thermal/exiftool_files/lib/bytes_heavy.pl",
+      "sha256": "c7def62cbf7d031c4fe319e414117043f2a273885bff93bd18e11935d00a6677"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/constant.pm",
+      "target": "modules/thermal/exiftool_files/lib/constant.pm",
+      "sha256": "e67cdfa533d42cbe5265bcf3c270f055620cba38a9295b5d584b7efc37a0c156"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/feature.pm",
+      "target": "modules/thermal/exiftool_files/lib/feature.pm",
+      "sha256": "00327dd2e86d6d38e3fab84f2cb6e00538de061d759bb0b26829e86fa2deed47"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/integer.pm",
+      "target": "modules/thermal/exiftool_files/lib/integer.pm",
+      "sha256": "eb62cc3ee22a592bc673e07158927d1a6536075d33258fc67ff91e3f720cf463"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/locale.pm",
+      "target": "modules/thermal/exiftool_files/lib/locale.pm",
+      "sha256": "2b21c1ea5095b62d18db3278ce9f4d486ca8c9572f4485a9ae8012e161adaa2d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/mro.pm",
+      "target": "modules/thermal/exiftool_files/lib/mro.pm",
+      "sha256": "4a12e17a9e8e41d3edef2e79d158d0e4ef4a3d8e346bbf2e24ebbc851e03891d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/overload.pm",
+      "target": "modules/thermal/exiftool_files/lib/overload.pm",
+      "sha256": "36d4c0844259013579e3e41d1a3cb7002bcf135ea5f5bb9aa036287f7ed67ccd"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/overload/numbers.pm",
+      "target": "modules/thermal/exiftool_files/lib/overload/numbers.pm",
+      "sha256": "482f02bdf621f7e7656311666a4f1caa6b329d2ec3a197b3672ad92855794f1e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/overloading.pm",
+      "target": "modules/thermal/exiftool_files/lib/overloading.pm",
+      "sha256": "5bba56c0acdcc449ca3b73500862a5750c907d97d652978038dbc7809c4fcd07"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/parent.pm",
+      "target": "modules/thermal/exiftool_files/lib/parent.pm",
+      "sha256": "046169e129cfb7d4b302567de268409f175652192914abd33245cb9939f16626"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/re.pm",
+      "target": "modules/thermal/exiftool_files/lib/re.pm",
+      "sha256": "a19cba44e51203f71a22731d18d96e8bb7caf6c8f060ffe6d2b9118ff7b293eb"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/strict.pm",
+      "target": "modules/thermal/exiftool_files/lib/strict.pm",
+      "sha256": "89a96f0a1a1ed78e0e9c525434b5779b2e2baa8f976dfa2f78771282fa08d88d"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/utf8.pm",
+      "target": "modules/thermal/exiftool_files/lib/utf8.pm",
+      "sha256": "f29ceaa8053199d3f6ccdadd327a54c252e881507ee02701daa2b7ebd99fdc13"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/vars.pm",
+      "target": "modules/thermal/exiftool_files/lib/vars.pm",
+      "sha256": "84de23fb5d39572d2b0dc5d4e1cd6363017fae8f54eff90d4c8121eb1edeeb57"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/warnings.pm",
+      "target": "modules/thermal/exiftool_files/lib/warnings.pm",
+      "sha256": "749cb1f346323d833651e8b5632e1454864583598a89e880e16868b6fc715538"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/lib/warnings/register.pm",
+      "target": "modules/thermal/exiftool_files/lib/warnings/register.pm",
+      "sha256": "ce25ec34358642703ff05b546b2ac42b4f2081ab7610d8373dd94c6b78040cf4"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/libgcc_s_dw2-1.dll",
+      "target": "modules/thermal/exiftool_files/libgcc_s_dw2-1.dll",
+      "sha256": "d4c477aeae223a49fb853ce19843c6f249c11b96eba2694d1c73a69149e6edd1"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/liblzma-5_.dll",
+      "target": "modules/thermal/exiftool_files/liblzma-5_.dll",
+      "sha256": "405a9f370436f8adbcfbfa9e4fee242264ae53ae631c32df5835ffc814fb2e22"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/libstdc++-6.dll",
+      "target": "modules/thermal/exiftool_files/libstdc++-6.dll",
+      "sha256": "213fe1b03d6de98cbee1db3b6b573b40df1a2861284a2def973ea77d7ad6c83e"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/libwinpthread-1.dll",
+      "target": "modules/thermal/exiftool_files/libwinpthread-1.dll",
+      "sha256": "557cdf8a156542a4a3c2f29ed8f45202bb7594e153f627aef8b478cfbf637480"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/perl.exe",
+      "target": "modules/thermal/exiftool_files/perl.exe",
+      "sha256": "7fb8b81bcd0503954973f8c0127558768345a27d622fe136b8468659745dc291"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/perl532.dll",
+      "target": "modules/thermal/exiftool_files/perl532.dll",
+      "sha256": "d50c3d8624e607e4c461d26cb20dcdcde475d2cd33c21c59a1f2cf6a9c513624"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/readme_windows.txt",
+      "target": "modules/thermal/exiftool_files/readme_windows.txt",
+      "sha256": "dc44bb2fc9a18d02af8b4ee82e1f90a1f7f3ac204858e60c3b9a5320c0355b1a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/exiftool_files/windows_exiftool.txt",
+      "target": "modules/thermal/exiftool_files/windows_exiftool.txt",
+      "sha256": "eedba39948dfe1988d3b1fffcd22cf3c0b3f8de54eac68e946761ed087a63d13"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/hand_landmarker.task",
+      "target": "modules/thermal/hand_landmarker.task",
+      "sha256": "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/main.py",
+      "target": "modules/thermal/main.py",
+      "sha256": "362e3d23e6cd5b6e13bfd3b271c66f0118544ddbb31fd4d8a7c09844eedcf892"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/pylama.ini",
+      "target": "modules/thermal/pylama.ini",
+      "sha256": "4442da3933289c47819aefe15771022fe0c49c5505725345604d97ad6f615caf"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/requirements.txt",
+      "target": "modules/thermal/requirements.txt",
+      "sha256": "29f6d3b703bf0914644ad248f1dec62bac09438d8294f21f9e8b6e3ec9f90a08"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/sample_images/DJI_XT-2.jpg",
+      "target": "modules/thermal/sample_images/DJI_XT-2.jpg",
+      "sha256": "efdbc4e51a87a5f38943055fcd04dfb2bdd97ef549b1cdef034c0d7f5b1e6eaa"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/sample_images/Flir_B60.jpg",
+      "target": "modules/thermal/sample_images/Flir_B60.jpg",
+      "sha256": "f1421dfca3181503871e6d233f2b4f1be3c774de1721d6f74f22bdaff6dd14e7"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/sample_images/Flir_E40.jpg",
+      "target": "modules/thermal/sample_images/Flir_E40.jpg",
+      "sha256": "7fc6f5a7000b7d52d48d716dea6b503d75608253f65e101fcbc767f27f9611cb"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/sample_images/H20T.jpg",
+      "target": "modules/thermal/sample_images/H20T.jpg",
+      "sha256": "4d63cae409c7807c73c2d841f298ac5a254c81fa281ab387547bf90e2862f804"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/sample_images/H20T_2.jpg",
+      "target": "modules/thermal/sample_images/H20T_2.jpg",
+      "sha256": "fcc695177349fa0093adb12b2d5daaab9290608ff2cd76101dc78086a7e70c8f"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/sample_images/T640.jpg",
+      "target": "modules/thermal/sample_images/T640.jpg",
+      "sha256": "0bd4c13e95317ac6c5904d61bd8ba1bd1d07e19caef127669a3e04d089618d64"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/sample_images/T640_2.jpg",
+      "target": "modules/thermal/sample_images/T640_2.jpg",
+      "sha256": "4d28747f1b0cb1a45bbbb6c15622d3ff192c1ac0356dc39cdea2cab9354f4d54"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/sample_images/your_image.jpg",
+      "target": "modules/thermal/sample_images/your_image.jpg",
+      "sha256": "a9d3b0c7032340472d4cecd6e1f57a6fc9af23d9398156edeaa3fbc3447cb43a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/scratch_test.py",
+      "target": "modules/thermal/scratch_test.py",
+      "sha256": "6561fdec4be1acc0b932a67f04ee1852efa9717f011e29beb8c7da0612b817df"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/thermal_cv/__init__.py",
+      "target": "modules/thermal/thermal_cv/__init__.py",
+      "sha256": "d32fa3bbbfe6d7387c0e1904200fb29abaf6bbbbc4322343ea64f0707474c298"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/thermal_cv/method1_formats.py",
+      "target": "modules/thermal/thermal_cv/method1_formats.py",
+      "sha256": "5dc0d7709df1f4edaa2093526b856a205853684e84ce6e88744bf760ab5d4e14"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/thermal_cv/method2_static_image.py",
+      "target": "modules/thermal/thermal_cv/method2_static_image.py",
+      "sha256": "86fc641601979ddad784d0e5d4a65723d2dd38933d3e740e46f2748bd5e83fc2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/thermal_cv/method3_video_sequence.py",
+      "target": "modules/thermal/thermal_cv/method3_video_sequence.py",
+      "sha256": "7c2a1171c8d6609dcc13c0d3c180c1912c78f726d738e05be56198f876d2964a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/thermal_cv/method4_live_camera.py",
+      "target": "modules/thermal/thermal_cv/method4_live_camera.py",
+      "sha256": "3a72de58f8e02a55bd24bdc2bb7bacceb79832f40c4f64fbed877f9e79b3f428"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/thermal_cv/overlay.py",
+      "target": "modules/thermal/thermal_cv/overlay.py",
+      "sha256": "c1f3b2680ff5bc4cc6c6fbb22ce129619877cd0e4cb59a694717d452c276a6f5"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/thermal_cv/synthetic.py",
+      "target": "modules/thermal/thermal_cv/synthetic.py",
+      "sha256": "20dc8b35e83032dbd59e1f851c85c1cf763f64bc9024135013a8f81be5927cff"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/thermal_cv/temperature.py",
+      "target": "modules/thermal/thermal_cv/temperature.py",
+      "sha256": "98850a8ae2073418118a65473112d6a55300d1cac7114be1241e69dabd3117fd"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/thermal_opencv.py",
+      "target": "modules/thermal/thermal_opencv.py",
+      "sha256": "080264964a16531bb0c8c36e96bf0f3fdd20684739daa0bbe0b5b38bb29a009a"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/utils.py",
+      "target": "modules/thermal/utils.py",
+      "sha256": "8c020e85ae59c12a6a7de5ef98f3bb832a47ae83160b4b0e79a644d1536eaed2"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/yolov8n-seg.pt",
+      "target": "modules/thermal/yolov8n-seg.pt",
+      "sha256": "a7cd8f929e1903d78a12a48efecab430209f18dc46cb96c3599a5980c63c423c"
+    },
+    {
+      "source": "ResQnet_Full/Thermal-Image-Analysis/yolov8n.pt",
+      "target": "modules/thermal/yolov8n.pt",
+      "sha256": "f59b3d833e2ff32e194b5bb8e08d211dc7c5bdf144b90d2c8412c47ccfc83b36"
+    },
+    {
+      "source": "ResQnet_Full/ai_route_engine/data/ble_rssi_localization.csv",
+      "target": "modules/route_engine/data/ble_rssi_localization.csv",
+      "sha256": "544963e9b2618b0844dc2fa40a6ab67e7c1b322cf2eae22fafe32dcf9c10e998"
+    },
+    {
+      "source": "ResQnet_Full/ai_route_engine/data/disaster_road_data.csv",
+      "target": "modules/route_engine/data/disaster_road_data.csv",
+      "sha256": "34806240365fb3f785d17bfa2c17d106e20c1452fba93a3819395224adafcb18"
+    },
+    {
+      "source": "ResQnet_Full/ai_route_engine/generate_data.py",
+      "target": "modules/route_engine/generate_data.py",
+      "sha256": "051dae1f3e18ba86bfd25407f9a98a9cb4f24776ad68b8f1182ced109bb12716"
+    },
+    {
+      "source": "ResQnet_Full/ai_route_engine/main.py",
+      "target": "modules/route_engine/main.py",
+      "sha256": "ce3574d0b1a93d2fd9c63af04d1198eabcbc6a8dc45c9b11bfb8bebe5dd2fcfd"
+    },
+    {
+      "source": "ResQnet_Full/ai_route_engine/model.py",
+      "target": "modules/route_engine/model.py",
+      "sha256": "9e21867a38fd83940b909b7f9117a2be50e4941dc89c90b76662b7f9247ec21f"
+    },
+    {
+      "source": "ResQnet_Full/ai_route_engine/requirements.txt",
+      "target": "modules/route_engine/requirements.txt",
+      "sha256": "1d110bc8daf243e795e7ab7cc880c3dd3cd4da2bddf02fcafa9a07654d1d3f29"
+    },
+    {
+      "source": "ResQnet_Full/ai_route_engine/thermal.mp4",
+      "target": "modules/route_engine/thermal.mp4",
+      "sha256": "fe5aa1141cb3d166e6fe817cca1d8d41e08bf01bf60a00e89333d6daf599c536"
+    },
+    {
+      "source": "ResQnet_Full/ai_route_engine/thermal_drone.py",
+      "target": "modules/route_engine/thermal_drone.py",
+      "sha256": "298d424e8df499198e6dea5ab8f303161aec9f4068e256e216b578518399f3cb"
+    },
+    {
+      "source": "ResQnet_Full/ai_route_engine/thermal_server.py",
+      "target": "modules/route_engine/thermal_server.py",
+      "sha256": "edf5ca316aadad5c282aac934d0e19c44b756952ea36279d67d1e1eba92b9fc0"
+    },
+    {
+      "source": "ResQnet_Full/ai_route_engine/train_model.py",
+      "target": "modules/route_engine/train_model.py",
+      "sha256": "90986f33f9d052f4902bac3add9f3383e42dafcfc55484c395322f56f8d772e3"
+    },
+    {
+      "source": "ResQnet_Full/ai_route_engine/weights/rescue_ai_weights.pth",
+      "target": "modules/route_engine/weights/rescue_ai_weights.pth",
+      "sha256": "b0891bc6e3ef7b20fe7051961f26e9fae12a166ce73549f7fc20e9956c5a3ad3"
+    },
+    {
+      "source": "ResQnet_Full/ai_route_engine/weights/scaler.pkl",
+      "target": "modules/route_engine/weights/scaler.pkl",
+      "sha256": "897637587fabf2e3879ebd1a018884d23f7c6897f42c2fc52e2760b77400a67a"
+    },
+    {
+      "source": "ResQnet_Full/ble_localization/ble_generate_data.py",
+      "target": "modules/ble_localization/ble_generate_data.py",
+      "sha256": "6f4cb2f5b89f8af156c9075993ba1e7e42457c8d6fe69d56e50deae416b30cea"
+    },
+    {
+      "source": "ResQnet_Full/ble_localization/ble_model.py",
+      "target": "modules/ble_localization/ble_model.py",
+      "sha256": "2032cea9fecd71e07686e1fc24c53f74517fdf7d008fb40fa8a12e51b7c9cc23"
+    },
+    {
+      "source": "ResQnet_Full/ble_localization/ble_train_model.py",
+      "target": "modules/ble_localization/ble_train_model.py",
+      "sha256": "e091d239c961a8f5c195a9bd1c31abb98a77591c198e3059f894ca6c7a596b9c"
+    },
+    {
+      "source": "ResQnet_Full/ble_localization/data/ble_rssi_localization.csv",
+      "target": "modules/ble_localization/data/ble_rssi_localization.csv",
+      "sha256": "544963e9b2618b0844dc2fa40a6ab67e7c1b322cf2eae22fafe32dcf9c10e998"
+    },
+    {
+      "source": "ResQnet_Full/ble_localization/main.py",
+      "target": "modules/ble_localization/main.py",
+      "sha256": "cbbf8ada9974741f65007be01d92d5a1f5da2b2dd1c127445e476973b9e102ac"
+    },
+    {
+      "source": "ResQnet_Full/ble_localization/weights/loc_scaler.pkl",
+      "target": "modules/ble_localization/weights/loc_scaler.pkl",
+      "sha256": "9160d7b5a63db17c0257a2c0acaa804ecd5dcba516f9503d8c86a8bf9ca8f91a"
+    },
+    {
+      "source": "ResQnet_Full/ble_localization/weights/sample_localization_plot.png",
+      "target": "modules/ble_localization/weights/sample_localization_plot.png",
+      "sha256": "c8908cbce0d4d58fa53014cceb614d23cc9a1b330a41cd4c6113a0a59197926d"
+    },
+    {
+      "source": "ResQnet_Full/ble_localization/weights/survivor_locator.pth",
+      "target": "modules/ble_localization/weights/survivor_locator.pth",
+      "sha256": "0ebdd53443282184b4286d3ed56cce539363499d6c622840713e5d7e76ea01b4"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/.gitignore",
+      "target": "modules/mesh_app/.gitignore",
+      "sha256": "4a8d984279954e0461e0ffef9b9e7455340a0a762f227c01065a53482a83a4f1"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/.metadata",
+      "target": "modules/mesh_app/.metadata",
+      "sha256": "ce00c52ad4416f4e300b194be4a11012f4aaf62620d45fba8e4f02a13971ab73"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/README.md",
+      "target": "modules/mesh_app/README.md",
+      "sha256": "a71c0d23ce91daf3d17480c23fafb4bbf71990467bfedc6cfdfa5067a3520268"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/analysis_options.yaml",
+      "target": "modules/mesh_app/analysis_options.yaml",
+      "sha256": "403d2c563287e55f12ff36526c0eeebec0510f7bf1a7b18a44bb6fef89cf7661"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/.gitignore",
+      "target": "modules/mesh_app/android/.gitignore",
+      "sha256": "b027c9de1011765c015e5819bf857c0d75bfcd0886fb01721c091159012e50f1"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/build.gradle.kts",
+      "target": "modules/mesh_app/android/app/build.gradle.kts",
+      "sha256": "e5698eed6fbccf3fa1174b63a361bfd75086a9a84203f4f3d87947eb6a2eb405"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/debug/AndroidManifest.xml",
+      "target": "modules/mesh_app/android/app/src/debug/AndroidManifest.xml",
+      "sha256": "30b0832ed8b92dfbd6ae2abfa939ccf26333d37600056b1572bd4a397a18a74b"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/main/AndroidManifest.xml",
+      "target": "modules/mesh_app/android/app/src/main/AndroidManifest.xml",
+      "sha256": "5482a449d457c2b9f7063004dc145bcf85221b3a1169a849f4421e6cebb10f8b"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/main/kotlin/com/resqnet/resqnet_mesh/MainActivity.kt",
+      "target": "modules/mesh_app/android/app/src/main/kotlin/com/resqnet/resqnet_mesh/MainActivity.kt",
+      "sha256": "24f3f8a96c8312c4a370b558b90c297e005bd1c497ed7524779f519b9dbbc1ef"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/main/res/drawable-v21/launch_background.xml",
+      "target": "modules/mesh_app/android/app/src/main/res/drawable-v21/launch_background.xml",
+      "sha256": "7ca6d5cec2169c5a98661a119db23a6f3399c8fef2256ff04f3a642831282478"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/main/res/drawable/launch_background.xml",
+      "target": "modules/mesh_app/android/app/src/main/res/drawable/launch_background.xml",
+      "sha256": "94433756fe10005ddd6fc55cc5c0b1e9f3c10b66a08ceac795ece6713d34e28a"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "target": "modules/mesh_app/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "sha256": "6a7c8f0d703e3682108f9662f813302236240d3f8f638bb391e32bfb96055fef"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+      "target": "modules/mesh_app/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+      "sha256": "c7c0c0189145e4e32a401c61c9bdc615754b0264e7afae24e834bb81049eaf81"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+      "target": "modules/mesh_app/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+      "sha256": "e14aa40904929bf313fded22cf7e7ffcbf1d1aac4263b5ef1be8bfce650397aa"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+      "target": "modules/mesh_app/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+      "sha256": "4d470bf22d5c17d84edc5f82516d1ba8a1c09559cd761cefb792f86d9f52b540"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "target": "modules/mesh_app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "sha256": "3c34e1f298d0c9ea3455d46db6b7759c8211a49e9ec6e44b635fc5c87dfb4180"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/main/res/values-night/styles.xml",
+      "target": "modules/mesh_app/android/app/src/main/res/values-night/styles.xml",
+      "sha256": "8c5bad5152f217e837519f9c15211d19f39bd45f5f67faf6dd81cb4b299e518f"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/main/res/values/styles.xml",
+      "target": "modules/mesh_app/android/app/src/main/res/values/styles.xml",
+      "sha256": "937d7c82f539c72eb94fd3a3773f29b3d3fef1997213c92cb632298cedf4bda9"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/app/src/profile/AndroidManifest.xml",
+      "target": "modules/mesh_app/android/app/src/profile/AndroidManifest.xml",
+      "sha256": "30b0832ed8b92dfbd6ae2abfa939ccf26333d37600056b1572bd4a397a18a74b"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/build.gradle.kts",
+      "target": "modules/mesh_app/android/build.gradle.kts",
+      "sha256": "6a26dba2cb8dfba1e74f540b0d17a89d96c1301d3c3bfda14348bed257fddcba"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/gradle.properties",
+      "target": "modules/mesh_app/android/gradle.properties",
+      "sha256": "4922e39cd2ea910bd97156fd4320b0be9217df262fc45435ce408bad534a20d0"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/gradle/wrapper/gradle-wrapper.properties",
+      "target": "modules/mesh_app/android/gradle/wrapper/gradle-wrapper.properties",
+      "sha256": "297c9e63b6fa6e7e8b221900fa1787c1a0e38869d8957da66389fd0f6b00f78e"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/android/settings.gradle.kts",
+      "target": "modules/mesh_app/android/settings.gradle.kts",
+      "sha256": "a9b5756048f668d4ebf355116678fd334cd5f2169b7d4518ad19b8df14d3af36"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/.gitignore",
+      "target": "modules/mesh_app/ios/.gitignore",
+      "sha256": "37380775aeb2499662b7aca80f4ac4c95ae827c3ba2bfa179aa3e9af4812c623"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Flutter/AppFrameworkInfo.plist",
+      "target": "modules/mesh_app/ios/Flutter/AppFrameworkInfo.plist",
+      "sha256": "91b8d35bd9c88b43ae0eac8348f9b57d2f3e209a4500e6516b18b459b7e3f2be"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Flutter/Debug.xcconfig",
+      "target": "modules/mesh_app/ios/Flutter/Debug.xcconfig",
+      "sha256": "a82d7765b37116ee4821d2cd1d65942febf8032353757ffb0826eabde785b4a6"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Flutter/Release.xcconfig",
+      "target": "modules/mesh_app/ios/Flutter/Release.xcconfig",
+      "sha256": "a82d7765b37116ee4821d2cd1d65942febf8032353757ffb0826eabde785b4a6"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner.xcodeproj/project.pbxproj",
+      "target": "modules/mesh_app/ios/Runner.xcodeproj/project.pbxproj",
+      "sha256": "e1c015a345ef34dcca97419ec9d0c82aec619307d5fb09ec75efab09e8d09c50"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+      "target": "modules/mesh_app/ios/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+      "sha256": "7f3b00b5c3fdb45242d7b87e1e5c4e25d1fa8129a16c94295ecc4e8ea2235c5f"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "target": "modules/mesh_app/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings",
+      "target": "modules/mesh_app/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings",
+      "sha256": "11b247bc6796892d67c9a821d18604db4dd6a880981b34f38460b9866e6b247f"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme",
+      "target": "modules/mesh_app/ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme",
+      "sha256": "2dd28b879e66081e28a3324cf2bee7ab2f70be9a3e50e08926b7366dadff7d6e"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner.xcworkspace/contents.xcworkspacedata",
+      "target": "modules/mesh_app/ios/Runner.xcworkspace/contents.xcworkspacedata",
+      "sha256": "46c3c9702ff7c5584e11c954d943cfb6e07fb26e3fbd072ddbc0f388aa352de1"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "target": "modules/mesh_app/ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings",
+      "target": "modules/mesh_app/ios/Runner.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings",
+      "sha256": "11b247bc6796892d67c9a821d18604db4dd6a880981b34f38460b9866e6b247f"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/AppDelegate.swift",
+      "target": "modules/mesh_app/ios/Runner/AppDelegate.swift",
+      "sha256": "9418c676adebac7e3f04daa80a7db62066e77f9766c804fd3e5e264124a31f80"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "sha256": "3b1e214f466ffedff74baa5598ad5c4421130eea6bc8d57b8fe23435e8280ae4"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png",
+      "sha256": "7770183009e914112de7d8ef1d235a6a30c5834424858e0d2f8253f6b8d31926"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png",
+      "sha256": "cab10a0d391ec5bc09ef50ce49e8ad401cee7ef03707ec0923a222c5c2b3d212"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png",
+      "sha256": "b9ad02cf6576a04d1b6806ac02a2431481b448dd0c2e505ce25842d1f7c4730b"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png",
+      "sha256": "c6e6d3b215ae744a9c391f4c4d44157eff5e739d6ad6c39f9bfa5df66dddd267"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png",
+      "sha256": "5dee24dc104ac76dc162e42ae0beb163d426bf365562ee28ba7b3ad368559a60"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png",
+      "sha256": "a9b21eb6f4271385655a8771f76e29eef8c1107d7879cbcfc567e6619d1f716a"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png",
+      "sha256": "e677d701ffe4af7bc2935098d6b3984cc9ab7ace573e6900955a5535b12410cf"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png",
+      "sha256": "b9ad02cf6576a04d1b6806ac02a2431481b448dd0c2e505ce25842d1f7c4730b"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png",
+      "sha256": "7c61c42fc7b657d9cf314d32a4ec458f0647c3aaf360be1b9377857266ec2499"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png",
+      "sha256": "19be171481dc71a0b2803ebcd01dd8b0c5fd5778dee34c0a3cabc948c225f24e"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png",
+      "sha256": "19be171481dc71a0b2803ebcd01dd8b0c5fd5778dee34c0a3cabc948c225f24e"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png",
+      "sha256": "4209a49e44a92ec40a327d3455eb1b1c153ee83d75de1c2be0a12ab18b2ff9de"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png",
+      "sha256": "836c918cb613249eba0483a6b02fa3df3c1c0a89a315ee4d3b88509b83c7ab73"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@2x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@2x.png",
+      "sha256": "41c7d42f6e61f8fe7f30b1ffa2256aecbc9682be06d18c4a3062043e1a2e547c"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-83.5x83.5@2x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-83.5x83.5@2x.png",
+      "sha256": "5d7e5bdf01b93802bc973345b3a78c038907147625035952a08a115a563b7f81"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json",
+      "sha256": "ccc7950fd5f5b82067c85f667940a9d59189151460761ece8098ca78daa19469"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png",
+      "sha256": "93ae7d494fad0fb30cbf3ae746a39c4bc7a0f8bbf87fbb587a3f3c01f3c5ce20"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png",
+      "sha256": "93ae7d494fad0fb30cbf3ae746a39c4bc7a0f8bbf87fbb587a3f3c01f3c5ce20"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png",
+      "sha256": "93ae7d494fad0fb30cbf3ae746a39c4bc7a0f8bbf87fbb587a3f3c01f3c5ce20"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Assets.xcassets/LaunchImage.imageset/README.md",
+      "target": "modules/mesh_app/ios/Runner/Assets.xcassets/LaunchImage.imageset/README.md",
+      "sha256": "a985b626c4f7546a8ba392d135e9226c3547c8e2b46895f5f2bdf40d7b14ef9f"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Base.lproj/LaunchScreen.storyboard",
+      "target": "modules/mesh_app/ios/Runner/Base.lproj/LaunchScreen.storyboard",
+      "sha256": "857e61203b3deafb05766d8fcda898b86a7cb6f3d5e385ecc9926c4d698215e9"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Base.lproj/Main.storyboard",
+      "target": "modules/mesh_app/ios/Runner/Base.lproj/Main.storyboard",
+      "sha256": "fd367b6c43006d61b730f674970dd48b9f662c8f2264e52ffc1558102a2c9f2d"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Info.plist",
+      "target": "modules/mesh_app/ios/Runner/Info.plist",
+      "sha256": "7011aa79362630ee8c2f6735a96b3130a16803b0b30b51ae2614f5e049602faf"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/Runner/Runner-Bridging-Header.h",
+      "target": "modules/mesh_app/ios/Runner/Runner-Bridging-Header.h",
+      "sha256": "1a8d11d01d1cc92c650c9c9ed35299240052d4683a15a719a2315ef44185e074"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/ios/RunnerTests/RunnerTests.swift",
+      "target": "modules/mesh_app/ios/RunnerTests/RunnerTests.swift",
+      "sha256": "5e8f4908dacea6f29b2a790e4d38bf5fded69096063f9a27a2f21584d62b30c0"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/lib/main.dart",
+      "target": "modules/mesh_app/lib/main.dart",
+      "sha256": "fbdc8d9ae15e327b977ebc542af23ec8e482a59aa51b4b6f7a682336703d2f2a"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/lib/models/survivor_data.dart",
+      "target": "modules/mesh_app/lib/models/survivor_data.dart",
+      "sha256": "cecbd8dc56dd3fbc8692142c1e4f8e91377b58e957729821384faf0f4428d160"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/lib/screens/home_screen.dart",
+      "target": "modules/mesh_app/lib/screens/home_screen.dart",
+      "sha256": "684d09c9ed724ea973ac9a373c0d432d7906fe78fccf0de2cde19337508d76b2"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/lib/screens/mesh_table_screen.dart",
+      "target": "modules/mesh_app/lib/screens/mesh_table_screen.dart",
+      "sha256": "7706c935ef7f7c0e822ff6cf8ef2dce760e6168e7977a702b2453af2862c4a38"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/lib/services/api_service.dart",
+      "target": "modules/mesh_app/lib/services/api_service.dart",
+      "sha256": "f5c09a1ceef3340a2a6899450e03d2f7186199017ab870460083cb13b03ce68d"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/lib/services/mesh_service.dart",
+      "target": "modules/mesh_app/lib/services/mesh_service.dart",
+      "sha256": "3e01421b981042517fb45a9a45367e703eab2ad400d544633b89185b6c255288"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/lib/widgets/signal_pulse.dart",
+      "target": "modules/mesh_app/lib/widgets/signal_pulse.dart",
+      "sha256": "d928e3eaac0c76e47d62907de78f8d5ebc8a90b73e76071ed1e6a912aa377283"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/pubspec.lock",
+      "target": "modules/mesh_app/pubspec.lock",
+      "sha256": "15904f32005b0cb6dbc595a5d2d828195f7424bc72a6db64c27ffb401ab43ef5"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/pubspec.yaml",
+      "target": "modules/mesh_app/pubspec.yaml",
+      "sha256": "f1c141abaebcabe10255f808fbe1fdb9ec102cd385cb13e7b5038c47d7b0987c"
+    },
+    {
+      "source": "ResQnet_Full/resqnet_mesh/test/widget_test.dart",
+      "target": "modules/mesh_app/test/widget_test.dart",
+      "sha256": "aa86f91c6ae301087b445626df084812052949e5c9eb1d39af11e07a5400f519"
+    }
+  ],
+  "legacy_frontend": {
+    "source_files": [
+      "ResQnet_Full/frontend/.gitignore",
+      "ResQnet_Full/frontend/AGENTS.md",
+      "ResQnet_Full/frontend/CLAUDE.md",
+      "ResQnet_Full/frontend/README.md",
+      "ResQnet_Full/frontend/eslint.config.mjs",
+      "ResQnet_Full/frontend/next.config.ts",
+      "ResQnet_Full/frontend/package-lock.json",
+      "ResQnet_Full/frontend/package.json",
+      "ResQnet_Full/frontend/postcss.config.mjs",
+      "ResQnet_Full/frontend/public/file.svg",
+      "ResQnet_Full/frontend/public/globe.svg",
+      "ResQnet_Full/frontend/public/next.svg",
+      "ResQnet_Full/frontend/public/vercel.svg",
+      "ResQnet_Full/frontend/public/window.svg",
+      "ResQnet_Full/frontend/src/app/favicon.ico",
+      "ResQnet_Full/frontend/src/app/globals.css",
+      "ResQnet_Full/frontend/src/app/layout.tsx",
+      "ResQnet_Full/frontend/src/app/page.tsx",
+      "ResQnet_Full/frontend/src/components/Dashboard.tsx",
+      "ResQnet_Full/frontend/src/components/hud/CommandLog.tsx",
+      "ResQnet_Full/frontend/src/components/hud/HudOverlay.tsx",
+      "ResQnet_Full/frontend/src/components/hud/HudStat.tsx",
+      "ResQnet_Full/frontend/src/components/hud/LeftPanel.tsx",
+      "ResQnet_Full/frontend/src/components/hud/RightPanel.tsx",
+      "ResQnet_Full/frontend/src/components/hud/index.ts",
+      "ResQnet_Full/frontend/src/components/scene/CursorLight.tsx",
+      "ResQnet_Full/frontend/src/components/scene/HazardMarker.tsx",
+      "ResQnet_Full/frontend/src/components/scene/MapCanvas.tsx",
+      "ResQnet_Full/frontend/src/components/scene/RoutePath.tsx",
+      "ResQnet_Full/frontend/src/components/scene/SceneCanvas.tsx",
+      "ResQnet_Full/frontend/src/components/scene/SurvivorSignal.tsx",
+      "ResQnet_Full/frontend/src/components/scene/Terrain.tsx",
+      "ResQnet_Full/frontend/src/components/scene/index.ts",
+      "ResQnet_Full/frontend/src/hooks/useApiHealth.ts",
+      "ResQnet_Full/frontend/src/hooks/useWebSocket.ts",
+      "ResQnet_Full/frontend/src/types/route.ts",
+      "ResQnet_Full/frontend/tsconfig.json"
+    ],
+    "status": "Ported into the unified frontend; original source retained in Git history"
+  },
+  "platform_backend_files": 213,
+  "drone_firmware_present": true
+}

@@ -55,7 +55,7 @@ export function MeshStatusPanel({ link, health, state }: MeshStatusPanelProps) {
   const highUrgency = state.survivors.filter((s) => s.urgency === 'high').length
 
   return (
-    <section className="rescue-panel w-80 space-y-5" aria-label="Mesh network status">
+    <section className="rescue-panel w-full max-w-[20rem] space-y-5" aria-label="Mesh network status">
       <header>
         <p className="rescue-eyebrow">BLE Mesh</p>
         <h2 className="text-xl font-semibold text-slate-50">Network Status</h2>
@@ -81,7 +81,7 @@ export function MeshStatusPanel({ link, health, state }: MeshStatusPanelProps) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <Stat label="Survivors" value={state.survivors.length} />
-        <Stat label="High urgency" value={highUrgency} />
+        <Stat label="High signal priority" value={highUrgency} />
         <Stat label="Relay nodes" value={relays} />
         <Stat label="Weak-signal zones" value={state.hazards.length} />
       </div>

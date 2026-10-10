@@ -1,0 +1,197 @@
+{
+  "created_at": "2026-10-10T01:53:20.666177+00:00",
+  "scope": "Real local API/database reads, simulator persistence/controls, all eight browser workspaces, mobile layouts, field API contracts and mocked outage/role handling",
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "typecheck",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "cwd": "frontend",
+      "exit_code": 0,
+      "log": "evidence/unified-dashboard/typecheck.log",
+      "sha256": "f9f98aa525b34b6852d72f7977e0e748e12846344f78621dea12e721c8ca3156"
+    },
+    {
+      "name": "lint",
+      "command": [
+        "npm",
+        "run",
+        "lint"
+      ],
+      "cwd": "frontend",
+      "exit_code": 0,
+      "log": "evidence/unified-dashboard/lint.log",
+      "sha256": "44570175d09e28aceef9071dccb0efc42b69aa3e6fd8c5e459c903b3f9936063"
+    },
+    {
+      "name": "frontend-tests",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "cwd": "frontend",
+      "exit_code": 0,
+      "log": "evidence/unified-dashboard/frontend-tests.log",
+      "sha256": "03a1bebc3836f5aa66770309777a88e0f81a892af7ef744254d3dded9cd737ca"
+    },
+    {
+      "name": "build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "cwd": "frontend",
+      "exit_code": 0,
+      "log": "evidence/unified-dashboard/build.log",
+      "sha256": "59fd2d63b64143bb975a8e55250e984a5f27c391d3244284cb94115d179107fd"
+    },
+    {
+      "name": "field-service-tests",
+      "command": [
+        "/home/srijan/projects/ieee/backend/.venv/bin/python",
+        "-m",
+        "pytest",
+        "tests/test_dashboard_services.py",
+        "-q"
+      ],
+      "cwd": "modules",
+      "exit_code": 0,
+      "log": "evidence/unified-dashboard/field-service-tests.log",
+      "sha256": "f7da7f86cbf89957a3d2994d522437ec98ca4c257402418f86bbcbd223cc7b9e"
+    },
+    {
+      "name": "live-api",
+      "command": [
+        "/home/srijan/projects/ieee/backend/.venv/bin/python",
+        "scripts/check_dashboard_live.py"
+      ],
+      "cwd": ".",
+      "exit_code": 0,
+      "log": "evidence/unified-dashboard/live-api.log",
+      "sha256": "b2aee341cd60595f9147ca44057230a49e201d332caa26a0a0c497784d8ff356"
+    },
+    {
+      "name": "live-browser",
+      "command": [
+        "npm",
+        "run",
+        "test:dashboard-live"
+      ],
+      "cwd": "frontend",
+      "exit_code": 0,
+      "log": "evidence/unified-dashboard/live-browser.log",
+      "sha256": "a4782a0872f3e2e337dcf597094e45b5ece978e9e306775acf4dccab71565fd9"
+    },
+    {
+      "name": "browser",
+      "command": [
+        "npm",
+        "run",
+        "test:dashboard-browser"
+      ],
+      "cwd": "frontend",
+      "exit_code": 0,
+      "log": "evidence/unified-dashboard/browser.log",
+      "sha256": "f1b39a9b40d5b9ed6a5612c73659f12cf6a53cefa6eec6980d174f083d9d7316"
+    }
+  ],
+  "source_sha256": {
+    "backend/app/api/routes/simulator.py": "b1754e58e0e58f6bd21012b061fe366799b817eec1589ec606dfcf23379ec65c",
+    "backend/app/config.py": "076cea35647f42406d5ef531adeaa3c89327072a470beae02096caa90c289264",
+    "backend/app/simulator/__init__.py": "c6522b21f364a9d74a4fad116bb20d3e99c66be7722f7030f480ec256ef40566",
+    "backend/app/simulator/engine.py": "f014dfa34f9fa46eecd596f1a3aecda94167dd383057495f4ab6f80e4e193f0f",
+    "backend/app/simulator/engine_types.py": "6c4a96f18066a077b491e0a543e001db47a31d11719219de2906ababd7234df7",
+    "backend/app/simulator/local_transport.py": "de69c65f01360305451fab6ce4a1eb9b448a793745cc00a3619a47663136c5f1",
+    "backend/app/simulator/rescue_ball.py": "1f95a0140f1da04dbd45e884d1179d3cbd776f59f9e3d4bec95af70a816370c4",
+    "backend/app/simulator/scenarios.py": "62f24c13deaf362b2395cc16fdd552420bbc2f1a3aeb4a4cf556f5fda842a30f",
+    "frontend/scripts/check-dashboard-live.cjs": "e1dec6c50c2043ee89418f050e891d28989774aa8deda8d1ae4434a1c1fe2f2b",
+    "frontend/scripts/check-dashboard.cjs": "e09c992c01145fec3a5575fce86299e6953f000716e1d72e19ea881a7c280aad",
+    "frontend/src/App.tsx": "1ca351df0b1086a47c240c38492873d4b2f6fb53f4d00f1d533efcfc3aee7554",
+    "frontend/src/api/client.test.ts": "9ab3a4d4dbe207030d429f39aae7da51f8366c468b5b57069158b91e82d3b716",
+    "frontend/src/api/client.ts": "7afc54949daaa4a02474b5ec891f7c717f97b1f4e8e432a02dd79ffc40a08944",
+    "frontend/src/api/token.ts": "67bf7ec6e70569956c6be992cb2827327b8f7a2fc86007686423662de945229b",
+    "frontend/src/api/types.ts": "2ac9a9b4a7e9e851f586638bd60115c7ac3716b083aeebb8efd8b4391f5d6888",
+    "frontend/src/auth/AuthContext.test.tsx": "2d501d41c8f4773924fd4fd23487cad75c67629f657de1b6153158b3f53146b5",
+    "frontend/src/auth/AuthContext.tsx": "927d2abbb6c5b22e37eae3595ab9a633eddeb1f23708bf95cabc65d675866e5a",
+    "frontend/src/components/ActionCard.tsx": "dc5a6364d0309e22af1a2c9be2bc627fab0e0d04201a19f5ad5e619fedf45abc",
+    "frontend/src/components/ActionCardControls.tsx": "008f731980eb49ff4a18c9852fb104b6de0e9dc7b782989fd2485f55351e0224",
+    "frontend/src/components/AppLayout.tsx": "e845aea1bf75b8d1c57f1a2498d0d110523dd23a5115cccec3e47046e31e1e7a",
+    "frontend/src/components/DronePanel.tsx": "904503c2795cf9349c6752b74baa5ab5e5d49c5f4bdec5a0dd772e3ca44bcdcc",
+    "frontend/src/components/FeedHealthPanel.tsx": "e109b98f8247f4e018562ad35eb52b41e012dfb72f8cacd7f536bea4720c2845",
+    "frontend/src/components/LayerToggle.tsx": "4477a50a82b16a4a92bab326c208ef829c349ca43216db47174e241edd42efbc",
+    "frontend/src/components/LowBandwidthToggle.tsx": "cb7ad399026dd87a195dea5268cc0ed272c4957d4468ae6697c0af655773ec8a",
+    "frontend/src/components/MapLegend.tsx": "0ef9b6603728262d227345ec83990bcb5da99719cb36189ee698ea2f786801ec",
+    "frontend/src/components/MapView.tsx": "f3893e2a18b77200acc6fc7660f06dc5be6b90f19a0a27b3c740c7de003e030a",
+    "frontend/src/components/MeshOverview.tsx": "0e5c54410b0cb15c67a8864ca7142678ba9402bb232941dcef1ae217d7ca1144",
+    "frontend/src/components/OperationsPanel.tsx": "fff02b8a19d382b743fe1e6b1cac8ea5549d280beb797b11d0cb84a36aa14b90",
+    "frontend/src/components/PagePlaceholder.tsx": "347e0fe84c245fa2874d21f0035d3058903c0c7be3f7e97ece35a63c1b32506e",
+    "frontend/src/components/QuickReportForm.tsx": "5f3064f1214c1ad216ef1c69faa9d9212941f7970e29164a4dcfee92f6444e3f",
+    "frontend/src/components/RouteSandbox.tsx": "1f148404fc7d47b49c11b817cbd9ce1f0a763899af08b2c62e4daae141495544",
+    "frontend/src/components/ThermalPanel.test.tsx": "f9798b54b054d395785a4f6c7efa8bec5eb0ad2bd0833d5ffb76832a655d5003",
+    "frontend/src/components/ThermalPanel.tsx": "06714f322fd784416859701e93ab1c94c3ada52f4f79e8200c2bfe3e97d98e76",
+    "frontend/src/components/mapLayers.ts": "a80e3c7fe5e14c0773a416ffec816ac7f08415824590489059ba23fcb444703a",
+    "frontend/src/components/rescue/CommandLog.tsx": "d3c0d3d3608a1dab816931fa27c6b7f24f5ed5f8d421b1713a79ab376db08ac3",
+    "frontend/src/components/rescue/MeshStatusPanel.tsx": "309d466e138dc30aa682d55ce25117ee57e42bac22598aacfca31b177e96746e",
+    "frontend/src/components/rescue/RescueMap.tsx": "9942971372ee4c2557df45e3485dc5aa0e49bf2a91a608e681a07ca5b749169e",
+    "frontend/src/components/rescue/SurvivorTriagePanel.tsx": "1f4f2f1c67b67e2c2b69386c169c1300b3a5a46551715cf12330468f73f0417e",
+    "frontend/src/components/rescue/index.ts": "92f70d139cc1a53490963daa419c0f1f5f4a1fcd483dc5f62c964b8e84f403dd",
+    "frontend/src/components/state/EmptyState.tsx": "3a1ae0aa517460063e8f210d062660d3720ce189ff39abf99c9abc456df15f6f",
+    "frontend/src/components/state/ErrorState.tsx": "a1666a07d80f40a6754ca6e14a8ce2ce7b7413d1dcafa4647fe4977c59e10962",
+    "frontend/src/components/state/LoadingState.tsx": "930a2ed2adb6ecfe5a9a233b37f6e750bfac57aaf77e9f821860fb45c8931e88",
+    "frontend/src/components/state/OfflineState.tsx": "debae6db09cf188e5d4340f530d255a50d981903896555facb2de8a0b84e6f89",
+    "frontend/src/components/state/StaleState.tsx": "f42c0387e60550b3273894da95df64d24525fbf8fdfe5ed97575def1f20a884b",
+    "frontend/src/components/state/index.ts": "8c4a7fbc3b6c08cbb8ae41f86c6775b046938222fbd223888351069f33e1d58b",
+    "frontend/src/context/LowBandwidthContext.tsx": "d9e8a90e8842599a0f9c93d26a18a70a913d49f9c6c7adab6cfd77e7a28dcd54",
+    "frontend/src/hooks/useClock.ts": "e9f4cd9623640ec24c3538843e1b8bb58156a52708edafeb74fa03353617e273",
+    "frontend/src/hooks/useMapLayers.ts": "c30d9fc27aec8e11145b3dc6b5065d07f873eb61b9930aa7cbe003d36e15c16e",
+    "frontend/src/hooks/useMeshHealth.ts": "db65a70182bac97de3c098fb7d6803a6c468a68c2f74506a68c7ce53fcb029ed",
+    "frontend/src/hooks/useMeshRoute.ts": "d76e540a8a4f2f08da72117446308596f3eba5d9d24af3ac2ecd641713341e76",
+    "frontend/src/hooks/useOutbox.ts": "4c90d9fd261f8e252e468e53ecb79a735f2224220467240bc699adbcb284f60d",
+    "frontend/src/lib/mapTransform.ts": "c5d234a5a02f0f36fcceb0a4b785a8851f6d4ea00ad85266d2a087dcad48c18c",
+    "frontend/src/lib/meshRoute.test.ts": "34e05573881b7a4d1eea6d2b1fb41185639a12d204c964eb7f456d2f9d11b8e6",
+    "frontend/src/lib/meshRoute.ts": "a029315c5e938a9f9216bdeac7cf5cb392650f965cf6e949528a46917ee637c1",
+    "frontend/src/lib/outbox-policy.ts": "eb7013b0fac947de4e07472aeeb92e96ac6901b52f0befa415c9d19705e29061",
+    "frontend/src/lib/outbox.test.ts": "84a7d3f9b531f701d7b5c6798098f329fbeaa20aeca3e6e109bd8e7373f22c95",
+    "frontend/src/lib/outbox.ts": "e92ec22e96706463fec60dd3a4d0d05a0262591deec321f76016c0ab7eef5778",
+    "frontend/src/lib/routeSandbox.test.ts": "316c314a3e29973bfbd23594b7c7d8c314507506347f8666f217dccd99a8e02e",
+    "frontend/src/lib/routeSandbox.ts": "12b57d21e65567f6d37a8bf79ebd76620005f886e38016727f0645e2f04f8b4c",
+    "frontend/src/lib/simulatorFaults.ts": "33f4c8379f357e29386fccbe3e5ce6b3f0d69d36c81ab22fe9b89300721ae06c",
+    "frontend/src/lib/ulid.ts": "3c68b6368913d1fcc45c4cae3a5eb084de985ddc4de55247900f81edf729842e",
+    "frontend/src/main.tsx": "f37423ee71ecf2246e910560494e1aa2c0f8a78a0f7acf5a3e36cc29643fe462",
+    "frontend/src/pages/AuditPage.tsx": "e175d62a3296798cad56f43bdc8673681974ab618a019d2ee1b6254a5725f041",
+    "frontend/src/pages/DashboardPage.test.tsx": "2dde0f014e0076dce2696ef976708ae3cffdd6c066295c45603ec8b73ed5c19d",
+    "frontend/src/pages/DashboardPage.tsx": "ced39d21af5655a2c47adefed4a6110b0a6600e7ff5c4b2c627ab31b4bf094b7",
+    "frontend/src/pages/DeviceDetailPage.tsx": "d1bb74c3a4fc121377bdbc25cca160f1b316359a47eeb4046b46150b66e02379",
+    "frontend/src/pages/FieldPage.tsx": "9ac68efe8f7add4758b979332b18838877d8b3ba3896a7e4cecd49bf9b43b95e",
+    "frontend/src/pages/HypothesesPage.tsx": "7a3911341e0743bd35bd0381d63f74d460bd591a5c363b6df4bf7b9d0dbaadd7",
+    "frontend/src/pages/IncidentDashboard.tsx": "30c9d1fe3545cf3c6736737492f9249df26e6a112971c06ca3bf299408fa917c",
+    "frontend/src/pages/LoginPage.tsx": "f980fa743d7896ba4b527506d2eb5c16add71fc0b5006dad4e791f5b7f089cdb",
+    "frontend/src/pages/NotFoundPage.tsx": "02b03eb746e5f3fe8deb471264188be1e198fba9f886cdcc61804bba532306f0",
+    "frontend/src/pages/PlanningPage.tsx": "5e50e20127550d402d75de55847c71166babaab9983fef3f746ec32c44f66500",
+    "frontend/src/pages/RescuePage.tsx": "93ba1c3b35071c829be68f2c90f45bd01bb21a9db74af78202c1690848af82b8",
+    "frontend/src/pages/SimulationPage.tsx": "a516d1329fe0f7c9fcd8681f9b5d74968fb7ef61588dacc9ef5a2f614db07e52",
+    "frontend/src/test/setup.ts": "7334f17c47e7d85c20b8c4a0d384fc8df3db1f4be50c0b6215297852a63d9173",
+    "frontend/src/types/map.ts": "5d9790ffb428dfdccf1fffff1b456e76e9ef88555ed18c13c1b7168321489577",
+    "frontend/src/types/rescue.ts": "935007ba1e30e9930662d5dd213e9eaee98b0b802a228d2b282e2c8471276c5d",
+    "frontend/src/vite-env.d.ts": "85c71b10264487eae126a284dd403459d7b420684ef737b1fdda2ef33d97bf88",
+    "modules/ble_localization/cli.py": "ff1e914bfdeb7e5772b2190b0212dbcb1fee6462c6e2375bba99ddbd6b240cb9",
+    "modules/ble_localization/main.py": "cbbf8ada9974741f65007be01d92d5a1f5da2b2dd1c127445e476973b9e102ac",
+    "modules/mesh_app/lib/services/api_service.dart": "f5c09a1ceef3340a2a6899450e03d2f7186199017ab870460083cb13b03ce68d",
+    "modules/route_engine/thermal_server.py": "edf5ca316aadad5c282aac934d0e19c44b756952ea36279d67d1e1eba92b9fc0",
+    "modules/tests/test_dashboard_services.py": "bde92c1f2f3e20a72a2017cece58d6135e7952aeeade91a535f5abf86298ee78",
+    "scripts/check_dashboard_live.py": "a6cfd87bc1dae553e877a11857db00f1089c7109c7fa2a14ddd2ed0c15ede85f",
+    "scripts/start_dashboard_local.py": "1f0935fefb2b330ba797cc793489ab0cdd80673254067182c90bbd736b3971f9"
+  },
+  "limitations": [
+    "Development PostgreSQL 18 differs from production PostgreSQL 16/TimescaleDB",
+    "Kafka, object storage and Ollama are not running; simulator uses explicit development database transport",
+    "No physical phone/controller/drone test; Flutter SDK unavailable",
+    "Desktop PyTorch route model and thermal analysis tools do not have web adapters",
+    "Field services remain separate, with no production authentication/tenancy integration"
+  ]
+}

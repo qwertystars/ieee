@@ -3,7 +3,6 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import { AppLayout } from './components/AppLayout'
 import { LoadingState } from './components/state/LoadingState'
-import LoginPage from './pages/LoginPage'
 
 const AuditPage = lazy(() => import('./pages/AuditPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
@@ -15,8 +14,8 @@ const PlanningPage = lazy(() => import('./pages/PlanningPage'))
 const RescuePage = lazy(() => import('./pages/RescuePage'))
 const SimulationPage = lazy(() => import('./pages/SimulationPage'))
 
-function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { isAuthenticated, loading } = useAuth()
+function ProtectedRoute({ children, operational = false }: { children: ReactNode; operational?: boolean }) {
+  const { isAuthenticated, loading, user } = useAuth()
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-950">
@@ -25,15 +24,24 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
     )
   }
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/dashboard" replace />
   }
+  if (operational && user?.role === 'viewer') return <Navigate to="/dashboard" replace />
   return <>{children}</>
+}
+
+function DashboardEntry() {
+  const { loading } = useAuth()
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-950"><LoadingState message="Connecting to the platform…" /></div>
+  return <div className="min-h-screen bg-slate-950"><Suspense fallback={<LoadingState />}><DashboardPage /></Suspense></div>
 }
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={<DashboardEntry />} />
+      <Route path="/preview" element={<Navigate to="/dashboard" replace />} />
 
       <Route
         element={
@@ -42,14 +50,6 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route
-          path="/dashboard"
-          element={
-            <Suspense fallback={<LoadingState />}>
-              <DashboardPage />
-            </Suspense>
-          }
-        />
         <Route
           path="/hypotheses"
           element={
@@ -78,7 +78,7 @@ export default function App() {
           path="/rescue"
           element={
             <Suspense fallback={<LoadingState />}>
-              <RescuePage />
+              <ProtectedRoute operational><RescuePage /></ProtectedRoute>
             </Suspense>
           }
         />

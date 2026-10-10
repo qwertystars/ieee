@@ -17,10 +17,10 @@ export function SurvivorTriagePanel({ survivors, onReset }: SurvivorTriagePanelP
   const sorted = [...survivors].sort((a, b) => URGENCY_RANK[a.urgency] - URGENCY_RANK[b.urgency])
 
   return (
-    <section className="rescue-panel w-96 space-y-4" aria-label="Survivor triage">
+    <section className="rescue-panel w-full max-w-[24rem] space-y-4" aria-label="Survivor triage">
       <header className="flex items-center justify-between">
         <div>
-          <p className="rescue-eyebrow">Survivor Triage</p>
+          <p className="rescue-eyebrow">Survivor Beacons</p>
           <h2 className="text-xl font-semibold text-slate-50">Priority Signals</h2>
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-400">
@@ -36,6 +36,7 @@ export function SurvivorTriagePanel({ survivors, onReset }: SurvivorTriagePanelP
           </button>
         </div>
       </header>
+      <p className="text-xs text-amber-200">Signal priority reflects RSSI, not medical urgency. GPS marks the reporting relay.</p>
       {sorted.length === 0 ? (
         <p className="text-sm text-slate-400">No survivors detected yet.</p>
       ) : (
@@ -49,7 +50,7 @@ export function SurvivorTriagePanel({ survivors, onReset }: SurvivorTriagePanelP
                 <p className="text-sm font-semibold text-slate-100">Beacon {survivor.id}</p>
                 {survivor.lat !== undefined && survivor.lng !== undefined && (
                   <p className="font-mono text-[10px] text-cyan-400/80">
-                    GPS {survivor.lat.toFixed(6)}, {survivor.lng.toFixed(6)}
+                    Relay GPS {survivor.lat.toFixed(6)}, {survivor.lng.toFixed(6)}
                   </p>
                 )}
                 <p className="text-[11px] text-slate-500">

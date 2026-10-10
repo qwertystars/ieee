@@ -7,12 +7,15 @@ export type MeshLinkStatus = 'connecting' | 'open' | 'closed' | 'error'
 const RETRY_MS = 2000
 
 // Subscribes to the BLE mesh service's live route state, reconnecting on drop.
-export function useMeshRoute(apiBase: string = meshApiBase()) {
+export function useMeshRoute(apiBase: string = meshApiBase(), enabled = true) {
   const [state, setState] = useState<RouteState>(EMPTY_ROUTE_STATE)
   const [hasReceivedData, setHasReceivedData] = useState(false)
   const [status, setStatus] = useState<MeshLinkStatus>('connecting')
+  const [receivedAt, setReceivedAt] = useState<number | null>(null)
+  const [resetError, setResetError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!enabled) return
     let socket: WebSocket | null = null
     let retry: number | null = null
     let active = true
@@ -24,6 +27,7 @@ export function useMeshRoute(apiBase: string = meshApiBase()) {
         if (!active) return
         try {
           setState(parseRouteMessage(JSON.parse(event.data)))
+          setReceivedAt(Date.now())
           setHasReceivedData(true)
         } catch {
           setStatus('error')
@@ -46,19 +50,24 @@ export function useMeshRoute(apiBase: string = meshApiBase()) {
       if (retry !== null) window.clearTimeout(retry)
       socket?.close()
     }
-  }, [apiBase])
+  }, [apiBase, enabled])
 
-  // Clears the local picture immediately; the service broadcasts the empty
-  // state to other viewers when its reset succeeds.
+  // Keep the last picture when a reset fails; do not imply server success.
   const reset = useCallback(async () => {
-    setState(EMPTY_ROUTE_STATE)
-    setHasReceivedData(true)
+    if (!enabled) return
+    setResetError(null)
     try {
-      await fetch(`${apiBase}/api/mesh/reset`, { method: 'POST' })
+      const response = await fetch(`${apiBase}/api/mesh/reset`, {
+        method: 'POST', signal: AbortSignal.timeout(4000),
+      })
+      if (!response.ok) throw new Error('Reset failed')
+      setState(EMPTY_ROUTE_STATE)
+      setHasReceivedData(true)
+      setReceivedAt(Date.now())
     } catch {
-      // Local state stays cleared even if the service is unreachable.
+      setResetError('Mesh reset failed. The last received picture has been retained.')
     }
-  }, [apiBase])
+  }, [apiBase, enabled])
 
-  return { state, status, hasReceivedData, reset }
+  return { state, status, hasReceivedData, receivedAt, resetError, reset }
 }

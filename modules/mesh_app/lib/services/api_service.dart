@@ -10,7 +10,8 @@ import 'package:http/http.dart' as http;
 import '../models/survivor_data.dart';
 
 class ApiService {
-  static const String _defaultBaseUrl = 'http://127.0.0.1:8000';
+  /// Mesh service URL configured when building the phone app.
+  static const String _defaultBaseUrl = String.fromEnvironment('MESH_API_BASE');
 
   final String baseUrl;
 
@@ -24,7 +25,16 @@ class ApiService {
     required double deviceLat,
     required double deviceLng,
   }) async {
-    final endpoint = '$baseUrl/api/mesh/sync';
+    final service = Uri.tryParse(baseUrl);
+    if (service == null ||
+        !['http', 'https'].contains(service.scheme) ||
+        service.host.isEmpty) {
+      return const SyncResult(
+        success: false,
+        message: 'Configure MESH_API_BASE with the mesh service URL (port 8001).',
+      );
+    }
+    final endpoint = '${baseUrl.replaceFirst(RegExp(r'/+$'), '')}/api/mesh/sync';
 
     final payload = {
       'device_id': deviceId,
