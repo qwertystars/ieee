@@ -24,6 +24,7 @@ def main() -> int:
             "-m", "pytest", "tests/test_dashboard_services.py", "-q"]),
         ("live-api", ROOT, [str(ROOT / "backend/.venv/bin/python"), "scripts/check_dashboard_live.py"]),
         ("live-browser", ROOT / "frontend", ["npm", "run", "test:dashboard-live"]),
+        ("cache-migration", ROOT / "frontend", ["node", "scripts/check-cache-migration.cjs"]),
         ("browser", ROOT / "frontend", ["npm", "run", "test:dashboard-browser"]),
     ]
     checks = []
@@ -43,7 +44,7 @@ def main() -> int:
         print(f"{name}: exit {code}", flush=True)
 
     sources = [*ROOT.glob("frontend/src/**/*.ts"), *ROOT.glob("frontend/src/**/*.tsx"),
-        ROOT / "frontend/scripts/check-dashboard.cjs", ROOT / "frontend/scripts/check-dashboard-live.cjs",
+        ROOT / "frontend/public/sw.js", ROOT / "frontend/scripts/check-dashboard.cjs", ROOT / "frontend/scripts/check-dashboard-live.cjs", ROOT / "frontend/scripts/check-cache-migration.cjs",
         ROOT / "scripts/check_dashboard_live.py", ROOT / "scripts/start_dashboard_local.py",
         ROOT / "backend/app/config.py", ROOT / "backend/app/api/routes/simulator.py",
         *ROOT.glob("backend/app/simulator/*.py"), ROOT / "modules/ble_localization/main.py",

@@ -13,7 +13,7 @@
       "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/situation-report",
       "status": 200,
       "expected": 200,
-      "response_sha256": "356ac092d2018ba5958557ba7c2903cb17927c268a40d76dd6b55a163ce8795f"
+      "response_sha256": "59fe346860f9f0c655cc28a9460f2f7eed63919795d01d7e02f320cc2c817d8a"
     },
     {
       "method": "GET",
@@ -34,28 +34,28 @@
       "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/hypotheses",
       "status": 200,
       "expected": 200,
-      "response_sha256": "25b9e45bf6f3d195823d8bcf317fc417a9dd582b6562f747d67beb14850aeef5"
+      "response_sha256": "4440bda4d2f381a1e95cac0d1b93caca8e187fd22f63e4299afd084ec578c9e9"
     },
     {
       "method": "GET",
       "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/audit-logs",
       "status": 200,
       "expected": 200,
-      "response_sha256": "a540fc28cc9095dcbb1dcebee1898b95710d6381509bc2bebe9fde124acc6796"
+      "response_sha256": "1a2bfe074d4957d38dad0a7a6f3e3edf7f2db42364f0ab2044abc35728c20a1e"
     },
     {
       "method": "GET",
       "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/feed-health",
       "status": 200,
       "expected": 200,
-      "response_sha256": "f89f2a8aa9b31722817cc5a01f0fa0e1f49139112b421ef6b0321590d1cca58c"
+      "response_sha256": "8834ffac41be0f2459c8117cdfae4ab9d0736295f93451a3a62ff5f0ed716ca4"
     },
     {
       "method": "GET",
       "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/degradation-summary",
       "status": 200,
       "expected": 200,
-      "response_sha256": "7c4ff5299e3ee73a0635c2ee379b94da174dba01b2bb77d7bb557e9dd80eebb6"
+      "response_sha256": "9ea66117e563600cca90bbd3ed3450fab97c0cb315ff33d46f90042e880da60d"
     },
     {
       "method": "GET",
@@ -118,7 +118,7 @@
       "path": "/api/observations?incident_id=01K0KF2EG0XC8KE3AD81HK0VEW",
       "status": 200,
       "expected": 200,
-      "response_sha256": "99d135d3b54e1c9954cb2d831682bf9eb52a486340848e4a2d74d820f05bb714"
+      "response_sha256": "03fda5842c1f2c521154bae979f4b5d6502587820b1a058c9438f6a7b6105a88"
     },
     {
       "method": "GET",
@@ -132,7 +132,7 @@
       "path": "/api/simulator/start",
       "status": 403,
       "expected": 403,
-      "response_sha256": "5ecffd2253b89c7b0dc9dd9ab799a93b94a5ad7fb268e1c466d45741d1fc82f9"
+      "response_sha256": "48233c3dbce032d66c5cd1e2a28a9e703763f596c88656e2b14f2b5481d15b43"
     },
     {
       "method": "POST",
@@ -167,7 +167,7 @@
       "path": "/api/simulator/set-speed",
       "status": 422,
       "expected": 422,
-      "response_sha256": "a51bc7e3d830e397363250212ae9719921f746f851bd9674a06bb5e0b21505c3"
+      "response_sha256": "a6bc77f25fbd7690c27c49a8eaa94b2dce2f3d0f6d77b187a45449c9b2a38130"
     },
     {
       "method": "POST",
@@ -258,7 +258,7 @@
       "path": "/api/observations?incident_id=01K0KF2EG0XC8KE3AD81HK0VEW&limit=500",
       "status": 200,
       "expected": 200,
-      "response_sha256": "2265ae55b406f28317835cc697aadd80f0bd070014eac3a31b6b70fb387a6bcd"
+      "response_sha256": "20de2e31f7aa947f363a60f1fce6dcb11a21585f94650b242214646d0256526c"
     },
     {
       "method": "POST",

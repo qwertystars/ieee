@@ -1,6 +1,6 @@
 // ResQNet-SAGE service worker — app-shell caching (cache-first).
 // Bump CACHE_VERSION on deploys to invalidate old caches.
-const CACHE_VERSION = 'resqnet-v2';
+const CACHE_VERSION = 'resqnet-v3';
 const CACHE_NAME = `${CACHE_VERSION}-shell`;
 
 // App shell: known static URLs precached on install. Hashed Vite assets
@@ -53,10 +53,26 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Never cache Vite development modules or its hot-reload transport.
+  if (url.pathname.startsWith('/src/') || url.pathname.startsWith('/node_modules/') ||
+      url.pathname.startsWith('/@') || url.pathname === '/sw.js') return;
+
   // API responses may contain authenticated or sensitive data. Never put them
   // in the public app-shell cache, even when a caller forgets an auth header.
   if (url.pathname.startsWith('/api/') || request.headers.has('Authorization') || request.credentials === 'include') {
     event.respondWith(fetch(new Request(request, { cache: 'no-store' })).catch(() => new Response('', { status: 503 })));
+    return;
+  }
+
+  // Prefer current HTML online while retaining the app shell for offline use.
+  if (request.mode === 'navigate') {
+    event.respondWith(fetch(request).then(response => {
+      if (response.ok) {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put('/index.html', copy)));
+      }
+      return response;
+    }).catch(() => caches.match('/index.html').then(cached => cached || Response.error())));
     return;
   }
 

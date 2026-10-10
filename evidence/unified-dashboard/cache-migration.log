@@ -1,0 +1,1 @@
+PASS: earlier service worker with stale CSS is removed; dashboard styles recover; simulation banner absent.
