@@ -20,15 +20,15 @@ export function AppLayout() {
 
   async function handleLogout() {
     await logout()
-    navigate('/login', { replace: true })
+    navigate('/dashboard', { replace: true })
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-950">
-      <header className="flex items-center justify-between border-b border-gray-800 bg-gray-900 px-4 py-3">
-        <div className="flex items-center gap-6">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 bg-gray-900 px-4 py-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           <span className="text-sm font-bold text-gray-100">ResQNet-SAGE</span>
-          <nav className="flex items-center gap-1" aria-label="Main navigation">
+          <nav className="flex flex-wrap items-center gap-1" aria-label="Main navigation">
             {NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.to}
@@ -47,7 +47,7 @@ export function AppLayout() {
             ))}
           </nav>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <LowBandwidthToggle />
           <span
             role="status"

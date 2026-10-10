@@ -7,10 +7,11 @@ const POLL_MS = 5000
 const TIMEOUT_MS = 3000
 
 // Polls the BLE mesh service's /health endpoint.
-export function useMeshHealth(apiBase: string = meshApiBase()) {
+export function useMeshHealth(apiBase: string = meshApiBase(), enabled = true) {
   const [status, setStatus] = useState<MeshHealthStatus>('checking')
 
   useEffect(() => {
+    if (!enabled) return
     let active = true
     let timer: number | null = null
 
@@ -36,7 +37,7 @@ export function useMeshHealth(apiBase: string = meshApiBase()) {
       active = false
       if (timer !== null) window.clearTimeout(timer)
     }
-  }, [apiBase])
+  }, [apiBase, enabled])
 
   return status
 }

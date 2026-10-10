@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "test": "vitest run",
-    "test:a11y": "playwright test tests/a11y.spec.ts --project=chromium"
+    "test:dashboard-browser": "node scripts/check-dashboard.cjs",
+    "test:a11y": "playwright test tests/a11y.spec.ts --project=chromium",
+    "test:dashboard-live": "node scripts/check-dashboard-live.cjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.51.0",

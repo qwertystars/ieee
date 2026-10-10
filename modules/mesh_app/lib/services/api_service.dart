@@ -11,7 +11,7 @@ import '../models/survivor_data.dart';
 
 class ApiService {
   /// Command Center backend URL (local network or when internet is restored)
-  static const String _defaultBaseUrl = 'http://172.45.1.133:8000';
+  static const String _defaultBaseUrl = String.fromEnvironment('MESH_API_BASE');
 
   final String baseUrl;
 
@@ -25,7 +25,16 @@ class ApiService {
     required double deviceLat,
     required double deviceLng,
   }) async {
-    final endpoint = '$baseUrl/api/mesh/sync';
+    final service = Uri.tryParse(baseUrl);
+    if (service == null ||
+        !['http', 'https'].contains(service.scheme) ||
+        service.host.isEmpty) {
+      return const SyncResult(
+        success: false,
+        message: 'Configure MESH_API_BASE with the mesh service URL (port 8001).',
+      );
+    }
+    final endpoint = '${baseUrl.replaceFirst(RegExp(r'/+$'), '')}/api/mesh/sync';
 
     final payload = {
       'device_id': deviceId,

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import time
 from collections import deque
-from typing import List, Literal
+from typing import Annotated, List, Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,7 +27,7 @@ from pydantic import BaseModel, Field
 class HazardPayload(BaseModel):
     """Schema for incoming thermal detection events."""
     type: Literal["THERMAL_DETECTION"] = "THERMAL_DETECTION"
-    coords: List[float] = Field(
+    coords: List[Annotated[float, Field(ge=0.0, le=1.0, allow_inf_nan=False)]] = Field(
         ...,
         min_length=2,
         max_length=2,
@@ -42,6 +42,7 @@ class HazardRecord(HazardPayload):
     id:         int
     timestamp:  float
     server_ms:  int   # milliseconds since server start
+    review_status: Literal["draft"] = "draft"
 
 
 # ──────────────────────────────────────────────────────────────────────────────

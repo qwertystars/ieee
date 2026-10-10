@@ -168,6 +168,58 @@ frontend/
 
 ## Field modules and hardware
 
+The **Dashboard** (`/dashboard`) is the unified command center. It shows mesh
+signals, thermal candidates and drone controls together, with embedded workspaces
+for the situation map, survivor map, planning/dispatch, digital twin, field work,
+AI hypotheses and audit. Field feeds are independent of the incident backend and
+show disconnected states when their services are unavailable. Detailed field
+panels are hidden from the viewer role; the standalone field services still need
+server-side authentication/tenancy before deployment.
+
+The app opens the dashboard directly at `/` or `/dashboard`. `/login` and
+`/preview` redirect there. During local development, field panels connect to
+their configured services without a login screen; no sample data is substituted
+for missing feeds. Incident tools show backend failures when that service is
+unavailable. Backend authentication remains enforced for live incident APIs,
+and production builds require an operational user to mount detailed field feeds.
+
+The dashboard also includes a **Route sandbox**: a 15×15 editable demonstration
+grid with fire, flood and collapse obstacles, endpoints and geometry-only shortest
+paths. It does not run the trained PyTorch model or recommend operational routes.
+
+Start the BLE service on port 8001 as described below. Start thermal ingestion
+with `uvicorn thermal_server:app --host 0.0.0.0 --port 8765` from
+`modules/route_engine/`. Configure frontend endpoints with
+`VITE_MESH_API_BASE`, `VITE_THERMAL_API_BASE`, and `VITE_DRONE_URL`
+(default drone URL: `http://192.168.4.1/`). The drone controls can open in a new
+tab or, over HTTP, inside the dashboard. The phone must join the ESP32 WiFi.
+
+For a lightweight local field-service environment, use uv:
+
+```bash
+uv venv backend/.venv --python 3.11
+uv pip install --python backend/.venv/bin/python fastapi uvicorn pydantic httpx pytest
+cd modules
+../backend/.venv/bin/python -m uvicorn ble_localization.main:app --host 127.0.0.1 --port 8001
+# In another terminal, from the repository root:
+cd modules/route_engine
+../../backend/.venv/bin/python -m uvicorn thermal_server:app --host 127.0.0.1 --port 8765
+```
+
+These dependencies support mesh sync and thermal event ingestion. The complete
+local dashboard now runs against PostgreSQL and the backend; see
+[Local dashboard](docs/LOCAL_DASHBOARD.md) for startup, development sessions and
+real-service verification. Install `websockets` as well for live BLE updates.
+The BLE prediction endpoints return 503 if their optional ML dependencies are
+missing. Start the mesh service on a reachable LAN interface when connecting real
+phones, and build the Flutter app with
+`flutter run --dart-define=MESH_API_BASE=http://YOUR_SERVER_IP:8001`.
+The mobile app no longer defaults to a teammate's hardcoded server IP.
+
+The thermal panel displays detection events, not video or GPS positions. The mesh
+path is the service's reported relay path, not the desktop AI engine's optimized
+route. That engine and the desktop thermal analysis tools still need web adapters.
+
 Beyond the platform, the repo carries the field team's modules and the drone firmware:
 
 - [`modules/`](modules/README.md) holds the BLE mesh localization service, the Flutter mesh app,

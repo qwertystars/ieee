@@ -14,12 +14,14 @@ accuracy, and landing mechanism have NOT been validated.
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import json
 import logging
 import random
 from collections.abc import Callable
 
+from app.config import settings
+from app.lib.ulid import generate_ulid
+from app.simulator.engine_types import deterministic_ulid as _deterministic_ulid
+from app.simulator.local_transport import build_simulation_payload, persist_simulation
 from app.simulator.rescue_ball import RescueBallDevice
 from app.simulator.scenarios import (
     RIVERTOWN_FLOOD_PATH,
@@ -37,8 +39,6 @@ from app.simulator.scenarios import (
 from app.streaming.producer import ProducerManager
 
 logger = logging.getLogger("app.simulator.engine")
-
-_CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
 # Maps fault type names to scenario injection functions.
 _FAULT_INJECTIONS: dict[str, Callable[..., None]] = {
@@ -65,35 +65,8 @@ _PHENOMENA: list[tuple[str, str, str]] = [
 _TICK_MS = 1000  # 1 second per tick
 
 
-def _b32_encode(data: bytes, length: int) -> str:
-    """Encode big-endian bytes into a Crockford base32 string of ``length`` chars."""
-    num = int.from_bytes(data, "big")
-    out: list[str] = []
-    for _ in range(length):
-        out.append(_CROCKFORD[num & 0x1F])
-        num >>= 5
-    return "".join(reversed(out))
-
-
-def _deterministic_ulid(rng: random.Random, ts_ms: int) -> str:
-    """Generate a 26-char ULID deterministically from an RNG and timestamp.
-
-    The timestamp portion encodes ``ts_ms`` (48-bit, same as ``generate_ulid``).
-    The randomness portion is drawn from ``rng`` so the same seed reproduces
-    the same ULID sequence.
-    """
-    ts_bytes = ts_ms.to_bytes(6, "big")
-    rand_bytes = rng.randbytes(10)
-    return _b32_encode(ts_bytes, 10) + _b32_encode(rand_bytes, 16)
-
-
 class SimulationEngine:
-    """Deterministic rescue-ball simulation engine.
-
-    All randomness is sourced from the seedable RNG, so the same seed
-    reproduces the same trajectory and observation IDs. Observations are
-    published through ``ProducerManager`` to the ``observations.raw`` topic.
-    """
+    """Seeded digital twin with explicit Kafka or local database transport."""
 
     def __init__(self, seed: int = 42) -> None:
         self._seed = seed
@@ -107,6 +80,7 @@ class SimulationEngine:
         self._sim_time_ms = 0
         self._producer: ProducerManager | None = None
         self._observation_ids: list[str] = []
+        self._run_id = ""
 
     @property
     def observation_ids(self) -> list[str]:
@@ -115,13 +89,14 @@ class SimulationEngine:
 
     def start(self, org_id: str, incident_id: str, device_count: int = 2) -> list[str]:
         """Create devices and start the simulation loop. Returns device IDs."""
-        if self._state == "running":
+        if self._state != "stopped":
             raise RuntimeError("Simulation already running — call stop() first")
         self._org_id = org_id
         self._incident_id = incident_id
         self._rng = random.Random(self._seed)
         self._sim_time_ms = 0
         self._observation_ids.clear()
+        self._run_id = generate_ulid()
         self._devices = [self._make_device(i) for i in range(device_count)]
         self._state = "running"
         self._task = asyncio.create_task(self._run_loop())
@@ -237,6 +212,8 @@ class SimulationEngine:
 
     async def _ensure_producer(self) -> None:
         """Start the Kafka producer (best-effort — non-fatal if unavailable)."""
+        if settings.SIMULATOR_TRANSPORT == "database":
+            return
         if self._producer is None:
             self._producer = ProducerManager()
         if not self._producer.is_started:
@@ -256,25 +233,11 @@ class SimulationEngine:
         so downstream consumers can distinguish simulated from real data.
         """
         obs_id = _deterministic_ulid(self._rng, self._sim_time_ms)
-        payload: dict = {
-            "observation_id": obs_id,
-            "event_type": "sensor_observation",
-            "phenomenon": phenomenon,
-            "geometry": {"type": "Point", "coordinates": [device.lon, device.lat]},
-            "observed_at": self._sim_time_ms,
-            "source_id": f"simulator:{device.device_id}",
-            "source_type": "sensor",
-            "org_id": self._org_id,
-            "incident_id": self._incident_id,
-            "value": float(value),
-            "unit": unit,
-            "provenance_chain": {"simulated": True},
-        }
-        hash_input = {k: v for k, v in payload.items() if k != "raw_data_hash"}
-        canonical = json.dumps(hash_input, sort_keys=True, separators=(",", ":"))
-        payload["raw_data_hash"] = "sha256:" + hashlib.sha256(canonical.encode()).hexdigest()
+        payload = build_simulation_payload(self, device, phenomenon, value, unit, obs_id)
         self._observation_ids.append(obs_id)
-        if self._producer is not None and self._producer.is_started:
+        if settings.SIMULATOR_TRANSPORT == "database":
+            await asyncio.to_thread(persist_simulation, payload, self._run_id)
+        elif self._producer is not None and self._producer.is_started:
             try:
                 await self._producer.send("observations.raw", payload)
             except Exception as exc:

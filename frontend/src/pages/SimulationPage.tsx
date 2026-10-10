@@ -1,14 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { InjectFaultRequest, Observation, GeoJSONFeature } from '../api/types'
 import { LoadingState, ErrorState, EmptyState, StaleState, OfflineState } from '../components/state'
 
-const FAULT_TYPES = [
-  'battery_drain', 'sensor_degradation', 'connectivity_loss', 'blocked_route',
-  'thermal_hotspot', 'human_heat_signature', 'water_depth', 'motion', 'vibration', 'environmental_temp',
-]
+import { SIMULATION_FAULTS } from '../lib/simulatorFaults'
 
 function fmtTime(ms: number): string {
   const s = Math.floor((ms ?? 0) / 1000)
@@ -29,6 +26,7 @@ interface Telemetry { battery?: number; signal?: number; temperature?: number; a
 function extractTel(features: GeoJSONFeature<Observation>[], deviceId: string): Telemetry | null {
   const sourceId = `simulator:${deviceId}`
   const obs = features.filter(f => f.properties.source_id === sourceId)
+    .sort((a, b) => a.properties.observed_at - b.properties.observed_at)
   if (obs.length === 0) return null
   const tel: Telemetry = {}
   for (const f of obs) {
@@ -46,13 +44,16 @@ function extractTel(features: GeoJSONFeature<Observation>[], deviceId: string): 
 export default function SimulationPage() {
   const queryClient = useQueryClient()
   const [toast, setToast] = useState<{ msg: string; kind: 'success' | 'error' } | null>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current) }, [])
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
   const [speed, setSpeed] = useState(1.0)
   const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true
 
   function showToast(msg: string, kind: 'success' | 'error' = 'success') {
     setToast({ msg, kind })
-    setTimeout(() => setToast(null), 3000)
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(null), 3000)
   }
 
   const statusQ = useQuery({
@@ -72,6 +73,7 @@ export default function SimulationPage() {
     queryKey: ['observations', incidentId],
     queryFn: ({ signal }) => api.getObservations(incidentId!, signal),
     enabled: !!incidentId && !!selectedDevice,
+    refetchInterval: 2000,
   })
 
   const telemetry = useMemo(() => {
@@ -129,10 +131,6 @@ export default function SimulationPage() {
 
   return (
     <div className="flex flex-col gap-4 p-6" aria-label="Simulation page">
-      <div className="rounded-lg border border-amber-600 bg-amber-900/30 px-4 py-2 text-center text-sm font-bold uppercase tracking-wider text-amber-300" role="banner" aria-label="Simulated data banner">
-        ⚠ Simulated Data — Digital twin only, not for operational use
-      </div>
-
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-gray-100">Simulation</h1>
@@ -218,9 +216,9 @@ export default function SimulationPage() {
         <section className="rounded-lg border border-gray-700 bg-gray-900/95 p-4" aria-label="Fault injection">
           <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-300">Inject Fault — <span className="font-mono text-blue-400">{selectedDevice}</span></h2>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="group" aria-label="Fault types">
-            {FAULT_TYPES.map(ft => (
-              <button key={ft} onClick={() => faultMut.mutate({ device_id: selectedDevice, fault_type: ft })} disabled={faultMut.isPending} className="rounded border border-gray-600 bg-gray-800 px-2 py-2 text-[11px] text-gray-200 hover:bg-gray-700 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label={`Inject fault ${ft}`}>
-                {ft.replace(/_/g, ' ')}
+            {SIMULATION_FAULTS.map(fault => (
+              <button key={fault.type} onClick={() => faultMut.mutate({ device_id: selectedDevice, fault_type: fault.type, kwargs: fault.kwargs })} disabled={faultMut.isPending} className="rounded border border-gray-600 bg-gray-800 px-2 py-2 text-[11px] text-gray-200 hover:bg-gray-700 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label={`Inject fault ${fault.type}`}>
+                {fault.label}
               </button>
             ))}
           </div>

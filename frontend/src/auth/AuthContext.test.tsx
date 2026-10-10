@@ -72,6 +72,7 @@ function renderWithProvider(node: ReactNode) {
 }
 
 beforeEach(() => {
+  vi.stubEnv('VITE_LOCAL_DEMO_LOGIN', '')
   vi.clearAllMocks()
   vi.mocked(api.login).mockReset()
   vi.mocked(api.getMe).mockReset()
@@ -79,10 +80,33 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.unstubAllEnvs()
   vi.restoreAllMocks()
 })
 
 describe('AuthProvider — initial mount', () => {
+  it('opens a real development session only when explicitly enabled', async () => {
+    vi.stubEnv('VITE_LOCAL_DEMO_LOGIN', 'true')
+    const { getToken } = await import('../api/client')
+    vi.mocked(getToken).mockReturnValue(null)
+    vi.mocked(api.login).mockResolvedValue({ access_token: 'jwt-local', token_type: 'bearer' })
+    vi.mocked(api.getMe).mockResolvedValue(MOCK_USER)
+    renderWithProvider(<Consumer />)
+    await waitFor(() => expect(screen.getByTestId('authenticated').textContent).toBe('true'))
+    expect(api.login).toHaveBeenCalledWith('admin@demo.disaster', 'demo1234')
+  })
+  it('renews a rejected local session through real authentication', async () => {
+    vi.stubEnv('VITE_LOCAL_DEMO_LOGIN', 'true')
+    const { getToken, ApiError } = await import('../api/client')
+    vi.mocked(getToken).mockReturnValue('old-session')
+    vi.mocked(api.getMe).mockRejectedValueOnce(new ApiError(401, 'Expired', '/api/auth/me'))
+      .mockResolvedValueOnce(MOCK_USER)
+    vi.mocked(api.login).mockResolvedValue({ access_token: 'renewed', token_type: 'bearer' })
+    renderWithProvider(<Consumer />)
+    await waitFor(() => expect(screen.getByTestId('authenticated').textContent).toBe('true'))
+    expect(api.login).toHaveBeenCalledTimes(1)
+    expect(api.getMe).toHaveBeenCalledTimes(2)
+  })
   it('sets loading=false immediately when no token is stored', async () => {
     const { getToken } = await import('../api/client')
     vi.mocked(getToken).mockReturnValue(null)

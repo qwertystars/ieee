@@ -5,24 +5,21 @@
 Exposes a FastAPI endpoint for BLE RSSI localization and keeps a CLI helper.
 """
 
-import argparse
+from __future__ import annotations
+
 import json
 import os
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
-import numpy as np
-import pandas as pd
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from ble_localization.ble_train_model import (
-    DATA_PATH,
-    NUM_RELAYS,
-    predict_location,
-    _relay_cols,
-    _rssi_cols,
-)
+if TYPE_CHECKING:
+    import numpy as np
+
+# Mesh synchronization must remain usable without the optional training stack.
+NUM_RELAYS = 4
 
 
 class PredictRequest(BaseModel):
@@ -91,6 +88,7 @@ latest_state: Dict = {}
 
 
 def _load_from_json(payload: str) -> np.ndarray:
+    import numpy as np
     data = json.loads(payload)
     relay_array = np.asarray(data, dtype=np.float32)
     if relay_array.shape != (NUM_RELAYS, 3):
@@ -99,6 +97,7 @@ def _load_from_json(payload: str) -> np.ndarray:
 
 
 def _load_from_relays(relays: List[List[float]]) -> np.ndarray:
+    import numpy as np
     relay_array = np.asarray(relays, dtype=np.float32)
     if relay_array.shape != (NUM_RELAYS, 3):
         raise ValueError(f"Expected relay data shape ({NUM_RELAYS}, 3).")
@@ -128,6 +127,9 @@ def _load_from_file(path: str) -> np.ndarray:
 
 
 def _load_sample(index: int) -> np.ndarray:
+    import numpy as np
+    import pandas as pd
+    from ble_localization.ble_train_model import DATA_PATH, _relay_cols, _rssi_cols
     if not os.path.exists(DATA_PATH):
         raise FileNotFoundError(f"Dataset not found at {DATA_PATH}.")
 
@@ -177,9 +179,12 @@ def health_check():
 @app.post("/predict")
 def predict(request: PredictRequest):
     try:
+        from ble_localization.ble_train_model import predict_location
         relay_data = _load_from_relays(request.relays)
         pred_x, pred_y = predict_location(relay_data)
         return {"x": pred_x, "y": pred_y}
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail="Localization model dependencies unavailable") from exc
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -187,9 +192,12 @@ def predict(request: PredictRequest):
 @app.post("/predict/sample")
 def predict_sample(request: SampleRequest):
     try:
+        from ble_localization.ble_train_model import predict_location
         relay_data = _load_sample(request.index)
         pred_x, pred_y = predict_location(relay_data)
         return {"x": pred_x, "y": pred_y, "index": request.index}
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail="Localization model dependencies unavailable") from exc
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -224,42 +232,6 @@ async def route_ws(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Predict survivor coordinates from BLE relay RSSI data."
-    )
-
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        "--relay-json",
-        help="Relay data as JSON array shaped (NUM_RELAYS, 3).",
-    )
-    group.add_argument(
-        "--relay-file",
-        help="Path to a JSON file containing relay data array.",
-    )
-    group.add_argument(
-        "--sample-index",
-        type=int,
-        help="Use a sample row from the dataset by index.",
-    )
-
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = _parse_args()
-
-    if args.relay_json:
-        relay_data = _load_from_json(args.relay_json)
-    elif args.relay_file:
-        relay_data = _load_from_file(args.relay_file)
-    else:
-        relay_data = _load_sample(args.sample_index)
-
-    pred_x, pred_y = predict_location(relay_data)
-    print(f"Predicted survivor location: x={pred_x:.2f}, y={pred_y:.2f}")
-
-
 if __name__ == "__main__":
+    from ble_localization.cli import main
     main()

@@ -5,10 +5,11 @@ const LINE_MS = 2200
 
 type CommandLogProps = {
   lines: string[]
+  label?: string
 }
 
 // Cycles through status lines with a typewriter effect.
-export function CommandLog({ lines }: CommandLogProps) {
+export function CommandLog({ lines, label = 'MESH SUMMARY' }: CommandLogProps) {
   const [lineIndex, setLineIndex] = useState(0)
   const [chars, setChars] = useState(0)
 
@@ -32,7 +33,7 @@ export function CommandLog({ lines }: CommandLogProps) {
     <section className="rescue-panel w-full" aria-label="Command log">
       <header className="flex items-center justify-between">
         <p className="rescue-eyebrow">Command Log</p>
-        <span className="text-xs text-slate-400">LIVE FEED</span>
+        <span className="text-xs text-slate-400">{label}</span>
       </header>
       <div className="mt-4 rounded-xl bg-black/50 px-4 py-3 font-mono text-xs text-cyan-200">
         <span className="text-cyan-500" aria-hidden="true">&gt;</span>{' '}

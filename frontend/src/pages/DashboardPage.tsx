@@ -1,216 +1,62 @@
+import { lazy, Suspense, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
-import MapView from '../components/MapView'
-import { FeedHealthPanel } from '../components/FeedHealthPanel'
-import { useLowBandwidth } from '../context/LowBandwidthContext'
-import { LoadingState, ErrorState, EmptyState, StaleState } from '../components/state'
+import { useAuth } from '../auth/AuthContext'
+import { MeshOverview } from '../components/MeshOverview'
+import { ThermalPanel } from '../components/ThermalPanel'
+import { DronePanel } from '../components/DronePanel'
+import { OperationsPanel } from '../components/OperationsPanel'
+import { LoadingState } from '../components/state'
 
-function severityColor(sev: string): string {
-  const m: Record<string, string> = {
-    extreme: 'text-red-400 bg-red-500/10',
-    severe: 'text-red-400 bg-red-500/10',
-    high: 'text-orange-400 bg-orange-500/10',
-    moderate: 'text-amber-400 bg-amber-500/10',
-    minor: 'text-blue-400 bg-blue-500/10',
-  }
-  return m[sev.toLowerCase()] ?? 'text-gray-400 bg-gray-500/10'
-}
+const IncidentDashboard = lazy(() => import('./IncidentDashboard'))
+const RescuePage = lazy(() => import('./RescuePage'))
+const PlanningPage = lazy(() => import('./PlanningPage'))
+const SimulationPage = lazy(() => import('./SimulationPage'))
+const FieldPage = lazy(() => import('./FieldPage'))
+const HypothesesPage = lazy(() => import('./HypothesesPage'))
+const AuditPage = lazy(() => import('./AuditPage'))
+const RouteSandbox = lazy(() => import('../components/RouteSandbox'))
 
-function statusColor(status: string): string {
-  const m: Record<string, string> = {
-    pending: 'text-gray-400', in_progress: 'text-blue-400',
-    completed: 'text-green-400', cancelled: 'text-gray-500',
-    blocked: 'text-red-400', approved: 'text-green-400',
-    dismissed: 'text-gray-500', draft: 'text-amber-400',
-  }
-  return m[status] ?? 'text-gray-400'
+const WORKSPACES = {
+  situation: { label: 'Situation map', component: IncidentDashboard },
+  rescue: { label: 'Survivor map', component: RescuePage },
+  planning: { label: 'Planning & dispatch', component: PlanningPage },
+  routes: { label: 'Route sandbox', component: RouteSandbox },
+  simulation: { label: 'Digital twin', component: SimulationPage },
+  field: { label: 'Field operations', component: FieldPage },
+  hypotheses: { label: 'AI hypotheses', component: HypothesesPage },
+  audit: { label: 'Audit trail', component: AuditPage },
 }
-
-function Panel({ title, children, stale }: {
-  title: string; children: React.ReactNode; stale?: boolean
-}) {
-  return (
-    <section className="rounded-lg border border-gray-700 bg-gray-900/95 p-3 shadow-lg" aria-label={title}>
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-gray-300">{title}</h2>
-        {stale && <StaleState />}
-      </div>
-      {children}
-    </section>
-  )
-}
+type Workspace = keyof typeof WORKSPACES
 
 export default function DashboardPage() {
-  const { refetchInterval, stripMapImagery } = useLowBandwidth()
-  const incidentsQ = useQuery({
-    queryKey: ['incidents'],
-    queryFn: ({ signal }) => api.getIncidents(signal),
-    refetchInterval,
-  })
-  const incidentId = incidentsQ.data?.incidents?.[0]?.id ?? null
-  const incident = incidentsQ.data?.incidents?.[0]
-
-  const sitRepQ = useQuery({
-    queryKey: ['situation-report', incidentId],
-    queryFn: ({ signal }) => api.getSituationReport(incidentId!, signal),
-    enabled: !!incidentId,
-    refetchInterval,
-  })
-  const alertsQ = useQuery({
-    queryKey: ['alerts', incidentId],
-    queryFn: ({ signal }) => api.getAlerts(incidentId!, signal),
-    enabled: !!incidentId,
-    refetchInterval,
-  })
-  const tasksQ = useQuery({
-    queryKey: ['tasks', incidentId],
-    queryFn: ({ signal }) => api.getTasks(incidentId!, signal),
-    enabled: !!incidentId,
-    refetchInterval,
-  })
-
-  if (incidentsQ.isLoading) {
-    return <div className="flex h-full items-center justify-center"><LoadingState message="Loading incident data…" /></div>
-  }
-  if (incidentsQ.isError) {
-    return <div className="p-6"><ErrorState message="Failed to load incidents" onRetry={() => incidentsQ.refetch()} /></div>
-  }
-  if (!incident) {
-    return <div className="p-6"><EmptyState message="No active incidents" hint="Create an incident to see the dashboard." /></div>
-  }
-
-  const alerts = alertsQ.data?.alerts ?? []
-  const tasks = tasksQ.data?.tasks ?? []
-  const sitRep = sitRepQ.data
-  const obsCount = sitRep?.observations?.length ?? 0
-  const hazardCount = sitRep?.hazards?.length ?? 0
-  const hypCount = sitRep?.hypotheses?.length ?? 0
+  const { user } = useAuth()
+  const fieldAccess = (import.meta.env.DEV && !user) || (!!user && user.role !== 'viewer')
+  const [workspace, setWorkspace] = useState<Workspace>('situation')
+  const incidents = useQuery({ queryKey: ['incidents'], queryFn: ({ signal }) => api.getIncidents(signal), refetchInterval: 10000 })
+  const incident = incidents.data?.incidents[0]
+  const WorkspaceComponent = WORKSPACES[workspace].component
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] w-full overflow-hidden">
-      {/* Map — left/main area (hidden in low-bandwidth text-first mode) */}
-      <div className="flex-1 relative" role="application" aria-label="Situation awareness map">
-        {stripMapImagery ? (
-          <div
-            className="flex h-full items-center justify-center bg-gray-900 text-gray-500"
-            role="status"
-            aria-label="Map imagery stripped — low-bandwidth mode active"
-          >
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-400">Map imagery stripped</p>
-              <p className="text-xs">Low-bandwidth mode — text-first dashboard</p>
-            </div>
-          </div>
-        ) : (
-          <MapView />
-        )}
-      </div>
+    <div className="mx-auto max-w-[1800px] space-y-6 p-4 text-slate-100 md:p-6">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div><p className="mb-2 text-xs uppercase tracking-[0.25em] text-cyan-400">ResQnet · unified operations</p><h1 className="text-2xl font-semibold md:text-3xl">Rescue command center</h1><p className="mt-2 text-sm text-slate-400">Situation awareness, field signals, thermal intelligence and drone control.</p></div>
+        <span role="status" className="rounded-full border border-slate-700 px-4 py-2 text-xs text-slate-300">{incidents.isPending ? 'Connecting to platform…' : incidents.isError ? 'Platform unavailable' : incident ? incident.title : 'No active incident'}</span>
+      </header>
 
-      {/* Right sidebar — situation report, feed health, alerts, tasks */}
-      <aside className="w-96 flex-shrink-0 overflow-y-auto border-l border-gray-800 bg-gray-950 p-3" aria-label="Situation panels">
-        {/* Incident header */}
-        <div className="mb-3 rounded-lg border border-gray-700 bg-gray-900 p-3">
-          <h1 className="text-sm font-bold text-gray-100">{incident.title}</h1>
-          <div className="mt-1 flex flex-wrap gap-2 text-xs">
-            <span className="rounded bg-gray-800 px-1.5 py-0.5 text-gray-300">{incident.disaster_type}</span>
-            <span className="rounded bg-gray-800 px-1.5 py-0.5 text-gray-300">Severity: {incident.severity}</span>
-            <span className="rounded bg-gray-800 px-1.5 py-0.5 text-gray-300">Status: {incident.status}</span>
-          </div>
-        </div>
+      <OperationsPanel title="Operations workspace" status="All tools in one dashboard">
+        <nav className="flex flex-wrap gap-2" aria-label="Dashboard workspaces">
+          {(Object.keys(WORKSPACES) as Workspace[]).filter(key => fieldAccess || key !== 'rescue').map(key => <button key={key} type="button" aria-pressed={workspace === key} aria-controls="operations-workspace" onClick={() => setWorkspace(key)} className={`rounded-lg px-4 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-cyan-400 ${workspace === key ? 'bg-cyan-700 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>{WORKSPACES[key].label}</button>)}
+        </nav>
+      </OperationsPanel>
 
-        {/* Feed health indicators */}
-        {incidentId && (
-          <div className="mb-3">
-            <FeedHealthPanel incidentId={incidentId} />
-          </div>
-        )}
+      <section id="operations-workspace" aria-label={WORKSPACES[workspace].label} className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
+        <div className="border-b border-slate-800 px-5 py-3 text-sm font-semibold">{WORKSPACES[workspace].label}</div>
+        <Suspense fallback={<div className="p-6"><LoadingState message="Loading workspace…" /></div>}><WorkspaceComponent /></Suspense>
+      </section>
 
-        {/* Situation report summary */}
-        <div className="mb-3">
-          {sitRepQ.isLoading && <Panel title="Situation Report"><LoadingState message="Generating report…" /></Panel>}
-          {sitRepQ.isError && <Panel title="Situation Report"><ErrorState message="Failed to load report" onRetry={() => sitRepQ.refetch()} /></Panel>}
-          {sitRep && (
-            <Panel title="Situation Report" stale={sitRepQ.isStale}>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded bg-gray-800/50 p-2">
-                  <div className="text-lg font-bold text-blue-400">{obsCount}</div>
-                  <div className="text-gray-500">Observations</div>
-                </div>
-                <div className="rounded bg-gray-800/50 p-2">
-                  <div className="text-lg font-bold text-orange-400">{hazardCount}</div>
-                  <div className="text-gray-500">Hazards</div>
-                </div>
-                <div className="rounded bg-gray-800/50 p-2">
-                  <div className="text-lg font-bold text-purple-400">{hypCount}</div>
-                  <div className="text-gray-500">Hypotheses</div>
-                </div>
-                <div className="rounded bg-gray-800/50 p-2">
-                  <div className="text-lg font-bold text-cyan-400">{alerts.length}</div>
-                  <div className="text-gray-500">Alerts</div>
-                </div>
-              </div>
-            </Panel>
-          )}
-        </div>
-
-        {/* Alert summary */}
-        <div className="mb-3">
-          {alertsQ.isLoading && <Panel title="Alerts"><LoadingState message="Loading alerts…" /></Panel>}
-          {alertsQ.isError && <Panel title="Alerts"><ErrorState message="Failed to load alerts" onRetry={() => alertsQ.refetch()} /></Panel>}
-          {alertsQ.data && alerts.length === 0 && <Panel title="Alerts"><EmptyState message="No active alerts" /></Panel>}
-          {alerts.length > 0 && (
-            <Panel title="Alerts" stale={alertsQ.isStale}>
-              <div className="flex flex-col gap-2">
-                {alerts.slice(0, 5).map(a => (
-                  <div key={a.id} className="rounded border border-gray-700 p-2 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-200">{a.title}</span>
-                      <span className={`rounded px-1.5 py-0.5 text-[10px] ${severityColor(a.severity)}`}>{a.severity}</span>
-                    </div>
-                    <p className="mt-1 text-gray-400">{a.message}</p>
-                    {a.recommended_action && (
-                      <p className="mt-1 text-amber-400">→ {a.recommended_action}</p>
-                    )}
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className={`text-[10px] ${statusColor(a.status)}`}>{a.status}</span>
-                    </div>
-                  </div>
-                ))}
-                {alerts.length > 5 && (
-                  <p className="text-center text-[10px] text-gray-500">+{alerts.length - 5} more alerts</p>
-                )}
-              </div>
-            </Panel>
-          )}
-        </div>
-
-        {/* Task summary */}
-        <div className="mb-3">
-          {tasksQ.isLoading && <Panel title="Tasks"><LoadingState message="Loading tasks…" /></Panel>}
-          {tasksQ.isError && <Panel title="Tasks"><ErrorState message="Failed to load tasks" onRetry={() => tasksQ.refetch()} /></Panel>}
-          {tasksQ.data && tasks.length === 0 && <Panel title="Tasks"><EmptyState message="No tasks" /></Panel>}
-          {tasks.length > 0 && (
-            <Panel title="Tasks" stale={tasksQ.isStale}>
-              <div className="flex flex-col gap-1.5">
-                {tasks.slice(0, 8).map(t => (
-                  <div key={t.id} className="flex items-center justify-between rounded border border-gray-700 p-1.5 text-xs">
-                    <span className="truncate text-gray-200">{t.title}</span>
-                    <div className="flex items-center gap-1.5">
-                      {t.priority && (
-                        <span className="text-[10px] text-amber-400">{t.priority}</span>
-                      )}
-                      <span className={`text-[10px] ${statusColor(t.status)}`}>{t.status}</span>
-                    </div>
-                  </div>
-                ))}
-                {tasks.length > 8 && (
-                  <p className="text-center text-[10px] text-gray-500">+{tasks.length - 8} more tasks</p>
-                )}
-              </div>
-            </Panel>
-          )}
-        </div>
-      </aside>
+      {fieldAccess ? <div className="grid items-start gap-4 xl:grid-cols-3"><MeshOverview /><ThermalPanel /><DronePanel /></div>
+        : <OperationsPanel title="Field feeds"><p className="text-sm text-slate-400">Detailed survivor, thermal and drone feeds are available to operational roles.</p></OperationsPanel>}
     </div>
   )
 }

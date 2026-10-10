@@ -86,6 +86,7 @@ export default function DeviceDetailPage() {
     queryKey: ['observations', incidentId],
     queryFn: ({ signal }) => api.getObservations(incidentId!, signal),
     enabled: !!incidentId,
+    refetchInterval: 2000,
   })
 
   const telemetry = useMemo(() => {
@@ -110,14 +111,6 @@ export default function DeviceDetailPage() {
 
   return (
     <div className="flex flex-col gap-4 p-6" aria-label="Device detail page">
-      <div
-        className="rounded-lg border border-amber-600 bg-amber-900/30 px-4 py-2 text-center text-sm font-bold uppercase tracking-wider text-amber-300"
-        role="banner"
-        aria-label="Simulated data label"
-      >
-        ⚠ Simulated Data — Digital twin telemetry
-      </div>
-
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-gray-100 font-mono">{id}</h1>

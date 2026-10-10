@@ -35,6 +35,21 @@ npm run build         # vite build
 
 ## Playwright e2e tests
 
+The unified dashboard has an independent browser check using explicit simulated
+feeds (no Docker/backend required):
+
+```bash
+cd frontend
+npm run dev                         # separate terminal
+npm run test:dashboard-browser
+```
+
+It verifies login-free dashboard entry, field endpoint connections without sample fallback, route sandbox interactions,
+mobile width, outage states and viewer access restrictions. Screenshots are
+written to `/tmp/ieee-dashboard-*.png`. Set `PLAYWRIGHT_EXECUTABLE_PATH` when
+using an existing Chromium installation, or install the matching browser with
+`npx playwright install chromium`.
+
 ```bash
 cd frontend
 npx playwright test   # runs all specs in tests/
@@ -85,3 +100,7 @@ Conflict recovery is covered by `tests/outbox-recovery.spec.ts`: a scripted
 409 keeps the item visible as a manual-resolution conflict rather than
 claiming synchronization success. Authenticated API responses remain excluded
 from Cache Storage.
+
+Real-service dashboard coverage: `npm run test:dashboard-live` opens all eight
+workspaces and exercises simulator telemetry, controls, device details and audit
+verification without mocks. See [local runtime setup](../../docs/LOCAL_DASHBOARD.md).
