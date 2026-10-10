@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-10-10T01:53:20.666177+00:00",
+  "created_at": "2026-10-10T02:00:53.257992+00:00",
   "scope": "Real local API/database reads, simulator persistence/controls, all eight browser workspaces, mobile layouts, field API contracts and mocked outage/role handling",
   "status": "PASS",
   "checks": [
@@ -36,7 +36,7 @@
       "cwd": "frontend",
       "exit_code": 0,
       "log": "evidence/unified-dashboard/frontend-tests.log",
-      "sha256": "03a1bebc3836f5aa66770309777a88e0f81a892af7ef744254d3dded9cd737ca"
+      "sha256": "2dfc39321c94485a2eef250c402fa3ab4d403f7fb4506be90fe12137a5d84b52"
     },
     {
       "name": "build",
@@ -48,7 +48,7 @@
       "cwd": "frontend",
       "exit_code": 0,
       "log": "evidence/unified-dashboard/build.log",
-      "sha256": "59fd2d63b64143bb975a8e55250e984a5f27c391d3244284cb94115d179107fd"
+      "sha256": "c3f67c5a0a498ee6b9d292a8d37a283497f71367ea208ad06cd91096c39627a1"
     },
     {
       "name": "field-service-tests",
@@ -62,7 +62,7 @@
       "cwd": "modules",
       "exit_code": 0,
       "log": "evidence/unified-dashboard/field-service-tests.log",
-      "sha256": "f7da7f86cbf89957a3d2994d522437ec98ca4c257402418f86bbcbd223cc7b9e"
+      "sha256": "77d92cd56cd64a1a5b65adac4e344cc7fd9699faace17014c0a319c92f46082d"
     },
     {
       "name": "live-api",
@@ -98,6 +98,17 @@
       "exit_code": 0,
       "log": "evidence/unified-dashboard/browser.log",
       "sha256": "f1b39a9b40d5b9ed6a5612c73659f12cf6a53cefa6eec6980d174f083d9d7316"
+    },
+    {
+      "name": "cache-migration",
+      "command": [
+        "node",
+        "scripts/check-cache-migration.cjs"
+      ],
+      "cwd": "frontend",
+      "exit_code": 0,
+      "log": "evidence/unified-dashboard/cache-migration.log",
+      "sha256": "f52f4bb45681faf1ce072c1918893a4e431b315dba7792609f8d23c50ebe5aeb"
     }
   ],
   "source_sha256": {
@@ -109,7 +120,8 @@
     "backend/app/simulator/local_transport.py": "de69c65f01360305451fab6ce4a1eb9b448a793745cc00a3619a47663136c5f1",
     "backend/app/simulator/rescue_ball.py": "1f95a0140f1da04dbd45e884d1179d3cbd776f59f9e3d4bec95af70a816370c4",
     "backend/app/simulator/scenarios.py": "62f24c13deaf362b2395cc16fdd552420bbc2f1a3aeb4a4cf556f5fda842a30f",
-    "frontend/scripts/check-dashboard-live.cjs": "e1dec6c50c2043ee89418f050e891d28989774aa8deda8d1ae4434a1c1fe2f2b",
+    "frontend/public/sw.js": "07f89218002835aa5d8aa38fe5d4015c8cc9183efa5d23f2eaa6bb5a299cd1d1",
+    "frontend/scripts/check-dashboard-live.cjs": "486312d63686824df34d5aadf171a0aeb10bc23cbde062b9d2a750ba297e1fac",
     "frontend/scripts/check-dashboard.cjs": "e09c992c01145fec3a5575fce86299e6953f000716e1d72e19ea881a7c280aad",
     "frontend/src/App.tsx": "1ca351df0b1086a47c240c38492873d4b2f6fb53f4d00f1d533efcfc3aee7554",
     "frontend/src/api/client.test.ts": "9ab3a4d4dbe207030d429f39aae7da51f8366c468b5b57069158b91e82d3b716",
@@ -162,7 +174,7 @@
     "frontend/src/lib/routeSandbox.ts": "12b57d21e65567f6d37a8bf79ebd76620005f886e38016727f0645e2f04f8b4c",
     "frontend/src/lib/simulatorFaults.ts": "33f4c8379f357e29386fccbe3e5ce6b3f0d69d36c81ab22fe9b89300721ae06c",
     "frontend/src/lib/ulid.ts": "3c68b6368913d1fcc45c4cae3a5eb084de985ddc4de55247900f81edf729842e",
-    "frontend/src/main.tsx": "f37423ee71ecf2246e910560494e1aa2c0f8a78a0f7acf5a3e36cc29643fe462",
+    "frontend/src/main.tsx": "7a276c9a5ff388ececbe322df6f924eb15feca3b110c75d5c8cba436eea270c9",
     "frontend/src/pages/AuditPage.tsx": "e175d62a3296798cad56f43bdc8673681974ab618a019d2ee1b6254a5725f041",
     "frontend/src/pages/DashboardPage.test.tsx": "2dde0f014e0076dce2696ef976708ae3cffdd6c066295c45603ec8b73ed5c19d",
     "frontend/src/pages/DashboardPage.tsx": "ced39d21af5655a2c47adefed4a6110b0a6600e7ff5c4b2c627ab31b4bf094b7",
@@ -185,7 +197,9 @@
     "modules/route_engine/thermal_server.py": "edf5ca316aadad5c282aac934d0e19c44b756952ea36279d67d1e1eba92b9fc0",
     "modules/tests/test_dashboard_services.py": "bde92c1f2f3e20a72a2017cece58d6135e7952aeeade91a535f5abf86298ee78",
     "scripts/check_dashboard_live.py": "a6cfd87bc1dae553e877a11857db00f1089c7109c7fa2a14ddd2ed0c15ede85f",
-    "scripts/start_dashboard_local.py": "1f0935fefb2b330ba797cc793489ab0cdd80673254067182c90bbd736b3971f9"
+    "scripts/start_dashboard_local.py": "1f0935fefb2b330ba797cc793489ab0cdd80673254067182c90bbd736b3971f9",
+    "frontend/scripts/check-cache-migration.cjs": "d864cf9e0f6ff559b361713547c68d16880624080fc263b4cccbcb307e6cf324",
+    "scripts/verify_unified_dashboard.py": "69ae7de00b2b727a5d0283e335630fa224cd9f2aa7756ba62bb447a0339971b5"
   },
   "limitations": [
     "Development PostgreSQL 18 differs from production PostgreSQL 16/TimescaleDB",

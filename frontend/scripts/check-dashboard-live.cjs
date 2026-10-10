@@ -16,6 +16,15 @@ const base = process.env.DASHBOARD_BASE_URL || 'http://localhost:5173';
   try {
     await page.goto(base);
     await page.getByRole('heading', { name: 'Rescue command center' }).waitFor();
+    if (await page.evaluate(() => getComputedStyle(document.querySelector('#root > div')).backgroundColor !== 'rgb(2, 6, 23)')) throw new Error('Dashboard styles are missing');
+    await page.evaluate(async () => {
+      const cache = await caches.open('resqnet-v2-shell');
+      await cache.put('/src/index.css', new Response('stale development stylesheet'));
+    });
+    await page.reload();
+    await page.getByRole('heading', { name: 'Rescue command center' }).waitFor();
+    await page.waitForFunction(async () => !(await caches.keys()).some(name => name.startsWith('resqnet-')));
+    checks.push({ development_cache_cleared: true, dashboard_styles_loaded: true });
     const tabs = [
       ['Situation map', 'Rivertown Cyclone-Flood 2026'], ['Survivor map', 'Network Status'],
       ['Planning & dispatch', 'Action proposals pending review.'], ['Route sandbox', 'Route planning sandbox'],

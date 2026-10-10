@@ -8,11 +8,11 @@
 
  Test Files  7 passed (7)
       Tests  67 passed (67)
-   Start at  07:22:58
-   Duration  1.12s (transform 478ms, setup 686ms, import 671ms, tests 385ms, environment 4.15s)
+   Start at  07:30:27
+   Duration  1.17s (transform 579ms, setup 810ms, import 702ms, tests 373ms, environment 4.34s)
 
-7:22:58 AM [vite] warning: `esbuild` option was specified by "vite:react-babel" plugin. This option is deprecated, please use `oxc` instead.
-7:22:58 AM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-babel" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+7:30:27 AM [vite] warning: `esbuild` option was specified by "vite:react-babel" plugin. This option is deprecated, please use `oxc` instead.
+7:30:27 AM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-babel" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
 Both esbuild and oxc options were set. oxc options will be used and esbuild options will be ignored. The following esbuild options were set: `{ jsx: 'automatic', jsxImportSource: undefined }`
 Error: useAuth must be used within an AuthProvider
     at Module.useAuth (/home/srijan/projects/ieee/frontend/src/auth/AuthContext.tsx:94:11)
