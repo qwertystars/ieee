@@ -2,16 +2,15 @@
 import os
 import pickle
 import sys
-from tkinter.messagebox import showwarning
 
 import numpy as np
 import pygame
 import pygame_gui as pygui
-from scipy.ndimage.interpolation import zoom
+from scipy.ndimage import zoom
 from thermal_base import ThermalImage
 from thermal_base import utils as ThermalImageHelpers
 
-from utils import WindowHandler, openImage, saveImage
+from utils import WindowHandler, openImage, saveImage, showwarning
 
 pygame.init()
 WINDOW_SIZE = (1020, 590)
@@ -420,7 +419,7 @@ class Window:
             delVal = np.max(self.mat) - minVal
             self.cbarVals = [minVal + i * delVal / 4 for i in range(5)][::-1]
 
-            cbar = np.row_stack(20 * (np.arange(256),))[:, ::-1].astype(np.float32)
+            cbar = np.vstack(20 * (np.arange(256),))[:, ::-1].astype(np.float32)
 
             self.image = ThermalImageHelpers.cmap_matplotlib(self.mat, args[0])
             cbar = ThermalImageHelpers.cmap_matplotlib(cbar, args[0])
@@ -619,7 +618,10 @@ if __name__ == "__main__":
     while not done:
 
         if NEW_FILE:
-            filename = openImage()
+            if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):
+                filename = sys.argv.pop(1)
+            else:
+                filename = openImage()
 
             if filename:
                 surface.fill((0, 0, 0))

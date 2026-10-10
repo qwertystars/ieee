@@ -75,17 +75,12 @@ class MeshService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Generate a unique 8-char device ID or load from storage
+  /// Generate a unique 8-char device ID every time the app opens
   Future<void> _loadOrGenerateDeviceId() async {
-    final prefs = await SharedPreferences.getInstance();
-    _deviceId = prefs.getString('resqnet_device_id') ?? '';
-
-    if (_deviceId.isEmpty) {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      final rng = Random.secure();
-      _deviceId = List.generate(8, (_) => chars[rng.nextInt(chars.length)]).join();
-      await prefs.setString('resqnet_device_id', _deviceId);
-    }
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final rng = Random.secure();
+    _deviceId = List.generate(8, (_) => chars[rng.nextInt(chars.length)]).join();
+    debugPrint('[MeshService] Generated new Device ID for this session: $_deviceId');
   }
 
   /// Capture current GPS coordinates
@@ -287,6 +282,21 @@ class MeshService extends ChangeNotifier {
         rssi: -55,
         relayLat: _lat,
         relayLng: _lng,
+        relayNodeId: _deviceId,
+        hopCount: 0,
+      ),
+    );
+  }
+
+  void simulateDetection() {
+    if (_mode != MeshMode.rescue) return;
+    final randomId = List.generate(4, (_) => '0123456789'[Random().nextInt(10)]).join();
+    _upsertSurvivor(
+      SurvivorData(
+        survivorId: 'SIM_$randomId',
+        rssi: -40 - Random().nextInt(40),
+        relayLat: _lat + (Random().nextDouble() - 0.5) * 0.001,
+        relayLng: _lng + (Random().nextDouble() - 0.5) * 0.001,
         relayNodeId: _deviceId,
         hopCount: 0,
       ),
