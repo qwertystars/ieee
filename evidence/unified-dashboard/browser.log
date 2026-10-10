@@ -1,0 +1,5 @@
+
+> resqnet-sage-frontend@0.1.0 test:dashboard-browser
+> node scripts/check-dashboard.cjs
+
+PASS: dashboard opens without login and connects to field endpoints; no sample preview is shown; simulated field feeds render; route sandbox works; mobile has no horizontal overflow; outages stay visible; viewer rescue access is blocked.
