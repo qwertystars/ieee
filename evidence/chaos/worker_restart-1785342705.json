@@ -1,0 +1,6 @@
+{
+  "scenario": "worker_restart",
+  "kafka_message_produced": true,
+  "consumer_resumed": true,
+  "recovery_time_s": 11.818
+}

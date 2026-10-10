@@ -1,0 +1,25 @@
+{
+  "cleanup": "No source, dependency, or lockfile changes; command output was captured read-only.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "npm run test",
+  "cwd": "/root/srijan/ieee/frontend",
+  "exit_code": 0,
+  "failure_assertion": "Exit 1 is a tested quality failure; exit 2 is reserved for unavailable external tooling.",
+  "finished_at": "2026-08-03T05:27:25.134012Z",
+  "hashes": {
+    "command_sha256": "0c7ec4aac044044cc5b274b09866dbba6c2eedca7ca0198dae0fa3b38e59513b"
+  },
+  "inputs": [
+    "<command>"
+  ],
+  "metrics": {
+    "expectation_met": true,
+    "expected_exit_code": 0,
+    "stderr": "5:27:22 AM [vite] warning: `esbuild` option was specified by \"vite:react-babel\" plugin. This option is deprecated, please use `oxc` instead.\n5:27:22 AM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by \"vite:react-babel\" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.\nBoth esbuild and oxc options were set. oxc options will be used and esbuild options will be ignored. The following esbuild options were set: `{ jsx: 'automatic', jsxImportSource: undefined }`\nError: useAuth must be used within an AuthProvider\n    at Module.useAuth (/root/srijan/ieee/frontend/src/auth/AuthContext.tsx:74:11)\n    at Consumer (/root/srijan/ieee/frontend/src/auth/AuthContext.test.tsx:41:16)\n    at renderWithHooks (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:20103:13)\n    at beginWork (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:21626:16)\n    at HTMLUnknownElement.callCallback (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:4164:14)\n    at HTMLUnknownElement.callTheUserObjectsOperation (/root/srijan/ieee/frontend/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)\n    at innerInvokeEventListeners (/root/srijan/ieee/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)\n    at invokeEventListeners (/root/srijan/ieee/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)\n    at HTMLUnknownElementImpl._dispatch (/root/srijan/ieee/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)\nError: useAuth must be used within an AuthProvider\n    at Module.useAuth (/root/srijan/ieee/frontend/src/auth/AuthContext.tsx:74:11)\n    at Consumer (/root/srijan/ieee/frontend/src/auth/AuthContext.test.tsx:41:16)\n    at renderWithHooks (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:15486:18)\n    at mountIndeterminateComponent (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:20103:13)\n    at beginWork (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:21626:16)\n    at HTMLUnknownElement.callCallback (/root/srijan/ieee/frontend/node_modules/react-dom/cjs/react-dom.development.js:4164:14)\n    at HTMLUnknownElement.callTheUserObjectsOperation (/root/srijan/ieee/frontend/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)\n    at innerInvokeEventListeners (/root/srijan/ieee/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)\n    at invokeEventListeners (/root/srijan/ieee/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)\n    at HTMLUnknownElementImpl._dispatch (/root/srijan/ieee/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)\n",
+    "stdout": "\n> resqnet-sage-frontend@0.1.0 test\n> vitest run\n\n\n RUN  v4.1.10 /root/srijan/ieee/frontend\n\n\n Test Files  3 passed (3)\n      Tests  49 passed (49)\n   Start at  05:27:22\n   Duration  2.32s (transform 425ms, setup 773ms, import 520ms, tests 476ms, environment 3.72s)\n\n"
+  },
+  "observed_exit_code": 0,
+  "started_at": "2026-08-03T05:27:21.934983Z",
+  "status": "PASS",
+  "task_id": "resqnet-sota-roadmap-F2-05-frontend-tests"
+}

@@ -1,0 +1,129 @@
+{
+  "schema_version": "resqnet.robustness-policy.v1",
+  "claim_policy": "deterministic fixture validation only; external robustness and equity claims remain DEFERRED_EXTERNAL",
+  "deterministic_seed": 2025,
+  "sample_policy": {
+    "total_samples": 400,
+    "subgroup_minimum_samples": 200,
+    "groups": ["low_connectivity", "connected"]
+  },
+  "attack_budget": {
+    "max_adversarial_records": 40,
+    "max_fraction": 0.1,
+    "capability": "untrusted content can alter text/severity claims but cannot alter provenance, tenant, review status, or route authorization",
+    "privileged_access": false,
+    "external_artifact_download": false
+  },
+  "privacy": {
+    "status": "PASS",
+    "attributes": "synthetic subgroup labels only",
+    "raw_pii": false,
+    "storage": "in-memory deterministic fixture",
+    "export": "aggregate metrics and route states only"
+  },
+  "thresholds": {
+    "max_degradation": 0.2,
+    "false_alert_burden_max": 0.05,
+    "severe_error_rate_max": 0.05,
+    "risk_coverage_max": 0.1,
+    "subgroup_gap_max": 0.1,
+    "fallback_rate_min": 1.0
+  },
+  "route_fallbacks": {
+    "flood_mapping": ["abstain", "unavailable", "uncertainty"],
+    "damage": ["abstain", "unavailable", "uncertainty"],
+    "nlp": ["abstain", "unavailable", "uncertainty"],
+    "ensemble": ["abstain", "unavailable", "uncertainty"],
+    "route_planner": ["abstain", "uncertainty"]
+  },
+  "failure_families": [
+    {
+      "id": "unseen_region_shift",
+      "formula": "degradation=max(0,(baseline_recall-shift_recall)/baseline_recall)",
+      "expected_degradation_max": 0.2,
+      "safe_fallback": "uncertainty",
+      "affected_routes": ["flood_mapping", "damage", "nlp", "ensemble", "route_planner"],
+      "release_blocking": true
+    },
+    {
+      "id": "unseen_hazard_shift",
+      "formula": "degradation=max(0,(baseline_recall-shift_recall)/baseline_recall)",
+      "expected_degradation_max": 0.2,
+      "safe_fallback": "uncertainty",
+      "affected_routes": ["flood_mapping", "damage", "nlp", "ensemble", "route_planner"],
+      "release_blocking": true
+    },
+    {
+      "id": "sensor_outage",
+      "injection_rate": 0.1,
+      "formula": "degradation=max(0,(baseline_recall-observed_recall)/baseline_recall)",
+      "expected_degradation_max": 0.2,
+      "safe_fallback": "abstain",
+      "affected_routes": ["flood_mapping", "damage", "ensemble", "route_planner"],
+      "release_blocking": true
+    },
+    {
+      "id": "sensor_delay",
+      "injection_rate": 0.1,
+      "formula": "degradation=max(0,(baseline_recall-observed_recall)/baseline_recall)",
+      "expected_degradation_max": 0.2,
+      "safe_fallback": "abstain",
+      "affected_routes": ["flood_mapping", "damage", "ensemble", "route_planner"],
+      "release_blocking": true
+    },
+    {
+      "id": "sensor_duplication",
+      "injection_rate": 0.05,
+      "formula": "degradation=max(0,(baseline_recall-observed_recall)/baseline_recall)",
+      "expected_degradation_max": 0.2,
+      "safe_fallback": "abstain",
+      "affected_routes": ["flood_mapping", "damage", "ensemble", "route_planner"],
+      "release_blocking": true
+    },
+    {
+      "id": "sensor_conflict",
+      "injection_rate": 0.2,
+      "formula": "degradation=max(0,(baseline_recall-observed_recall)/baseline_recall)",
+      "expected_degradation_max": 0.2,
+      "safe_fallback": "abstain",
+      "affected_routes": ["flood_mapping", "damage", "ensemble", "route_planner"],
+      "release_blocking": true
+    },
+    {
+      "id": "adversarial_misinformation",
+      "formula": "false_alert_burden=non_actionable_alerts/all_alerts; severe_error=explicit_severe_false_negatives/severe_labels",
+      "expected_degradation_max": 0.2,
+      "safe_fallback": "abstain",
+      "affected_routes": ["nlp", "ensemble", "route_planner"],
+      "release_blocking": true
+    },
+    {
+      "id": "weather_quality",
+      "formula": "degradation=max(0,(baseline_recall-observed_recall)/baseline_recall)",
+      "expected_degradation_max": 0.2,
+      "safe_fallback": "abstain",
+      "affected_routes": ["flood_mapping", "damage", "ensemble", "route_planner"],
+      "release_blocking": true
+    },
+    {
+      "id": "language_shift",
+      "formula": "degradation=max(0,(baseline_recall-observed_recall)/baseline_recall)",
+      "expected_degradation_max": 0.2,
+      "safe_fallback": "uncertainty",
+      "affected_routes": ["nlp", "ensemble", "route_planner"],
+      "release_blocking": true
+    }
+  ],
+  "formula_definitions": {
+    "harm_weighted_error": "sum(cost(prediction,actual) for non-abstained samples)/sum(false_negative_cost for actual positive, false_positive_cost for actual negative)",
+    "risk_coverage": "error_rate among highest-confidence non-abstained predictions retained at requested coverage",
+    "subgroup_gap": "max absolute primary-recall difference across groups with at least subgroup_minimum_samples",
+    "fallback_rate": "affected samples with an explicit abstain, unavailable, or uncertainty state / affected samples",
+    "attack_budget": "adversarial_records / total_samples <= max_fraction and adversarial_records <= max_adversarial_records"
+  },
+  "external_validation": {
+    "status": "DEFERRED_EXTERNAL",
+    "reason": "licensed region/hazard, sensor, weather, language, subgroup, and adjudicated harm data are unavailable",
+    "real_metrics_published": false
+  }
+}

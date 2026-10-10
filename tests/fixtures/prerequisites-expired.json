@@ -1,0 +1,24 @@
+[
+  {
+    "id": "dataset.damage.xbd",
+    "owner": "ml-data-governance",
+    "authority": "xView2 program",
+    "status": "DEFERRED_EXTERNAL",
+    "evidence_type": {
+      "kind": "dataset_license",
+      "consent_status": "PENDING",
+      "IRB_status": "PENDING",
+      "geographic_privacy_status": "PENDING",
+      "validator_status": "PENDING",
+      "key_custody_status": "NOT_REQUIRED"
+    },
+    "evidence_hash": null,
+    "hash_algorithm": "SHA-256",
+    "source_url": "https://xview2.org/dataset",
+    "recorded_at": "2026-01-01T00:00:00Z",
+    "expires_at": "2026-01-02T00:00:00Z",
+    "depends_on": [],
+    "deferred_reason": "license_not_permitted",
+    "claim_classes": ["research"]
+  }
+]

@@ -1,0 +1,245 @@
+[
+  {
+    "model_id": "sar-flood-mapping",
+    "model_type": "sar_flood_mapping",
+    "version": "2.0.0",
+    "checksum": "ee35b360436e6987beabade928b71bf56baf49e507a993ea6c6ac99f02649bdd",
+    "artifact": {
+      "filename": "sar-flood-mapping-v2.0.0.onnx",
+      "r2_key": "models/sar-flood-mapping-v2.0.0.onnx",
+      "source_url": "https://huggingface.co/Governor6191/sar-flood-extent-unet-resnet34/resolve/main/model.onnx",
+      "sha256": "ee35b360436e6987beabade928b71bf56baf49e507a993ea6c6ac99f02649bdd"
+    },
+    "contract": {
+      "contract_version": "2.0.0",
+      "model_version": "2.0.0",
+      "feature_schema_version": "2.0.0",
+      "preprocessing_version": "2.0.0",
+      "calibration_version": "unavailable",
+      "output_schema_version": "2.0.0"
+    },
+    "training_dataset": "Sen1Floods11",
+    "validation_status": "validated",
+    "input_schema": {
+      "bands": [
+        "VV",
+        "VH"
+      ],
+      "shape": [
+        1,
+        2,
+        512,
+        512
+      ],
+      "dtype": "float32",
+      "onnx_inputs": {
+        "input": {
+          "shape": [1, 2, 512, 512],
+          "dtype": "float32"
+        }
+      }
+    },
+    "output_schema": {
+      "output": {
+        "shape": [1, 2, 512, 512],
+        "dtype": "float32"
+      }
+    },
+    "accuracy_metrics": {
+      "iou": 0.67,
+      "f1": 0.8
+    },
+    "calibration": {
+      "status": "DEFERRED_EXTERNAL",
+      "deferred_reason": "no ONNX-output calibration artifact; prior linear feature proxy is not an ONNX calibration",
+      "output_type": "sar_segmentation_confidence",
+      "output_types": ["sar_segmentation_confidence", "conformal_interval", "risk_coverage", "ensemble_disagreement"],
+      "method": "pixelwise_temperature_scaling_plus_split_conformal",
+      "confidence_level": 0.9,
+      "minimum_samples": 200,
+      "subgroup_minimum_samples": 200,
+      "hazard_minimum_samples": 200,
+      "shift_trigger": "ece_delta_or_coverage_delta_or_member_disagreement",
+      "recalibration_cadence_days": 30,
+      "test_tuning_forbidden": true,
+      "artifact": {
+        "status": "unavailable",
+        "version": null,
+        "sha256": null,
+        "reference": null
+      },
+      "split": {
+        "calibration_partition": "calibration",
+        "evaluation_partition": "test",
+        "fit_partitions": ["train", "calibration"],
+        "final_test_tuning": false
+      },
+      "thresholds": {
+        "confidence_min": 0.8,
+        "disagreement_max": 0.1,
+        "ece_max": 0.05,
+        "brier_max": 0.15,
+        "nll_max": 0.7,
+        "coverage_min": 0.85,
+        "coverage_max": 0.95,
+        "risk_max": 0.1,
+        "shift_ece_delta": 0.05,
+        "shift_coverage_delta": 0.05
+      },
+      "metrics": {
+        "required": ["segmentation_confidence", "conformal_coverage", "conformal_interval_width", "risk_coverage", "subgroup_coverage", "hazard_coverage", "reliability", "ece", "brier", "nll"],
+        "observed": null
+      },
+      "abstention": {
+        "status": "abstain",
+        "reason": "calibration_unavailable"
+      }
+    },
+    "signed": true,
+    "notes": "Real pre-trained U-Net+ResNet34 from Governor6191/sar-flood-extent-unet-resnet34. The historical feature-level LinearRegression/MAPIE result is retained only as non-ONNX background and is not calibration evidence for this ONNX output. Until a hashed pixel-output calibration artifact is registered, safety output is abstain-only."
+  },
+  {
+    "model_id": "building-damage",
+    "model_type": "building_damage",
+    "version": "2.0.0",
+    "checksum": "5b3a4bc419f09d6e2dcc9e15481558cc9b59d8610976a4a0585c3135bc65bd1f",
+    "artifact": {
+      "filename": "building-damage-v2.0.0.onnx",
+      "r2_key": "models/building-damage-v2.0.0.onnx",
+      "source_url": "https://huggingface.co/vivek20072000/xview2-checkpoints/resolve/main/best_checkpoint.pth",
+      "sha256": "5b3a4bc419f09d6e2dcc9e15481558cc9b59d8610976a4a0585c3135bc65bd1f"
+    },
+    "contract": {
+      "contract_version": "2.0.0",
+      "model_version": "2.0.0",
+      "feature_schema_version": "2.0.0",
+      "preprocessing_version": "2.0.0",
+      "calibration_version": "unavailable",
+      "output_schema_version": "2.0.0"
+    },
+    "training_dataset": "xBD (xView2)",
+    "validation_status": "validated",
+    "calibration": {
+      "status": "DEFERRED_EXTERNAL",
+      "deferred_reason": "xBD calibration labels are registration-gated and unavailable in workspace",
+      "output_type": "damage_probability",
+      "output_types": ["damage_probability", "risk_coverage"],
+      "method": "temperature_scaling_multiclass_probability",
+      "confidence_level": 0.9,
+      "minimum_samples": 200,
+      "subgroup_minimum_samples": 200,
+      "hazard_minimum_samples": 200,
+      "shift_trigger": "ece_delta_or_coverage_delta",
+      "recalibration_cadence_days": 30,
+      "test_tuning_forbidden": true,
+      "artifact": {"status": "unavailable", "version": null, "sha256": null, "reference": null},
+      "split": {"calibration_partition": "calibration", "evaluation_partition": "test", "fit_partitions": ["train", "calibration"], "final_test_tuning": false},
+      "thresholds": {"confidence_min": 0.8, "disagreement_max": 0.1, "ece_max": 0.05, "brier_max": 0.15, "nll_max": 0.7, "coverage_min": 0.85, "coverage_max": 0.95, "risk_max": 0.1, "shift_ece_delta": 0.05, "shift_coverage_delta": 0.05},
+      "metrics": {"required": ["reliability", "ece", "brier", "nll", "risk_coverage", "subgroup_ece", "hazard_ece"], "observed": null},
+      "abstention": {"status": "abstain", "reason": "calibration_unavailable"}
+    },
+    "input_schema": {
+      "bands": [
+        "B2",
+        "B3",
+        "B4",
+        "B8"
+      ],
+      "shape": [
+        1,
+        4,
+        256,
+        256
+      ],
+      "dtype": "float32",
+      "onnx_inputs": {
+        "input": {
+          "shape": [1, 4, 256, 256],
+          "dtype": "float32"
+        }
+      }
+    },
+    "output_schema": {
+      "output": {
+        "shape": [1, 4, 256, 256],
+        "dtype": "float32"
+      }
+    },
+    "accuracy_metrics": {
+      "f1": 0.34
+    },
+    "signed": true,
+    "notes": "Real pre-trained U-Net+ResNet50 (SCSE attention) from vivek20072000/xview2-checkpoints on HuggingFace. Trained on xBD (xView2). Checkpoint best_f1=0.34 (epoch 182). xView2 baseline published F1=0.2654 (Gupta et al. 2019). Adapted: conv1 expanded 3->4 bands (B8 NIR from channel mean), seg_head adapted 5->4 classes (background dropped), seg_head input truncated 32->16 (smp version mismatch). Real pre-trained model. No calibration dataset available — model is validated but not calibrated."
+  },
+  {
+    "model_id": "incident-nlp",
+    "model_type": "incident_nlp",
+    "version": "2.0.0",
+    "checksum": "038e4fa15021d0da8ec9c5e02ceed9de37d05cd4cd9a6eb73b0a9824999a81a7",
+    "artifact": {
+      "filename": "incident-nlp-v2.0.0.onnx",
+      "r2_key": "models/incident-nlp-v2.0.0.onnx",
+      "source_url": "https://huggingface.co/sakibalfahim/CrisisPulse/resolve/main/model.onnx",
+      "sha256": "038e4fa15021d0da8ec9c5e02ceed9de37d05cd4cd9a6eb73b0a9824999a81a7"
+    },
+    "contract": {
+      "contract_version": "2.0.0",
+      "model_version": "2.0.0",
+      "feature_schema_version": "2.0.0",
+      "preprocessing_version": "2.0.0",
+      "calibration_version": "unavailable",
+      "output_schema_version": "2.0.0"
+    },
+    "training_dataset": "CrisisPulse (disaster tweets)",
+    "validation_status": "validated",
+    "calibration": {
+      "status": "DEFERRED_EXTERNAL",
+      "deferred_reason": "no public labeled incident corpus is available for probability calibration",
+      "output_type": "nlp_probability",
+      "output_types": ["nlp_probability", "risk_coverage"],
+      "method": "temperature_scaling_binary_probability",
+      "confidence_level": 0.9,
+      "minimum_samples": 200,
+      "subgroup_minimum_samples": 200,
+      "hazard_minimum_samples": 200,
+      "shift_trigger": "ece_delta_or_coverage_delta",
+      "recalibration_cadence_days": 30,
+      "test_tuning_forbidden": true,
+      "artifact": {"status": "unavailable", "version": null, "sha256": null, "reference": null},
+      "split": {"calibration_partition": "calibration", "evaluation_partition": "test", "fit_partitions": ["train", "calibration"], "final_test_tuning": false},
+      "thresholds": {"confidence_min": 0.8, "disagreement_max": 0.1, "ece_max": 0.05, "brier_max": 0.15, "nll_max": 0.7, "coverage_min": 0.85, "coverage_max": 0.95, "risk_max": 0.1, "shift_ece_delta": 0.05, "shift_coverage_delta": 0.05},
+      "metrics": {"required": ["reliability", "ece", "brier", "nll", "risk_coverage", "subgroup_ece", "hazard_ece"], "observed": null},
+      "abstention": {"status": "abstain", "reason": "calibration_unavailable"}
+    },
+    "input_schema": {
+      "input_ids": [
+        1,
+        128
+      ],
+      "attention_mask": [
+        1,
+        128
+      ],
+      "dtype": "int64",
+      "onnx_inputs": {
+        "input_ids": {
+          "shape": [1, 128],
+          "dtype": "int64"
+        },
+        "attention_mask": {
+          "shape": [1, 128],
+          "dtype": "int64"
+        }
+      }
+    },
+    "output_schema": {
+      "logits": {
+        "shape": [1, 2],
+        "dtype": "float32"
+      }
+    },
+    "accuracy_metrics": {},
+    "signed": true,
+    "notes": "Real pre-trained BERT (bert-base-uncased fine-tune) from sakibalfahim/CrisisPulse. Binary classification: 0=Not Disaster, 1=Disaster. Apache-2.0 license. Model card lists f1/accuracy/recall as tracked metrics but does not publish specific values. Exported with token_type_ids=zeros (single-sentence); ONNX graph exposes only input_ids and attention_mask per serving contract. Real pre-trained model. No calibration dataset available — model is validated but not calibrated."
+  }
+]

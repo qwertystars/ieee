@@ -1,0 +1,33 @@
+{
+  "schema_version": "resqnet.validators-lock.v1",
+  "lock_sha256": "b812b39518ae514b977bb9b64e2b754936a8c07825bc011343225966ad992d02",
+  "validators": [
+    {
+      "id": "cap-validator",
+      "version": "1.2.0",
+      "source_url": "https://docs.oasis-open.org/emergency/cap/v1.2/CAP-v1.2-os.html",
+      "artifact_filename": "cap-validator-1.2.0.zip",
+      "artifact_path": "external-validators/cap-validator-1.2.0.zip",
+      "sha256": "6c2b6b43a17b7d2c40e32a1de9b0e4c2e9beacb1d08f554eb4a1d29fbf9f1830",
+      "offline_invocation": "python -m cap_validator --input {fixture}"
+    },
+    {
+      "id": "ogc-api-features-validator",
+      "version": "1.0.1",
+      "source_url": "https://docs.ogc.org/is/17-069r4/17-069r4.html",
+      "artifact_filename": "ogc-api-features-validator-1.0.1.zip",
+      "artifact_path": "external-validators/ogc-api-features-validator-1.0.1.zip",
+      "sha256": "9aa9e91d3d6d5e0b04a3e4ddf9ac96debd7ab83e6462a7e68cbdc7fc4a9af1d2",
+      "offline_invocation": "python -m ogc_api_features_validator --input {fixture}"
+    },
+    {
+      "id": "sensorthings-validator",
+      "version": "1.1.0",
+      "source_url": "https://docs.ogc.org/is/18-088/18-088.html",
+      "artifact_filename": "sensorthings-validator-1.1.0.zip",
+      "artifact_path": "external-validators/sensorthings-validator-1.1.0.zip",
+      "sha256": "3a76ad2c569c4c4ea8d25ac6a2b213f8b9c72a5c0e2d8907d2ef12f8a16a5e47",
+      "offline_invocation": "python -m sensorthings_validator --input {fixture}"
+    }
+  ]
+}

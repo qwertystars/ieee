@@ -1,0 +1,43 @@
+=== Gate D Checkpoint ===
+Date: 2026-07-26T22:43:41Z
+
+=== Check 1: PWA manifest ===
+frontend/dist/manifest.json
+manifest.json: EXISTS ✅
+
+=== Check 2: Service worker ===
+frontend/dist/sw.js
+sw.js: EXISTS ✅
+
+=== Check 3: Outbox (IndexedDB) ===
+frontend/src/lib/outbox.ts
+outbox.ts: EXISTS ✅
+frontend/src/hooks/useOutbox.ts
+useOutbox.ts: EXISTS ✅
+
+=== Check 4: Feed-health tracking ===
+frontend/src/components/FeedHealthPanel.tsx
+FeedHealthPanel: EXISTS ✅
+
+=== Check 5: Low-bandwidth toggle ===
+frontend/src/components/LowBandwidthToggle.tsx
+LowBandwidthToggle: EXISTS ✅
+
+=== Check 6: health.router registered ===
+Health endpoints: ['/api/incidents/{incident_id}/feed-health', '/api/incidents/{incident_id}/degradation-summary']
+health.router registered ✅
+
+=== Check 7: Frontend build ===
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 10.79s
+Build: PASS ✅
+
+=== Gate D Summary ===
+PWA manifest ✅
+Service worker ✅
+IndexedDB outbox ✅
+Feed-health tracking ✅
+Low-bandwidth toggle ✅
+health.router registered ✅
+Frontend build ✅
+8-step offline demo deferred (requires running backend + browser)

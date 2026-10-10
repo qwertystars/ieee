@@ -1,0 +1,42 @@
+{
+  "task_id": "resqnet-sota-roadmap-2",
+  "command": "cd backend && .venv/bin/python -m pytest tests/test_onnx_inference_e2e.py tests/test_model_manifests.py -q; cd backend && .venv/bin/python -m pytest tests/test_serving.py -q; declared missing-weight shell with absolute restoration trap; backend/.venv/bin/python scripts/download_real_models.py --help; authenticated TestClient inline driver using data/sample-sar/sample.tif",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "backend/data/models/manifests.json",
+    "backend/data/models/sar-flood-mapping-v2.0.0.onnx",
+    "backend/data/models/building-damage-v2.0.0.onnx",
+    "backend/data/models/incident-nlp-v2.0.0.onnx",
+    "authenticated TestClient incident",
+    "real SAR fixture backend/data/sample-sar/sample.tif",
+    "malformed damage/NLP payloads and six mismatched contract versions",
+    "damage/NLP real-input fixtures: DEFERRED_EXTERNAL"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-01T08:16:58Z",
+  "finished_at": "2026-08-01T08:17:14Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "focused_tests": "20 passed, 2 skipped (damage/NLP DEFERRED_EXTERNAL)",
+    "serving_regressions": "6 passed",
+    "missing_weights_tests": "1 passed, 17 deselected",
+    "real_route": "HTTP 200 available, output output=[1,2,512,512], fixture SHA-256 recorded",
+    "no_input_route": "HTTP 200 abstain/input_required",
+    "uncalibrated_routes": "HTTP 200 abstain/calibration_unavailable",
+    "incompatible_route": "HTTP 422 with all six mismatched version fields",
+    "malformed_route": "damage HTTP 422 input_shape_mismatch; NLP HTTP 422 empty input",
+    "downloader_help": "exit 0; argparse usage and --model {sar,damage,nlp} options printed"
+  },
+  "hashes": {
+    "backend/data/models/manifests.json": "72ae88e8ee22f65f1c55cdb24e9b19d9bf24c93df0d748389cbf9731e272c569",
+    "backend/data/models/sar-flood-mapping-v2.0.0.onnx": "ee35b360436e6987beabade928b71bf56baf49e507a993ea6c6ac99f02649bdd",
+    "backend/data/models/building-damage-v2.0.0.onnx": "5b3a4bc419f09d6e2dcc9e15481558cc9b59d8610976a4a0585c3135bc65bd1f",
+    "backend/data/models/incident-nlp-v2.0.0.onnx": "038e4fa15021d0da8ec9c5e02ceed9de37d05cd4cd9a6eb73b0a9824999a81a7",
+    "backend/data/sample-sar/sample.tif": "d7cbe932c7ed74a627706a9e9df99f706df3e5abc7d45a49e9d00677a6b09eb4",
+    "backend/app/perception/serving.py": "56ea471753e1d4d5f1e0eed7cc6b9f35a9dde78dfcd94a7b054ef9dd9345cab1",
+    "scripts/download_real_models.py": "edf70cc592817861880b7bcd0345b24cd316a24058592a541e34566b813cd713"
+  },
+  "failure_assertion": "Unregistered records fail unavailable; cache tamper invalidates cached sessions; wrong output dtype is incompatible; missing SAR weights return unavailable; stale or mismatched contracts return incompatible/HTTP 422; absent calibration abstains only for missing input or valid-shaped data; malformed provided inputs return HTTP 422; alternate NLP source is absent.",
+  "cleanup": "Absolute-path restoration trap restored the SAR artifact; final SHA-256 matched the manifest and no backup file remains in /tmp. Temporary cache-tamper manifest/artifact used by tests was under pytest tmp_path and removed by pytest. The root-relative --help invocation performed no model download or file writes."
+}

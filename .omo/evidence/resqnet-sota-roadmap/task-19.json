@@ -1,0 +1,50 @@
+{
+  "task_id": "19",
+  "command": "backend/.venv/bin/python scripts/reproduce_sota_report.py --manifest evidence/sota/release-manifest.json --clean-room --report evidence/sota/task-19-happy.json",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "evidence/sota/release-manifest.json",
+    "evidence/sota/prerequisites.json",
+    "scripts/reproduce_sota_report.py",
+    "scripts/reproduce_sota_contract.py",
+    "backend/requirements.lock",
+    "frontend/package-lock.json",
+    "evidence/sota/task-19-happy.json",
+    "tests/fixtures/tampered-release-manifest.json"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-03T01:50:16.000Z",
+  "finished_at": "2026-08-03T01:50:17.114Z",
+  "exit_code": 2,
+  "status": "DEFERRED_EXTERNAL",
+  "metrics": {
+    "machine_gate_status": "PASS",
+    "claim_statuses": {"research": "DEFERRED_EXTERNAL", "production": "DEFERRED_EXTERNAL", "shadow": "DEFERRED_EXTERNAL", "field": "DEFERRED_EXTERNAL"},
+    "sota_claim": false,
+    "external_prerequisites": [
+      "dataset.flood.sen1floods11",
+      "dataset.flood.floodnet",
+      "dataset.damage.xbd",
+      "dataset.nlp.incident-evaluation",
+      "dataset.sensor.regional-trial",
+      "dataset.operator.human-factors"
+    ],
+    "metric_fingerprint": "4adcc6ab3ec2962494b4f7bf531bdc0d684db3d9800413c7e3d7db2b546a87b7",
+    "tampered_manifest": {"command": "backend/.venv/bin/python scripts/reproduce_sota_report.py --manifest tests/fixtures/tampered-release-manifest.json --verify", "expected_exit_code": 1, "observed_status": "FAIL"},
+    "external_metric_values_published": false,
+    "synthetic_fixture_claim": "validation-only",
+    "basedpyright": "unavailable; prior installation decision declined the server"
+  },
+  "hashes": {
+    "evidence/sota/release-manifest.json": "b59136df72811818b6a5ddae3dfe8951897a6774691b0d48d66ea4eebbb6d626",
+    "evidence/sota/task-19-happy.json": "ef8a3cb9f87fba2b425e0c55aef4853c658f00fe602e8ed47b03838904820fdb",
+    "evidence/sota/prerequisites.json": "65b982196a807063179d02ee87d2f155e0fb1173c6e45c932dc7eaafda184e83",
+    "scripts/reproduce_sota_report.py": "f9ba4c90921aa7aa030d5a1bf0d0fef8c3c4747466d9ef4ccfabb0651de7dff6",
+    "scripts/reproduce_sota_contract.py": "3ab68543e44726eae034b7d35d46debfa7094b93f4edea375e9c74e25a4284fe",
+    "backend/requirements.lock": "08d106c301801866e9c29c23e6c0fca7e1f45ed23c63d7c1b15c958fff03cfb7",
+    "frontend/package-lock.json": "9759d69e0ec47956bb9807fb2c2c40a526e6d640adeab69207fdea44f779db78",
+    "tests/fixtures/tampered-release-manifest.json": "7bdf184517ed1c4715edaec43effe7bf6fc3804f4e66956bf240b28a3bb7f717"
+  },
+  "failure_assertion": "Clean-room hashes and deterministic gates pass, but every claim class remains DEFERRED_EXTERNAL; tampered manifest verification must fail with exit 1 and no claim promotion.",
+  "cleanup": "No external datasets, models, credentials, or production systems were modified; local inputs were read-only."
+}

@@ -1,0 +1,66 @@
+{
+  "task_id": "26",
+  "command": "backend/.venv/bin/python scripts/run_field_exercise_harness.py --scenario tests/fixtures/field-machine-v1.yaml --replay --report evidence/sota/task-26-machine.json; backend/.venv/bin/python scripts/run_field_exercise_harness.py --scenario tests/fixtures/field-machine-failures.yaml --assert-safe-degradation; backend/.venv/bin/python scripts/run_field_exercise_harness.py --scenario tests/fixtures/field-external.yaml --prerequisites evidence/sota/prerequisites.json --require-agency-hardware --expect-deferred",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "scripts/run_field_exercise_harness.py",
+    "tests/fixtures/field-machine-v1.yaml",
+    "tests/fixtures/field-machine-failures.yaml",
+    "tests/fixtures/field-external.yaml",
+    "evidence/sota/prerequisites.json",
+    "evidence/sota/field-trial-report.json",
+    "docs/FIELD_EXERCISE_HARNESS.md"
+  ],
+  "code_revision": "working-tree-uncommitted",
+  "started_at": "2026-08-03T04:07:20.776624Z",
+  "finished_at": "2026-08-03T04:07:21.013404Z",
+  "exit_code": 2,
+  "status": "DEFERRED_EXTERNAL",
+  "metrics": {
+    "commands": [
+      {"exit_code": 0, "status": "PASS", "assertion": "fixed degraded-mode thresholds, signed-log integrity, deterministic replay, and no-actuation controls passed"},
+      {"exit_code": 1, "status": "FAIL", "assertion": "unsafe assertions emitted remediation and failed closed"},
+      {"exit_code": 2, "status": "DEFERRED_EXTERNAL", "assertion": "agency, human, hardware, ethics, safety, consent, and field sample evidence remain unavailable"}
+    ],
+    "claim_classes": {
+      "field_machine": "PASS",
+      "field_external": "DEFERRED_EXTERNAL",
+      "agency_shadow_trial": "DEFERRED_EXTERNAL",
+      "physical_execution": "DEFERRED_EXTERNAL",
+      "human_workload": "DEFERRED_EXTERNAL"
+    },
+    "machine_gate": {
+      "status": "PASS",
+      "claim_class": "field_machine",
+      "alert_latency_p95_ms": 1800.0,
+      "loss_rate": 0.04,
+      "duplicate_rate": 0.02,
+      "audit_completeness": 1.0,
+      "no_actuation": true,
+      "machine_pass_satisfies_external_field_gate": false
+    },
+    "external_field_gate": {
+      "status": "DEFERRED_EXTERNAL",
+      "missing_external_values": ["agency_authorization", "ethics_irb", "training", "insurance_safety_review", "device_inventory", "consent", "stop_authority", "blinding", "missing_data_rules", "observed_incidents", "observed_hazard_types"],
+      "minimums": {"incidents": 100, "hazard_types": 3}
+    },
+    "external_limitations": [
+      "The machine fixture uses a test-only HMAC key and synthetic measurements.",
+      "No agency authorization, participants, IRB or ethics approval, training, insurance or safety review, device inventory, consent, stop authority, workload, physical measurement, or 100-incident field scenario exists.",
+      "No field readiness or life-safety claim is made."
+    ]
+  },
+  "hashes": {
+    "scripts/run_field_exercise_harness.py": "1d571ebf04822dc2e575cf5c86c3575ddf9d5f2a4524265b40b89f656c4a6482",
+    "scripts/field_exercise_contract.py": "dd7a66c366f5d9d41eae8b9760fe45f109cbc3db564c0ae211a7f8315791d8e6",
+    "tests/test_field_exercise_harness.py": "282b98fae6a6648e41892a49bc46c4f931f6c7adf6d6cab6086c8f2498bdd76a",
+    "tests/fixtures/field-machine-v1.yaml": "d0522bfbe773da02443363fe8f4b58d9bb6e470dcee4524a3ac1b4fda7de8da4",
+    "tests/fixtures/field-machine-failures.yaml": "f93682fab040b6e6dea7b631360ffb23388688d019378b97040775a0ee28554e",
+    "tests/fixtures/field-external.yaml": "0576957ccc439c2777bb13dbe80bacc2a33d9c78e375e29b82a82a1745e2f8d5",
+    "evidence/sota/field-trial-report.json": "472ae612a1e8e5bdef3dee0fa9de5f20ad465574695e1f40bd489286397ab7bb",
+    "evidence/sota/task-26-machine.json": "a47379de3442dc36940e4671c5726f6ba17447159652236c3db9ea102f3460b8",
+    "docs/FIELD_EXERCISE_HARNESS.md": "750f3ab84c4398c9ad8737a13f1f761a9d162633dc53077193d84671ff20bfd0"
+  },
+  "failure_assertion": "No failed machine gate is promoted to success; external, physical, agency, and human claims remain explicitly DEFERRED_EXTERNAL.",
+  "cleanup": "No API route, database row, queue message, device key, network request, agency system, participant, hardware, dispatch, public warning, resource commitment, or production state was invoked or modified."
+}

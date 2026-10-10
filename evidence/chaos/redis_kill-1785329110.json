@@ -1,0 +1,14 @@
+{
+  "scenario": "redis_kill",
+  "load_successes": 39,
+  "load_failures": 0,
+  "login_during_outage": 200,
+  "protected_endpoint_during_outage": 200,
+  "deep_health_during_outage": {
+    "database": true,
+    "redis": false,
+    "redpanda": true,
+    "minio": true
+  },
+  "recovery_time_s": 4.552
+}

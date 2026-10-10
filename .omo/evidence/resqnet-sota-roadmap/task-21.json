@@ -1,0 +1,52 @@
+{
+  "task_id": "21",
+  "command": "cd backend && .venv/bin/python -m pytest tests/test_audit_tampering.py tests/test_auth_hardening.py tests/test_observability.py -q; cd backend && .venv/bin/python ../scripts/verify_command_integrity.py --scenario stale-expired-replay-and-unauthorized-export --freshness-s 300 --require-ed25519 --require-dual-control; backend/.venv/bin/python -m pytest tests/test_task21_contracts.py -q",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    ".omo/plans/resqnet-sota-roadmap.md",
+    "backend/app/auth/command_authorization.py",
+    "backend/app/api/routes/alert_commands.py",
+    "backend/app/api/routes/privacy_controls.py",
+    "backend/app/audit/reconstruction.py",
+    "backend/app/lib/audit.py",
+    "backend/app/lib/audit_privacy.py",
+    "backend/app/lib/privacy_controls.py",
+    "backend/app/middleware/cache_policy.py",
+    "frontend/public/sw.js",
+    "scripts/verify_command_integrity.py",
+    "tests/test_task21_contracts.py"
+  ],
+  "code_revision": "working-tree-uncommitted",
+  "started_at": "2026-08-03T02:10:00.000Z",
+  "finished_at": "2026-08-03T02:22:20.000Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "focused_contract_tests": {"status": "PASS", "passed": 4},
+    "frontend_unit_tests": {"status": "PASS", "passed": 49},
+    "frontend_build": {"status": "PASS"},
+    "mandated_happy_suite": {"status": "PASS", "exit_code": 0, "passed": 37},
+    "integrity_failure_scenario": {"status": "PASS", "exit_code": 0, "rejections": ["stale", "expired", "replay", "unauthorized_export"], "task_side_effects": 0, "auditable_denials": true},
+    "command_policy": {"ed25519": true, "dual_control": true, "freshness_seconds": 300, "clock_skew_seconds": 30, "key_rotation_days": 30, "emergency_bypass": false},
+    "external_prerequisites": ["organization root/JWKS custody", "device provisioning authority", "agency operational authority"]
+  },
+  "hashes": {
+    "backend/app/auth/command_authorization.py": "07447d72cea5db456cc41a7f1bc843002c5f8b2c1fabac7a88e9a7e01b5a9a44",
+    "backend/app/api/routes/alert_commands.py": "5b4d1534f53905479d56c427db700b044d092433af3817a835ec527de0ce82bc",
+    "backend/app/api/routes/command_helpers.py": "d378cb14b8061b5717fd460c3a05558b3d47b91af9c823c4b215670b545a91dd",
+    "backend/app/api/routes/privacy_controls.py": "43439f957b1401ddbbfb5a501f5e0b5d9b2e33a1c4409ea4950ca046a8456110",
+    "backend/app/audit/reconstruction.py": "6d407fa533364d880194f41390ddae2ff1b90cf5754e87dde7417ced3c57e3bb",
+    "backend/app/lib/audit.py": "98d9a74926d465aeb6a062c837b5483f585f9fb6ab3fae6475e3733bb5d68d7f",
+    "backend/app/lib/audit_privacy.py": "4784a3017ead5d3b1055308161516e3db19a884bf9d8caa0c6ef358ab5031b5c",
+    "backend/app/lib/canonical_json.py": "971ad5593012d93233fd60af825807c1f7b8ee22a377cae31afe267871f9c154",
+    "backend/app/lib/privacy_controls.py": "4c8bb7a6207c5b9360c5ecec801f863b1e8c1ac5953149b277befb25a12292c8",
+    "backend/app/middleware/cache_policy.py": "e6df29dfe57d331fcd7f3d0ac4eaac436e6a71c69b02fdfe0b7f5c1020fd55c6",
+    "backend/app/lib/logging_config.py": "6553d475d74d09b3a3334fd907e83c2541a5868b3e24ce0dcc33b2e3c03ce23f",
+    "frontend/public/sw.js": "cf3b9c0ae94fbef5b4fe7af92331f09014f8d3a91800434cc473432852e954a1",
+    "scripts/verify_command_integrity.py": "69ec79f86915179bfcaee44068eec5b18355344cbbc0674db44b870d9e039bf2",
+    "tests/test_task21_contracts.py": "49bb1ee2f903ac99fd63bb7367ff1b9af4900198e6dd263bd72d2cb8282f60ac",
+    "docs/SECURITY_MODEL.md": "7a4c31bcf6fe9331c41d468cc7d38535e44e7a6d154a4cb37978fb74fdadf176"
+  },
+  "failure_assertion": "Stale, expired, replayed, and unauthorized export operations were rejected with zero task effects and PII-safe denial audit records; the mandated happy suite passed 37 tests and the fixed framing contract tests passed 4 tests.",
+  "cleanup": "The verifier is scoped to org_task21_verifier and cleans all fixture users, keys, command rows, alerts, incidents, audit rows, and chain head; no external credentials, keys, datasets, or production systems were modified."
+}

@@ -1,0 +1,436 @@
+================================================================================
+F1 — PLAN COMPLIANCE AUDIT: resqnet-remaining-work
+================================================================================
+Audit date: 2026-07-29
+Branch: codex/resqnet-remaining-work
+Plan: .omo/plans/resqnet-remaining-work.md
+Auditor: F1 final-verification task (agent-executed, zero human intervention)
+
+Purpose: Verify that all 8 user-specified remaining-work items map to
+completed implementation todos (T1-T42) with verifiable evidence, and that
+item 8 (physical hardware / field trial) is honestly documented as deferred.
+
+================================================================================
+PLAN CHECKBOX STATE
+================================================================================
+
+Command: grep -c "^- \[x\]" .omo/plans/resqnet-remaining-work.md
+Result:  42 implementation todos marked [x] (T1-T42)
+
+Command: grep -c "^- \[ \]" .omo/plans/resqnet-remaining-work.md
+Result:  4 final-verification tasks marked [ ] (F1-F4, this task included)
+
+All 42 implementation todos are checked. F1-F4 are pending (expected —
+this is the first final-verification task to run).
+
+================================================================================
+BRANCH COMMIT STATE
+================================================================================
+
+Command: git log --oneline codex/resqnet-remaining-work ^main
+Result:  25 commits on the branch (24 implementation + 1 merge from gap-closure)
+
+Commit subjects match the plan's per-todo commit messages. Conventional
+commit format (feat/fix/test/docs/perf/verify) used throughout.
+
+================================================================================
+ITEM-BY-ITEM COMPLIANCE AUDIT
+================================================================================
+
+The user specified 8 remaining-work gaps. Each is audited below against
+the todos that close it and the evidence on disk.
+
+------------------------------------------------------------------------------
+ITEM 1: Fix all automated tests
+  Plan todos: T1-T6 (Wave 1)
+  Commit gate: Backend 0 failures + Playwright 21/21
+------------------------------------------------------------------------------
+
+T1  [x] Branch created (codex/resqnet-remaining-work) — no commit (branch only)
+T2  [x] Playwright .or() -> .first() fix — commit 39767b8
+T3  [x] Capabilities test adaptive assertions — commit 9fe97bc
+T4  [x] Low connectivity test adaptive skip — commit 47dd4a5
+T5  [x] Deep health check adaptive assertions — commit 47dd4a5
+T6  [x] SOTA route tests stabilized — commit ab99520
+
+Evidence verified:
+  - evidence/final-verification/backend-pytest.log
+    Line 49: "556 passed, 2 skipped, 12 warnings in 362.54s"
+    (2 skips are adaptive skip-when-service-running guards from T3-T5, not failures)
+  - evidence/final-verification/playwright.log
+    Line 67: "21 passed (3.4m)" — all 21 tests green
+  - evidence/final-verification/frontend-test.log
+    Line 34-35: "Test Files 3 passed (3) / Tests 45 passed (45)"
+
+VERDICT: ITEM 1 PASS — all 6 todos complete, all test suites green.
+
+------------------------------------------------------------------------------
+ITEM 2: Stop reporting placeholder ML models as production-ready
+  Plan todos: T7-T12 (Wave 2)
+  Commit gate: Capabilities returns degraded for placeholders; manifests exist;
+               placeholder outputs blocked
+------------------------------------------------------------------------------
+
+T7  [x] Model manifests created — commit 0d88ac7
+T8  [x] Capabilities returns degraded for placeholders — commit b4a8939
+T9  [x] Placeholder outputs blocked from operational alerts — commit b4a8939
+T10 [x] Manifest-gated capabilities test — commit 7a36857
+T11 [x] KNOWN_LIMITATIONS updated with manifest-based validation — commit c80b55a
+T12 [x] Backend suite passes with manifest gating — commit 7a36857
+
+Evidence verified:
+  - backend/data/models/manifests.json exists (3816 bytes)
+    Contains model_type, version, checksum, training_dataset, validation_status,
+    input_schema, output_schema, accuracy_metrics, signed, calibration, notes
+    for all 3 models.
+  - docs/KNOWN_LIMITATIONS.md lines 30-35: documents manifest-based validation
+    status. Capabilities endpoint consults manifests at request time.
+  - backend/tests/test_model_manifests.py exists (8026 bytes) — 4 tests covering
+    manifest-gated capabilities and placeholder blocking.
+
+VERDICT: ITEM 2 PASS — manifests exist, capabilities gated by validation_status,
+placeholder outputs blocked from alerts.
+
+------------------------------------------------------------------------------
+ITEM 3: Install real pre-trained disaster models
+  Plan todos: T13-T20 (Wave 3)
+  Commit gate: 3 real ONNX models >1MB; manifests validated + signed;
+               capabilities available; conformal coverage recorded
+------------------------------------------------------------------------------
+
+T13 [x] Heavy geospatial/ML deps installed — commit 39a4ed4
+T14 [x] SAR flood mapping model downloaded + ONNX export — commit 39a4ed4
+T15 [x] Building damage model downloaded + ONNX export — commit 39a4ed4
+T16 [x] NLP incident classification model + ONNX export — commit 39a4ed4
+T17 [x] MODEL_CATALOG updated to match real I/O schemas — commit 39a4ed4
+T18 [x] E2E inference test with non-trivial output assertion — commit 39a4ed4
+T19 [x] Conformal calibration run, coverage recorded — commit 39a4ed4
+T20 [x] Capabilities reports available + docs updated — commit 39a4ed4
+
+Evidence verified (on-disk model files):
+  - backend/data/models/sar-flood-mapping-v2.0.0.onnx — 97,732,369 bytes (93 MB)
+  - backend/data/models/building-damage-v2.0.0.onnx — 135,239,420 bytes (129 MB)
+  - backend/data/models/incident-nlp-v2.0.0.onnx — 438,170,430 bytes (418 MB)
+  - All 3 exceed the >1MB acceptance threshold. Old placeholders archived as
+    *.placeholder.bak (137-200 bytes each).
+
+Manifest verification (manifests.json):
+  - sar_flood_mapping: validation_status="validated", signed=true,
+    checksum=ee35b360..., training_dataset="Sen1Floods11",
+    accuracy_metrics={iou:0.67, f1:0.80},
+    calibration={coverage:0.9412, interval_width:0.6235, method:"conformal",
+      n_samples:55, alpha:0.1, brier_score:0.2621, ece:0.1262}
+  - building_damage: validation_status="validated", signed=true,
+    checksum=5b3a4bc4..., training_dataset="xBD (xView2)",
+    accuracy_metrics={f1:0.34}, calibration=null (honestly documented:
+    xBD registration-gated, no calibration data)
+  - incident_nlp: validation_status="validated", signed=true,
+    checksum=038e4fa1..., training_dataset="CrisisPulse (disaster tweets)",
+    accuracy_metrics={} (honestly empty — model card does not publish values,
+    NOT fabricated)
+
+Conformal calibration:
+  - SAR coverage 0.9412 at alpha=0.1 — within [0.85, 0.95] target band.
+  - Building damage and NLP: calibration=null, honestly documented as lacking
+    calibration datasets. NOT fabricated.
+
+Accuracy metrics are sourced from published checkpoints/model cards, not
+fabricated. The NLP model card does not publish specific values, so
+accuracy_metrics is {} (empty) — honest non-fabrication.
+
+VERDICT: ITEM 3 PASS — 3 real ONNX models installed (>1MB each), manifests
+validated+signed, conformal coverage recorded for SAR, other two honestly
+lack calibration data.
+
+------------------------------------------------------------------------------
+ITEM 4: Raise ingestion performance to 100 obs/sec
+  Plan todos: T21-T27 (Wave 4)
+  Commit gate: Load test sustains 100 obs/sec on both profiles
+------------------------------------------------------------------------------
+
+T21 [x] Profile ingest API bottleneck — commit 321dc1a
+T22 [x] Batch observation endpoint (bulk POST) — commit 321dc1a
+T23 [x] Kafka partitions 1 -> 6 — commit 321dc1a
+T24 [x] Configurable worker concurrency — commit f14ec21
+T25 [x] Batch consumer commits + async confidence — commit f14ec21
+T26 [x] Docker resource limits increased — commit 86ed457
+T27 [x] Load test 100 obs/sec on both profiles — commit 9c84a8c
+
+Evidence verified:
+  - evidence/load/2026-07-29-full.json
+    ingest_rate_per_s: 162.79 (target: 100.0) — MET
+    success_rate: 0.992587 (target: 0.99) — MET
+    dashboard_p95_s: 0.0696 (target: 2.0) — MET
+    api_read_p95_ms: 40.96 (target: 500.0) — MET
+    failover_s: 23.788 (target: 30.0) — MET
+    slo_met: all 6 true
+  - evidence/load/2026-07-29-reduced.json
+    ingest_rate_per_s: 195.58 (target: 100.0) — MET
+    success_rate: 1.0 (target: 0.99) — MET
+    slo_met: all 6 true
+
+Both profiles exceed 100 obs/sec. First attempt reached only 16.01 obs/sec
+(DB pool exhaustion); root cause fixed by raising pool to 50 connections
+and deferring confidence computation to Kafka consumer. Documented in
+FINAL_REPORT.md T27.
+
+VERDICT: ITEM 4 PASS — 162.79 obs/sec (full), 195.58 obs/sec (reduced),
+both exceed 100 obs/sec target. All 6 SLOs met on both profiles.
+
+------------------------------------------------------------------------------
+ITEM 5: Run full-duration reliability testing
+  Plan todos: T28-T33 (Wave 5)
+  Commit gate: 1h soak 99% availability; measured failover <30s;
+               overlapping failures handled
+------------------------------------------------------------------------------
+
+T28 [x] 1-hour soak test at target load — commit 9c84a8c
+T29 [x] Measured Redis/Redpanda/MinIO recovery times — commit 512b2e3
+T30 [x] Overlapping failures (Redis+Redpanda, Redis+MinIO) — commit ddeb2dc
+T31 [x] Container restarts mid-load — commit 07a9eb9
+T32 [x] Disk pressure on database container — commit 976595e
+T33 [x] Intermittent network loss — commit 68d9fdd
+
+Evidence verified:
+  - evidence/load/2026-07-29-soak-full.json (1-hour soak)
+    soak_duration_s: 3599.77 (target: 3600) — MET (genuine 1-hour duration)
+    success_rate: 0.992587 (target: 0.99) — MET (99.26%)
+    ingest_rate_per_s: 162.79 — MET
+    All 6 SLOs met.
+
+  - evidence/chaos/redis_kill-1785347938.json
+    recovery_time_s: 4.491 (<30s) — MET, 0 load failures
+  - evidence/chaos/overlapping_redis_redpanda-1785347978.json
+    recovery_time_s: 10.791 (<30s) — MET, 0 load failures, login 200, obs POST 201
+  - evidence/chaos/network_loss-1785348093.json
+    recovery_time_s: 0.004, data_loss: false, 3 cycles, Kafka resumed
+  - evidence/chaos/disk_pressure-1785348039.json
+    health_during_pressure: 200, obs POST 201, deep health all true, recovered
+
+  - 112 chaos evidence files in evidence/chaos/ with recovery_time_s measured
+    (not hardcoded 30s — T29 replaced the hardcoded value with time.perf_counter())
+
+Measured failover times (from FINAL_REPORT.md T29):
+  Redis kill:              9.053s
+  Redpanda kill:          10.184s
+  MinIO kill:             14.019s
+  Redis+Redpanda overlap: 11.02s
+  Redis+MinIO overlap:    13.024s
+  Backend restart:        17.262s
+  Worker restart:         12.238s
+  All under 30s SLO.
+
+Note: Backend container restarted twice during the 1-hour soak (exit code 137,
+host-level resource pressure, not container OOM). Failures were transient and
+overall success rate stayed above 99%. This is honestly documented in
+FINAL_REPORT.md T28 and KNOWN_LIMITATIONS.md disclaimer #6 partial retirement.
+
+VERDICT: ITEM 5 PASS — genuine 1-hour soak at 99.26%, 9 chaos scenarios pass,
+measured failover times all <30s, no data loss.
+
+------------------------------------------------------------------------------
+ITEM 6: Clean up frontend warnings
+  Plan todos: T34-T36 (Wave 6)
+  Commit gate: ESLint 0 warnings; TypeScript 0 errors; tests pass
+------------------------------------------------------------------------------
+
+T34 [x] useClock hook eliminates Date.now() in render — commit a967a2c
+T35 [x] Derive state via TanStack Query (no set-state-in-effect) — commit a967a2c
+T36 [x] Verify zero ESLint + TypeScript warnings — commit a967a2c
+
+Evidence verified:
+  - evidence/final-verification/eslint.log
+    File is 0 bytes (empty output = 0 warnings from --max-warnings 0)
+  - evidence/final-verification/typecheck.log
+    Lines 1-4: tsc --noEmit ran with no errors (clean exit, no output)
+  - evidence/final-verification/frontend-test.log
+    Line 34-35: "Test Files 3 passed (3) / Tests 45 passed (45)"
+  - frontend/src/hooks/useClock.ts exists (313 bytes)
+
+VERDICT: ITEM 6 PASS — 0 ESLint warnings, 0 TypeScript errors, 45/45 tests pass.
+
+------------------------------------------------------------------------------
+ITEM 7: Harden authentication
+  Plan todos: T37-T39 (Wave 6)
+  Commit gate: 15-min access tokens; refresh works; local cache rejects
+               pre-revoked during outage; admin blocked, ops allowed with audit
+------------------------------------------------------------------------------
+
+T37 [x] 15-min access tokens + 7-day refresh tokens — commit 845058c
+T38 [x] Local emergency revocation cache — commit b15b8f4
+T39 [x] Hybrid fail-closed/fail-open + break-glass audit — commit 261c3c3
+
+Evidence verified (source code on disk):
+  - backend/app/config.py:39  ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+  - backend/app/config.py:40  REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+  - backend/app/deps.py:26    _local_revoked_tokens: set[str] = set()
+  - backend/app/deps.py:30    class SensitiveOperation(str, Enum)
+  - backend/app/deps.py:87    def check_sensitive_operation(token, op)
+  - backend/app/deps.py:97    if op is SensitiveOperation.ADMIN_CHANGE: (fail-closed)
+  - backend/app/lib/audit.py:120  def write_break_glass_audit_if_outage(...)
+  - backend/app/api/routes/auth.py:41-42  access + refresh token creation
+  - backend/app/api/routes/auth.py:78  refresh endpoint token creation
+  - backend/app/api/routes/alerts.py:148  check_sensitive_operation(ALERT_APPROVAL)
+  - backend/app/api/routes/alerts.py:171  write_break_glass_audit_if_outage(...)
+  - backend/tests/test_auth_hardening.py exists (12063 bytes, 14 tests)
+
+Auth hardening state (from FINAL_REPORT.md):
+  Access token TTL:           15 minutes (was 720)
+  Refresh token TTL:         7 days
+  Refresh endpoint:          POST /api/auth/refresh
+  Revocation:                 Redis denylist + local in-memory cache (SHA256)
+  Admin during Redis outage:  Fail-closed (rejected)
+  Emergency ops during outage: Fail-open (allowed, break-glass audit)
+  Auth hardening tests:       14 (6 T37 + 3 T38 + 5 T39)
+
+VERDICT: ITEM 7 PASS — 15-min access tokens, 7-day refresh tokens, local
+revocation cache, hybrid fail-closed/fail-open policy, break-glass audit.
+All verified in source code and tests.
+
+------------------------------------------------------------------------------
+ITEM 8: Move from simulation to real-world validation (DEFERRED MILESTONE)
+  Plan todos: T40-T41 (Wave 7)
+  Commit gate: Docs updated; physical work still DEFERRED
+------------------------------------------------------------------------------
+
+T40 [x] Deferred milestone docs updated with software-readiness status — commit 4720417
+T41 [x] FINAL_REPORT.md updated with remaining-work results — commit 4720417
+
+This item is HONESTLY DEFERRED. The plan's TL;DR (line 9) explicitly states:
+"What it will NOT do: Build or procure physical rescue-ball hardware;
+execute physical floodwater/deployment/field tests; train ML models from
+scratch on CPU; fabricate model accuracy or benchmark results."
+
+Evidence of honest deferral:
+  - docs/HARDWARE_SPECIFICATION.md line 3-6:
+    "SPECIFICATION DOCUMENT ONLY. The physical device described in this
+     document has NOT been built, procured, or manufactured. Physical build,
+     procurement, and manufacturing are a DEFERRED MILESTONE."
+  - docs/HARDWARE_SPECIFICATION.md line 14: "Status: SPEC ONLY (not built, deferred)"
+  - docs/HARDWARE_SPECIFICATION.md line 38: "still a DEFERRED MILESTONE"
+
+  - docs/PHYSICAL_TEST_PLAN.md line 3-10:
+    "SPECIFICATION DOCUMENT ONLY. Physical testing has NOT been executed.
+     EXECUTION of this test plan is a DEFERRED MILESTONE... No results in
+     this document. No data has been collected. No device has been built,
+     submerged, calibrated, recovered, or validated."
+  - docs/PHYSICAL_TEST_PLAN.md line 30: "are still a DEFERRED MILESTONE"
+
+  - docs/FIELD_TRIAL_PROTOCOL.md line 3-11:
+    "PROTOCOL DOCUMENT ONLY. The field trial has NOT been executed.
+     EXECUTION of this field trial is a DEFERRED MILESTONE... No results
+     exist in this document. No agency has committed. No trial region has
+     been selected. No data has been collected."
+  - docs/FIELD_TRIAL_PROTOCOL.md line 339: "All physical gates are DEFERRED"
+  - docs/FIELD_TRIAL_PROTOCOL.md line 375: "Status: DEFERRED. No device built"
+  - docs/FIELD_TRIAL_PROTOCOL.md lines 382-385: All hardware items DEFERRED
+  - docs/FIELD_TRIAL_PROTOCOL.md lines 400-403: All sensor items DEFERRED
+
+  - docs/KNOWN_LIMITATIONS.md disclaimers remain in force:
+    #1 (line 266): "Rescue Ball Is Simulated (Not Physical Hardware)"
+    #2 (line 277): "Physical Deployment and Landing Not Validated"
+    #3 (line 288): "Simulated Thermal Imaging Not Certified for Human Detection"
+
+  - grep -n "DEFERRED" across all 3 docs returns 20+ matches, all marking
+    physical work as deferred.
+
+The software work (T40-T41) updated these docs to record that all software
+gates (Waves 1-6) are GREEN, while keeping all physical gates DEFERRED.
+No physical testing is claimed. No hardware is claimed to exist. No field
+trial is claimed to have been executed. This is honest deferral.
+
+VERDICT: ITEM 8 PASS — honestly deferred. Docs updated with software-
+readiness status. Physical hardware, sensor calibration, and field trial
+execution remain explicitly DEFERRED. No fabricated claims.
+
+================================================================================
+T42: COMPLETE TEST SUITE VERIFICATION
+================================================================================
+
+T42 [x] All test suites pass — commit 025d216
+
+Evidence verified (evidence/final-verification/):
+  - backend-pytest.log:   556 passed, 2 skipped, 0 failures
+  - frontend-test.log:    45 passed (3 files)
+  - eslint.log:           0 bytes (0 warnings)
+  - typecheck.log:        clean (0 errors)
+  - playwright.log:       21 passed (3.4m)
+
+All 5 verification commands from T42 acceptance criteria pass.
+
+================================================================================
+ANTI-FABRICATION CHECK
+================================================================================
+
+The following claims were checked against on-disk evidence for fabrication:
+
+1. Model file sizes: Verified via ls -la backend/data/models/
+   - sar-flood-mapping-v2.0.0.onnx: 97,732,369 bytes (real, >1MB)
+   - building-damage-v2.0.0.onnx: 135,239,420 bytes (real, >1MB)
+   - incident-nlp-v2.0.0.onnx: 438,170,430 bytes (real, >1MB)
+   - Old placeholders archived as *.placeholder.bak (137-200 bytes)
+
+2. Conformal coverage: 0.9412 recorded in manifests.json, within [0.85, 0.95].
+   Calibration data source (Sen1Floods11) and sample count (55) documented.
+   NOT fabricated — real calibration run via production API endpoint.
+
+3. Accuracy metrics: Sourced from published checkpoints/model cards.
+   - SAR: val_iou=0.6699 from HF model card -> manifest IoU=0.67, F1=0.80
+   - Building damage: best_f1=0.34 from checkpoint -> manifest F1=0.34
+   - NLP: model card does not publish values -> accuracy_metrics={} (empty, NOT fabricated)
+
+4. Load test results: JSON files in evidence/load/ contain raw Locust data
+   with total_requests, total_failures, and computed rates. Numbers are
+   internally consistent (e.g., 58599 succeeded / 3599.77s = 16.28 posts/s
+   per worker * 10 batch = 162.8 obs/sec).
+
+5. Chaos test results: JSON files in evidence/chaos/ contain per-scenario
+   recovery_time_s measured with time.perf_counter(). Not hardcoded 30s.
+
+6. Soak duration: 3599.77s (genuine 1-hour, not shortened).
+
+7. Physical hardware: No device exists. All 3 docs say DEFERRED. No physical
+   testing claimed. No fabricated hardware results.
+
+No fabricated claims detected.
+
+================================================================================
+SCOPE FIDELITY CHECK
+================================================================================
+
+The plan's "Must NOT have" guardrails (lines 38-48) were checked:
+
+- No physical rescue-ball hardware built/procured: CONFIRMED (deferred)
+- No physical floodwater/deployment/landing testing: CONFIRMED (deferred)
+- No real sensor procurement/calibration: CONFIRMED (deferred)
+- No certified human-detection capability claimed: CONFIRMED (disclaimer #3)
+- No multi-agency field trials executed: CONFIRMED (deferred)
+- No fabricated accuracy/weights/benchmarks: CONFIRMED (see anti-fabrication)
+- No ML training from scratch on CPU: CONFIRMED (used pre-trained models)
+- No weakened graceful-degradation fallbacks: CONFIRMED (model_unavailable,
+  Kafka noop producer, PMTiles vector fallback all intact)
+- No push to main: CONFIRMED (branch is codex/resqnet-remaining-work)
+- No modification of merged Phase 1 or gap-closure commits: CONFIRMED
+
+================================================================================
+SUMMARY TABLE
+================================================================================
+
+| Item | Description | Todos | Status | Evidence |
+|------|-------------|-------|--------|----------|
+| 1 | Fix all automated tests | T1-T6 | PASS | 556 passed, 21/21 Playwright, 45/45 frontend |
+| 2 | Stop placeholder ML reporting | T7-T12 | PASS | manifests.json, capabilities gated, placeholder blocking |
+| 3 | Install real pre-trained models | T13-T20 | PASS | 3 ONNX files (93/129/418 MB), validated+signed, coverage 0.9412 |
+| 4 | Raise ingestion to 100 obs/sec | T21-T27 | PASS | 162.79 full, 195.58 reduced, all 6 SLOs met |
+| 5 | Full-duration reliability testing | T28-T33 | PASS | 1h soak 99.26%, 9 chaos tests, failover <30s |
+| 6 | Clean up frontend warnings | T34-T36 | PASS | 0 ESLint, 0 TS errors, 45/45 tests |
+| 7 | Harden authentication | T37-T39 | PASS | 15-min tokens, 7-day refresh, local cache, hybrid policy |
+| 8 | Real-world validation (deferred) | T40-T41 | PASS (deferred) | Docs updated, physical work honestly DEFERRED |
+
+All 42 implementation todos (T1-T42) are marked [x] and verified against
+on-disk evidence. Item 8 is honestly documented as a deferred milestone.
+No fabricated claims detected. No scope creep detected.
+
+================================================================================
+VERDICT: APPROVE
+================================================================================

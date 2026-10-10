@@ -1,0 +1,46 @@
+{
+  "task_id": "3",
+  "command": "cd backend && .venv/bin/python -m compileall -q app/api/routes/alert_commands.py && .venv/bin/python -m pytest tests/test_sota_routes.py -q && .venv/bin/python -m pytest tests/test_sota_routes.py -k 'invalid_signature or expired_signature or revoked_signing_key or replayed_nonce' -q && cd .. && PYTHONPATH=backend backend/.venv/bin/python scripts/verify_command_authorization.py --scenario two-person-dispatch --freshness-s 300 --expect-one-task --expect-two-distinct-roles && PYTHONPATH=backend backend/.venv/bin/python scripts/verify_command_authorization.py --scenario single-approver-or-stale-signature --expect-deny --expect-zero-tasks && cd frontend && npx playwright test tests/action-card.spec.ts && npx playwright test tests/e2e.spec.ts -g 'high-consequence dispatch stays pending' && npm run typecheck && npm run build",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "backend/tests/test_sota_routes.py",
+    "backend/app/auth/command_authorization.py",
+    "backend/alembic/versions/0007_alert_command_workflow.py",
+    "frontend/src/components/ActionCard.tsx",
+    "frontend/src/components/ActionCardControls.tsx",
+    "frontend/src/pages/PlanningPage.tsx",
+    "frontend/tests/action-card.spec.ts",
+    "frontend/tests/e2e.spec.ts",
+    "scripts/verify_command_authorization.py"
+  ],
+  "code_revision": "working-tree-2026-08-01",
+  "started_at": "2026-08-01T09:50:00Z",
+  "finished_at": "2026-08-01T10:00:00Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "full_sota_routes": "28 passed, 2 warnings",
+    "authorization_happy": "PASS",
+    "authorization_failure": "PASS",
+    "authorization_adversarial": "4 route tests pass: invalid signature, expired signature, revoked key, replayed nonce",
+    "focused_task3_tests": "28 passed",
+    "playwright_action_card": "6 passed",
+    "playwright_planning_dispatch": "1 passed",
+    "frontend_typecheck": "PASS",
+    "frontend_build": "PASS",
+    "python_compile": "PASS",
+    "command_results": "All nine listed commands exited 0; the adversarial subset passed 4 tests and the dispatch flow remained pending until dual approval."
+  },
+  "hashes": {
+    "backend/tests/test_sota_routes.py": "d0aa61ee22c2af092be96e9114df91052eddab47ec5abfd845f7b8fba50a4619",
+    "backend/app/api/routes/alert_commands.py": "0f7a9e9a71f0794551c1c0fe013bfc6e172bc8f8fe36a78828db0d31489fb7e6",
+    "frontend/src/components/ActionCard.tsx": "dc5a6364d0309e22af1a2c9be2bc627fab0e0d04201a19f5ad5e619fedf45abc",
+    "frontend/src/components/ActionCardControls.tsx": "008f731980eb49ff4a18c9852fb104b6de0e9dc7b782989fd2485f55351e0224",
+    "frontend/src/pages/PlanningPage.tsx": "5e50e20127550d402d75de55847c71166babaab9983fef3f746ec32c44f66500",
+    "frontend/tests/action-card.spec.ts": "2c74ce493f2b5e47524ce59d20fdff7078905005ee0ab4f4b6deceba9fbaeb68",
+    "frontend/tests/e2e.spec.ts": "62cfa61fd51cbbfa6d9d3e18692409199e26bc0f3db43327203072e4b2458472",
+    "scripts/verify_command_authorization.py": "5546526e757d0480561f4cbf6b3a05fd19d27f5f30bcb211b5074f920e89f895"
+  },
+  "failure_assertion": "Every listed command has an individual exit_code and status; the aggregate PASS is valid only because the fail-fast sequence completed with exit_code 0.",
+  "cleanup": "Verifier removes generated incident, alert, command decisions, approvals, tasks, idempotency effects, and generated key IDs; audit history remains append-only. Playwright webServer lifecycle stopped its managed processes. No plan checkbox or boulder file was edited."
+}

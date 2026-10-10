@@ -1,0 +1,9 @@
+{
+  "schema_version": "resqnet.published-baseline-config.v1",
+  "baseline_id": "incident-nlp-majority-crisispulse-v1",
+  "task": "incident-nlp",
+  "status": "DEFERRED_EXTERNAL",
+  "reason": "no licensed labeled incident evaluation corpus is available; CrisisPulse is plumbing-only",
+  "artifact_available": false,
+  "command": "python scripts/run_baseline.py --config benchmarks/baselines/crisis-nlp.yaml"
+}

@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Rescue page HUD panels (ported from the field team's Next.js dashboard). */
+@layer components {
+  .rescue-panel {
+    @apply rounded-[20px] border border-slate-400/20 bg-slate-900/70 p-5 shadow-2xl backdrop-blur-lg;
+  }
+
+  .rescue-eyebrow {
+    @apply text-[0.7rem] uppercase tracking-[0.24em] text-slate-400;
+  }
+}

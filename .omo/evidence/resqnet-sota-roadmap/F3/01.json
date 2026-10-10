@@ -1,0 +1,35 @@
+{
+  "cleanup": "Command output was captured; no external validators, data, participants, credentials, or production state were created or modified by the wrapper.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "bash scripts/run_production_parity.sh --instances 2 --operators 50 --ingest-rate 100 --duration 3600 --min-success-rate 0.999 --max-ack-loss 0 --max-dashboard-p95-s 2 --max-api-read-p95-ms 500",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 2,
+  "failure_assertion": "The observed exit/status pair must match the exact F3 expectation; expected DEFERRED_EXTERNAL is accepted only for the declared external preflight.",
+  "finished_at": "2026-08-03T23:49:31.645498Z",
+  "hashes": {
+    "command_sha256": "02cbd64962c977de9bdc6c6c753ed20479e5e321066e8ee5523db31737f7d9e1",
+    "config/production-parity.json": "c202c30e9198fe56d30186b47ed628ffe7b3570dcf4905394f503c751ce5d8b7",
+    "deploy/production-parity/haproxy.cfg": "f009b1350f14d4a32f88c78b0997d67336447afa99e908314027a95189ee60fe",
+    "docker-compose.production-parity.yml": "b240e01ac0f83866dfbb3e76a49e33ed773032cb97a47530b5ce324ef082b463",
+    "docs/PRODUCTION_PARITY_RUNBOOK.md": "2a778c94020b77da0d3751d6ddfcc0e2c9ea837ad057c69f3c0eca2e52c91a1d",
+    "scripts/run_production_parity.sh": "81ca1c5f491ea9551f33a89cf5eca52c7416a889975185b9fc23b378fb8bdffc"
+  },
+  "inputs": [
+    "scripts/run_production_parity.sh",
+    "config/production-parity.json",
+    "docker-compose.production-parity.yml",
+    "deploy/production-parity/haproxy.cfg",
+    "docs/PRODUCTION_PARITY_RUNBOOK.md"
+  ],
+  "metrics": {
+    "expected_exit_code": 2,
+    "expected_pair_match": true,
+    "expected_status": "DEFERRED_EXTERNAL",
+    "observed_exit_code": 2,
+    "stderr": "The one-hour external traffic driver, production secret custody, and TLS material are not available in this agent runtime; no local soak is substituted.\n",
+    "stdout": ""
+  },
+  "started_at": "2026-08-03T23:49:31.514396Z",
+  "status": "DEFERRED_EXTERNAL",
+  "task_id": "resqnet-sota-roadmap-F3-F3-01"
+}

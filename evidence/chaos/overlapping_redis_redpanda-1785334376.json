@@ -1,0 +1,18 @@
+{
+  "scenario": "overlapping_redis_redpanda",
+  "services_killed": [
+    "redis",
+    "redpanda"
+  ],
+  "load_successes": 40,
+  "load_failures": 0,
+  "login_during_outage": 200,
+  "observation_post_during_outage": 201,
+  "deep_health_during_outage": {
+    "database": true,
+    "redis": false,
+    "redpanda": false,
+    "minio": true
+  },
+  "recovery_time_s": 9.468
+}

@@ -1,0 +1,39 @@
+{
+  "scenario": "network_loss",
+  "cycles": 3,
+  "cycle_results": [
+    {
+      "cycle": 1,
+      "disconnect_rc": 0,
+      "connect_rc": 0,
+      "login_during_outage": 0
+    },
+    {
+      "cycle": 2,
+      "disconnect_rc": 0,
+      "connect_rc": 0,
+      "login_during_outage": 0
+    },
+    {
+      "cycle": 3,
+      "disconnect_rc": 0,
+      "connect_rc": 0,
+      "login_during_outage": 0
+    }
+  ],
+  "load_successes": 292,
+  "load_failures": 169,
+  "recovery_time_s": 0.003,
+  "observation_post_after_recovery": 201,
+  "login_after_recovery": 200,
+  "health_after_recovery": 200,
+  "deep_health_after_recovery": {
+    "database": true,
+    "redis": true,
+    "redpanda": true,
+    "minio": true
+  },
+  "kafka_message_produced": true,
+  "kafka_consumer_resumed": true,
+  "data_loss": false
+}

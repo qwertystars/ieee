@@ -1,0 +1,113 @@
+{
+  "@iot.count": 6,
+  "value": [
+    {
+      "@iot.id": "RIVG-01",
+      "phenomenonTime": "2026-07-20T02:00:00Z",
+      "result": 1.8,
+      "Datastream": {
+        "@iot.id": "RIVG-01-waterlevel",
+        "name": "Rivulet River Gauge water level",
+        "unitOfMeasurement": {"symbol": "m", "name": "meters"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivulet River Gauge at Bridge BR-04",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.875, 19.068]
+        }
+      }
+    },
+    {
+      "@iot.id": "RIVG-01",
+      "phenomenonTime": "2026-07-20T03:00:00Z",
+      "result": 2.1,
+      "Datastream": {
+        "@iot.id": "RIVG-01-waterlevel",
+        "name": "Rivulet River Gauge water level",
+        "unitOfMeasurement": {"symbol": "m", "name": "meters"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivulet River Gauge at Bridge BR-04",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.875, 19.068]
+        }
+      }
+    },
+    {
+      "@iot.id": "RIVG-01",
+      "phenomenonTime": "2026-07-20T04:00:00Z",
+      "result": 2.5,
+      "Datastream": {
+        "@iot.id": "RIVG-01-waterlevel",
+        "name": "Rivulet River Gauge water level",
+        "unitOfMeasurement": {"symbol": "m", "name": "meters"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivulet River Gauge at Bridge BR-04",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.875, 19.068]
+        }
+      }
+    },
+    {
+      "@iot.id": "RIVG-01",
+      "phenomenonTime": "2026-07-20T05:00:00Z",
+      "result": 3.2,
+      "Datastream": {
+        "@iot.id": "RIVG-01-waterlevel",
+        "name": "Rivulet River Gauge water level",
+        "unitOfMeasurement": {"symbol": "m", "name": "meters"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivulet River Gauge at Bridge BR-04",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.875, 19.068]
+        }
+      }
+    },
+    {
+      "@iot.id": "RIVG-02",
+      "phenomenonTime": "2026-07-20T04:00:00Z",
+      "result": 1.2,
+      "Datastream": {
+        "@iot.id": "RIVG-02-waterlevel",
+        "name": "Coastal tide gauge water level",
+        "unitOfMeasurement": {"symbol": "m", "name": "meters"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Coastal Tide Gauge",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.890, 19.055]
+        }
+      }
+    },
+    {
+      "@iot.id": "RIVG-02",
+      "phenomenonTime": "2026-07-20T05:00:00Z",
+      "result": 2.8,
+      "Datastream": {
+        "@iot.id": "RIVG-02-waterlevel",
+        "name": "Coastal tide gauge water level",
+        "unitOfMeasurement": {"symbol": "m", "name": "meters"}
+      },
+      "FeatureOfInterest": {
+        "name": "Rivertown Coastal Tide Gauge",
+        "encodingType": "application/vnd.geo+json",
+        "feature": {
+          "type": "Point",
+          "coordinates": [72.890, 19.055]
+        }
+      }
+    }
+  ]
+}

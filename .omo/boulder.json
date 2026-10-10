@@ -1,0 +1,631 @@
+{
+  "schema_version": 2,
+  "active_work_id": "resqnet-sota-roadmap-fc72f459",
+  "works": {
+    "resqnet-sota-roadmap-fc72f459": {
+      "work_id": "resqnet-sota-roadmap-fc72f459",
+      "active_plan": "/root/srijan/ieee/.omo/plans/resqnet-sota-roadmap.md",
+      "plan_name": "resqnet-sota-roadmap",
+      "status": "completed",
+      "started_at": "2026-08-01T06:53:41.239Z",
+      "updated_at": "2026-08-03T05:59:40.858Z",
+      "session_ids": [
+        "opencode:ses_0458bbabaffe7cniqrOsOssNbT"
+      ],
+      "session_origins": {
+        "opencode:ses_0458bbabaffe7cniqrOsOssNbT": "direct"
+      },
+      "agent": "atlas",
+      "task_sessions": {
+        "todo:1": {
+          "task_key": "todo:1",
+          "task_label": "1",
+          "task_title": "Exact happy verifier `cd backend && .venv/bin/python ../scripts/verify_multi_instance_state.py --instances 2 --scenario revoke-and-fanout --revocation-deadline-s 60` fails because `/api/eval/run` returns 401 after login.",
+          "session_id": "opencode:ses_042f42eb2ffeAhwGC2sKJ4IzWv",
+          "agent": "Sisyphus-Junior",
+          "started_at": "2026-08-01T07:15:26.859Z",
+          "status": "completed",
+          "updated_at": "2026-08-01T12:28:07.112Z",
+          "ended_at": "2026-08-01T12:28:07.111Z",
+          "elapsed_ms": 18760252
+        },
+        "todo:2": {
+          "task_key": "todo:2",
+          "task_label": "2",
+          "task_title": "Canonicalize versioned inference contracts",
+          "session_id": "opencode:ses_043c7bc0bffeY0C21fOCdIDDNy",
+          "agent": "Sisyphus-Junior",
+          "started_at": "2026-08-01T07:52:26.663Z",
+          "status": "completed",
+          "updated_at": "2026-08-01T08:13:29.922Z",
+          "ended_at": "2026-08-01T08:13:29.922Z",
+          "elapsed_ms": 1263259
+        },
+        "todo:3": {
+          "task_key": "todo:3",
+          "task_label": "3",
+          "task_title": "Complete alert-to-task command workflow",
+          "session_id": "opencode:ses_0434aa724ffeuUW76UtxsOA0Ry",
+          "agent": "oracle",
+          "started_at": "2026-08-01T08:16:34.633Z",
+          "status": "running",
+          "updated_at": "2026-08-01T10:11:00.765Z"
+        },
+        "todo:5": {
+          "task_key": "todo:5",
+          "task_label": "5",
+          "task_title": "Make ingestion and fusion durable and idempotent",
+          "session_id": "opencode:ses_0431a24e3ffeKfYNCGqNlh6b8t",
+          "agent": "oracle",
+          "started_at": "2026-08-01T10:36:12.686Z",
+          "status": "running",
+          "updated_at": "2026-08-01T10:54:17.267Z"
+        },
+        "todo:6": {
+          "task_key": "todo:6",
+          "task_label": "6",
+          "task_title": "Implement deterministic fusion replay and model lineage",
+          "session_id": "opencode:ses_0430918adffeP6Qq2uq3P1I5ay",
+          "agent": "Sisyphus-Junior",
+          "category": "ultrabrain",
+          "updated_at": "2026-08-01T11:15:51.847Z",
+          "started_at": "2026-08-01T11:15:51.847Z",
+          "status": "running"
+        },
+        "todo:7": {
+          "task_key": "todo:7",
+          "task_label": "7",
+          "task_title": "Replace process-local coordination state",
+          "session_id": "opencode:ses_042f42eb2ffeAhwGC2sKJ4IzWv",
+          "agent": "Sisyphus-Junior",
+          "category": "ultrabrain",
+          "updated_at": "2026-08-01T12:15:58.105Z",
+          "started_at": "2026-08-01T12:15:58.105Z",
+          "status": "completed",
+          "ended_at": "2026-08-01T12:15:58.105Z",
+          "elapsed_ms": 0
+        },
+        "todo:8": {
+          "task_key": "todo:8",
+          "task_label": "8",
+          "task_title": "Correct offline synchronization and conflict handling",
+          "session_id": "opencode:ses_042a273f9ffeVmcg3XKrZeZxl2",
+          "agent": "Sisyphus-Junior",
+          "started_at": "2026-08-01T12:34:13.016Z",
+          "status": "running",
+          "updated_at": "2026-08-01T13:46:41.741Z"
+        },
+        "todo:9": {
+          "task_key": "todo:9",
+          "task_label": "9",
+          "task_title": "Enforce production-safe configuration and identity",
+          "session_id": "opencode:ses_0426b4037ffemxe7OwtUZq5nRQ",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-08-02T20:44:29.428Z",
+          "started_at": "2026-08-02T20:44:29.428Z",
+          "status": "running"
+        },
+        "todo:10": {
+          "task_key": "todo:10",
+          "task_label": "10",
+          "task_title": "Make backup, restore, and disaster recovery verifiable",
+          "session_id": "opencode:ses_03bc561daffeg32u5bRt0FTQfO",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-08-02T21:11:00.203Z",
+          "started_at": "2026-08-02T21:11:00.203Z",
+          "status": "running"
+        },
+        "todo:11": {
+          "task_key": "todo:11",
+          "task_label": "11",
+          "task_title": "Establish production observability and SLO evidence",
+          "session_id": "opencode:ses_03bad245cffeJ8a9a2pM2KMBKD",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-08-02T21:48:46.317Z",
+          "started_at": "2026-08-02T21:48:46.316Z",
+          "status": "completed",
+          "ended_at": "2026-08-02T21:48:46.317Z",
+          "elapsed_ms": 1
+        },
+        "todo:12": {
+          "task_key": "todo:12",
+          "task_label": "12",
+          "task_title": "Prove production-parity deployment and horizontal recovery",
+          "session_id": "opencode:ses_03b8af621ffe3zx50iVMJcIeXF",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-08-02T22:09:29.997Z",
+          "started_at": "2026-08-02T22:09:29.996Z",
+          "status": "completed",
+          "ended_at": "2026-08-02T22:09:29.997Z",
+          "elapsed_ms": 1
+        },
+        "todo:13": {
+          "task_key": "todo:13",
+          "task_label": "13",
+          "task_title": "Build licensed dataset and provenance registry",
+          "session_id": "opencode:ses_03b77cdb8ffeBmCrfO68qdhGFX",
+          "agent": "Sisyphus-Junior",
+          "started_at": "2026-08-02T22:29:37.005Z",
+          "status": "running",
+          "updated_at": "2026-08-02T22:33:15.001Z"
+        },
+        "todo:14": {
+          "task_key": "todo:14",
+          "task_label": "14",
+          "task_title": "Implement leakage-safe real-data benchmark harness",
+          "session_id": "opencode:ses_03b62b9d1ffeUjBNVx9lkJ7QDA",
+          "agent": "Sisyphus-Junior",
+          "started_at": "2026-08-02T23:01:05.071Z",
+          "status": "running",
+          "updated_at": "2026-08-02T23:08:39.550Z"
+        },
+        "todo:15": {
+          "task_key": "todo:15",
+          "task_label": "15",
+          "task_title": "Replace heuristic/placeholder operational ML paths with real-input inference",
+          "session_id": "opencode:ses_03b423b88ffeXNUNQd1MssKMJr",
+          "agent": "Sisyphus-Junior",
+          "started_at": "2026-08-02T23:37:00.055Z",
+          "status": "running",
+          "updated_at": "2026-08-02T23:59:29.181Z"
+        },
+        "todo:16": {
+          "task_key": "todo:16",
+          "task_label": "16",
+          "task_title": "Add model-specific calibration, uncertainty, and abstention",
+          "session_id": "opencode:ses_03b129f7bffeEYDI0fYX1x0CXd",
+          "agent": "Sisyphus-Junior",
+          "started_at": "2026-08-03T00:30:38.375Z",
+          "status": "running",
+          "updated_at": "2026-08-03T00:40:27.502Z"
+        },
+        "todo:17": {
+          "task_key": "todo:17",
+          "task_label": "17",
+          "task_title": "Add strong published baselines, ablations, and statistics",
+          "session_id": "opencode:ses_03aedce25ffeD1fc1VFtKpoRIt",
+          "agent": "Sisyphus-Junior",
+          "started_at": "2026-08-03T01:00:48.037Z",
+          "status": "running",
+          "updated_at": "2026-08-03T01:09:45.205Z"
+        },
+        "todo:18": {
+          "task_key": "todo:18",
+          "task_label": "18",
+          "task_title": "Evaluate shift, missing modalities, adversarial inputs, and equity",
+          "session_id": "opencode:ses_03ac0f8afffeLjL1YFJOv8EAUg",
+          "agent": "Sisyphus-Junior",
+          "category": "quick",
+          "started_at": "2026-08-03T01:29:24.531Z",
+          "status": "running",
+          "updated_at": "2026-08-03T01:34:09.325Z"
+        },
+        "todo:19": {
+          "task_key": "todo:19",
+          "task_label": "19",
+          "task_title": "Publish reproducible SOTA evidence package",
+          "session_id": "opencode:ses_03abce10fffeareJnDDrkGv0dE",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-08-03T01:53:23.349Z",
+          "started_at": "2026-08-03T01:53:23.349Z",
+          "status": "running"
+        },
+        "todo:20": {
+          "task_key": "todo:20",
+          "task_label": "20",
+          "task_title": "Implement standards-backed interoperability contracts",
+          "session_id": "opencode:ses_03aaab922ffeRPRSnV4PHva9Ia",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-08-03T02:15:06.730Z",
+          "started_at": "2026-08-03T02:15:06.730Z",
+          "status": "running"
+        },
+        "todo:21": {
+          "task_key": "todo:21",
+          "task_label": "21",
+          "task_title": "Harden provenance, privacy, and high-consequence commands",
+          "session_id": "opencode:ses_03aaaae9cffetn4OM4yNfSm0b4",
+          "agent": "Sisyphus-Junior",
+          "updated_at": "2026-08-03T02:42:50.811Z",
+          "started_at": "2026-08-03T02:42:50.811Z",
+          "status": "running"
+        },
+        "todo:23": {
+          "task_key": "todo:23",
+          "task_label": "23",
+          "task_title": "Add authenticated shadow-mode operational telemetry",
+          "session_id": "opencode:ses_03a7d2597ffe5psQVQ8wfwR0Wh",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-08-03T03:05:48.998Z",
+          "started_at": "2026-08-03T03:05:48.998Z",
+          "status": "running"
+        },
+        "todo:24": {
+          "task_key": "todo:24",
+          "task_label": "24",
+          "task_title": "Execute laboratory and tabletop conformance exercises",
+          "session_id": "opencode:ses_03a690da2ffeq8s7cq1IRWfiPV",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-08-03T03:22:33.871Z",
+          "started_at": "2026-08-03T03:22:33.871Z",
+          "status": "running"
+        },
+        "todo:25": {
+          "task_key": "todo:25",
+          "task_label": "25",
+          "task_title": "Validate physical sensor and rescue-ball integration readiness",
+          "session_id": "opencode:ses_03a59b813ffelVUVWFfOgXJXbC",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-08-03T03:43:47.935Z",
+          "started_at": "2026-08-03T03:43:47.935Z",
+          "status": "running"
+        },
+        "todo:26": {
+          "task_key": "todo:26",
+          "task_label": "26",
+          "task_title": "Run staged field exercise and multi-agency shadow trial",
+          "session_id": "opencode:ses_03a4630c4ffesuAAzK0safwPzp",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-08-03T04:08:44.228Z",
+          "started_at": "2026-08-03T04:08:44.228Z",
+          "status": "running"
+        },
+        "todo:27": {
+          "task_key": "todo:27",
+          "task_label": "27",
+          "task_title": "Establish release governance and publish bounded claims",
+          "session_id": "opencode:ses_03a2f50baffeag3LGS6SpNnZPb",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-08-03T04:27:50.195Z",
+          "started_at": "2026-08-03T04:27:50.195Z",
+          "status": "running"
+        },
+        "final-wave:f1": {
+          "task_key": "final-wave:f1",
+          "task_label": "F1",
+          "task_title": "Plan compliance audit - run `python scripts/verify_plan.py --plan .omo/plans/resqnet-sota-roadmap.md --implementation-count 27 --final-count 4 --check-fields references,acceptance,qa,evidence,commit --expand-range-dependencies --check-dag --check-dependency-field-equality --check-external-statuses` expecting exit 0; verify every todo’s Blocked by/Blocks exactly matches the matrix and every prerequisite uses the exact schema/status set; archive `.omo/evidence/resqnet-sota-roadmap/F1.json`.",
+          "session_id": "opencode:ses_03a1d288dffeYKhwD4G0fX0JgD",
+          "agent": "Sisyphus-Junior",
+          "started_at": "2026-08-03T04:46:32.821Z",
+          "status": "running",
+          "updated_at": "2026-08-03T05:08:14.201Z"
+        },
+        "final-wave:f2": {
+          "task_key": "final-wave:f2",
+          "task_label": "F2",
+          "task_title": "Code quality review - run `python scripts/run_quality_gate.py --report-file .omo/evidence/resqnet-sota-roadmap/F2/01-lint.json --cwd /root/srijan/ieee --expect-exit 0 -- make lint`, then unique report files for `make typecheck`, `cd frontend && npx eslint src/ --max-warnings 0`, `cd frontend && npm run typecheck`, `cd frontend && npm run test`, and `python scripts/verify_source_audit.py --files-from <(git diff --name-only $(git merge-base HEAD main)..HEAD) --checks security,durability,contracts`; individual missing tooling is 2/DEFERRED_EXTERNAL, any other failure is 1/FAIL, and `python scripts/run_quality_gate.py --aggregate .omo/evidence/resqnet-sota-roadmap/F2/*.json --report-file .omo/evidence/resqnet-sota-roadmap/F2/report.json` returns DEFERRED_EXTERNAL only when no check exits 1 and at least one is deferred, otherwise PASS.",
+          "session_id": "opencode:ses_039f9707fffez98uQK1qMSdb7L",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-08-03T05:29:28.533Z",
+          "started_at": "2026-08-03T05:29:28.533Z",
+          "status": "running"
+        }
+      },
+      "ended_at": "2026-08-03T05:59:40.858Z",
+      "elapsed_ms": 169559619
+    }
+  },
+  "active_plan": "/root/srijan/ieee/.omo/plans/resqnet-sota-roadmap.md",
+  "started_at": "2026-08-01T06:53:41.239Z",
+  "status": "completed",
+  "updated_at": "2026-08-03T05:59:40.858Z",
+  "session_ids": [
+    "opencode:ses_0458bbabaffe7cniqrOsOssNbT"
+  ],
+  "session_origins": {
+    "opencode:ses_0458bbabaffe7cniqrOsOssNbT": "direct"
+  },
+  "plan_name": "resqnet-sota-roadmap",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Exact happy verifier `cd backend && .venv/bin/python ../scripts/verify_multi_instance_state.py --instances 2 --scenario revoke-and-fanout --revocation-deadline-s 60` fails because `/api/eval/run` returns 401 after login.",
+      "session_id": "opencode:ses_042f42eb2ffeAhwGC2sKJ4IzWv",
+      "agent": "Sisyphus-Junior",
+      "started_at": "2026-08-01T07:15:26.859Z",
+      "status": "completed",
+      "updated_at": "2026-08-01T12:28:07.112Z",
+      "ended_at": "2026-08-01T12:28:07.111Z",
+      "elapsed_ms": 18760252
+    },
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "Canonicalize versioned inference contracts",
+      "session_id": "opencode:ses_043c7bc0bffeY0C21fOCdIDDNy",
+      "agent": "Sisyphus-Junior",
+      "started_at": "2026-08-01T07:52:26.663Z",
+      "status": "completed",
+      "updated_at": "2026-08-01T08:13:29.922Z",
+      "ended_at": "2026-08-01T08:13:29.922Z",
+      "elapsed_ms": 1263259
+    },
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "Complete alert-to-task command workflow",
+      "session_id": "opencode:ses_0434aa724ffeuUW76UtxsOA0Ry",
+      "agent": "oracle",
+      "started_at": "2026-08-01T08:16:34.633Z",
+      "status": "running",
+      "updated_at": "2026-08-01T10:11:00.765Z"
+    },
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "Make ingestion and fusion durable and idempotent",
+      "session_id": "opencode:ses_0431a24e3ffeKfYNCGqNlh6b8t",
+      "agent": "oracle",
+      "started_at": "2026-08-01T10:36:12.686Z",
+      "status": "running",
+      "updated_at": "2026-08-01T10:54:17.267Z"
+    },
+    "todo:6": {
+      "task_key": "todo:6",
+      "task_label": "6",
+      "task_title": "Implement deterministic fusion replay and model lineage",
+      "session_id": "opencode:ses_0430918adffeP6Qq2uq3P1I5ay",
+      "agent": "Sisyphus-Junior",
+      "category": "ultrabrain",
+      "updated_at": "2026-08-01T11:15:51.847Z",
+      "started_at": "2026-08-01T11:15:51.847Z",
+      "status": "running"
+    },
+    "todo:7": {
+      "task_key": "todo:7",
+      "task_label": "7",
+      "task_title": "Replace process-local coordination state",
+      "session_id": "opencode:ses_042f42eb2ffeAhwGC2sKJ4IzWv",
+      "agent": "Sisyphus-Junior",
+      "category": "ultrabrain",
+      "updated_at": "2026-08-01T12:15:58.105Z",
+      "started_at": "2026-08-01T12:15:58.105Z",
+      "status": "completed",
+      "ended_at": "2026-08-01T12:15:58.105Z",
+      "elapsed_ms": 0
+    },
+    "todo:8": {
+      "task_key": "todo:8",
+      "task_label": "8",
+      "task_title": "Correct offline synchronization and conflict handling",
+      "session_id": "opencode:ses_042a273f9ffeVmcg3XKrZeZxl2",
+      "agent": "Sisyphus-Junior",
+      "started_at": "2026-08-01T12:34:13.016Z",
+      "status": "running",
+      "updated_at": "2026-08-01T13:46:41.741Z"
+    },
+    "todo:9": {
+      "task_key": "todo:9",
+      "task_label": "9",
+      "task_title": "Enforce production-safe configuration and identity",
+      "session_id": "opencode:ses_0426b4037ffemxe7OwtUZq5nRQ",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-08-02T20:44:29.428Z",
+      "started_at": "2026-08-02T20:44:29.428Z",
+      "status": "running"
+    },
+    "todo:10": {
+      "task_key": "todo:10",
+      "task_label": "10",
+      "task_title": "Make backup, restore, and disaster recovery verifiable",
+      "session_id": "opencode:ses_03bc561daffeg32u5bRt0FTQfO",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-08-02T21:11:00.203Z",
+      "started_at": "2026-08-02T21:11:00.203Z",
+      "status": "running"
+    },
+    "todo:11": {
+      "task_key": "todo:11",
+      "task_label": "11",
+      "task_title": "Establish production observability and SLO evidence",
+      "session_id": "opencode:ses_03bad245cffeJ8a9a2pM2KMBKD",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-08-02T21:48:46.317Z",
+      "started_at": "2026-08-02T21:48:46.316Z",
+      "status": "completed",
+      "ended_at": "2026-08-02T21:48:46.317Z",
+      "elapsed_ms": 1
+    },
+    "todo:12": {
+      "task_key": "todo:12",
+      "task_label": "12",
+      "task_title": "Prove production-parity deployment and horizontal recovery",
+      "session_id": "opencode:ses_03b8af621ffe3zx50iVMJcIeXF",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-08-02T22:09:29.997Z",
+      "started_at": "2026-08-02T22:09:29.996Z",
+      "status": "completed",
+      "ended_at": "2026-08-02T22:09:29.997Z",
+      "elapsed_ms": 1
+    },
+    "todo:13": {
+      "task_key": "todo:13",
+      "task_label": "13",
+      "task_title": "Build licensed dataset and provenance registry",
+      "session_id": "opencode:ses_03b77cdb8ffeBmCrfO68qdhGFX",
+      "agent": "Sisyphus-Junior",
+      "started_at": "2026-08-02T22:29:37.005Z",
+      "status": "running",
+      "updated_at": "2026-08-02T22:33:15.001Z"
+    },
+    "todo:14": {
+      "task_key": "todo:14",
+      "task_label": "14",
+      "task_title": "Implement leakage-safe real-data benchmark harness",
+      "session_id": "opencode:ses_03b62b9d1ffeUjBNVx9lkJ7QDA",
+      "agent": "Sisyphus-Junior",
+      "started_at": "2026-08-02T23:01:05.071Z",
+      "status": "running",
+      "updated_at": "2026-08-02T23:08:39.550Z"
+    },
+    "todo:15": {
+      "task_key": "todo:15",
+      "task_label": "15",
+      "task_title": "Replace heuristic/placeholder operational ML paths with real-input inference",
+      "session_id": "opencode:ses_03b423b88ffeXNUNQd1MssKMJr",
+      "agent": "Sisyphus-Junior",
+      "started_at": "2026-08-02T23:37:00.055Z",
+      "status": "running",
+      "updated_at": "2026-08-02T23:59:29.181Z"
+    },
+    "todo:16": {
+      "task_key": "todo:16",
+      "task_label": "16",
+      "task_title": "Add model-specific calibration, uncertainty, and abstention",
+      "session_id": "opencode:ses_03b129f7bffeEYDI0fYX1x0CXd",
+      "agent": "Sisyphus-Junior",
+      "started_at": "2026-08-03T00:30:38.375Z",
+      "status": "running",
+      "updated_at": "2026-08-03T00:40:27.502Z"
+    },
+    "todo:17": {
+      "task_key": "todo:17",
+      "task_label": "17",
+      "task_title": "Add strong published baselines, ablations, and statistics",
+      "session_id": "opencode:ses_03aedce25ffeD1fc1VFtKpoRIt",
+      "agent": "Sisyphus-Junior",
+      "started_at": "2026-08-03T01:00:48.037Z",
+      "status": "running",
+      "updated_at": "2026-08-03T01:09:45.205Z"
+    },
+    "todo:18": {
+      "task_key": "todo:18",
+      "task_label": "18",
+      "task_title": "Evaluate shift, missing modalities, adversarial inputs, and equity",
+      "session_id": "opencode:ses_03ac0f8afffeLjL1YFJOv8EAUg",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "started_at": "2026-08-03T01:29:24.531Z",
+      "status": "running",
+      "updated_at": "2026-08-03T01:34:09.325Z"
+    },
+    "todo:19": {
+      "task_key": "todo:19",
+      "task_label": "19",
+      "task_title": "Publish reproducible SOTA evidence package",
+      "session_id": "opencode:ses_03abce10fffeareJnDDrkGv0dE",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-08-03T01:53:23.349Z",
+      "started_at": "2026-08-03T01:53:23.349Z",
+      "status": "running"
+    },
+    "todo:20": {
+      "task_key": "todo:20",
+      "task_label": "20",
+      "task_title": "Implement standards-backed interoperability contracts",
+      "session_id": "opencode:ses_03aaab922ffeRPRSnV4PHva9Ia",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-08-03T02:15:06.730Z",
+      "started_at": "2026-08-03T02:15:06.730Z",
+      "status": "running"
+    },
+    "todo:21": {
+      "task_key": "todo:21",
+      "task_label": "21",
+      "task_title": "Harden provenance, privacy, and high-consequence commands",
+      "session_id": "opencode:ses_03aaaae9cffetn4OM4yNfSm0b4",
+      "agent": "Sisyphus-Junior",
+      "updated_at": "2026-08-03T02:42:50.811Z",
+      "started_at": "2026-08-03T02:42:50.811Z",
+      "status": "running"
+    },
+    "todo:23": {
+      "task_key": "todo:23",
+      "task_label": "23",
+      "task_title": "Add authenticated shadow-mode operational telemetry",
+      "session_id": "opencode:ses_03a7d2597ffe5psQVQ8wfwR0Wh",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-08-03T03:05:48.998Z",
+      "started_at": "2026-08-03T03:05:48.998Z",
+      "status": "running"
+    },
+    "todo:24": {
+      "task_key": "todo:24",
+      "task_label": "24",
+      "task_title": "Execute laboratory and tabletop conformance exercises",
+      "session_id": "opencode:ses_03a690da2ffeq8s7cq1IRWfiPV",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-08-03T03:22:33.871Z",
+      "started_at": "2026-08-03T03:22:33.871Z",
+      "status": "running"
+    },
+    "todo:25": {
+      "task_key": "todo:25",
+      "task_label": "25",
+      "task_title": "Validate physical sensor and rescue-ball integration readiness",
+      "session_id": "opencode:ses_03a59b813ffelVUVWFfOgXJXbC",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-08-03T03:43:47.935Z",
+      "started_at": "2026-08-03T03:43:47.935Z",
+      "status": "running"
+    },
+    "todo:26": {
+      "task_key": "todo:26",
+      "task_label": "26",
+      "task_title": "Run staged field exercise and multi-agency shadow trial",
+      "session_id": "opencode:ses_03a4630c4ffesuAAzK0safwPzp",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-08-03T04:08:44.228Z",
+      "started_at": "2026-08-03T04:08:44.228Z",
+      "status": "running"
+    },
+    "todo:27": {
+      "task_key": "todo:27",
+      "task_label": "27",
+      "task_title": "Establish release governance and publish bounded claims",
+      "session_id": "opencode:ses_03a2f50baffeag3LGS6SpNnZPb",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-08-03T04:27:50.195Z",
+      "started_at": "2026-08-03T04:27:50.195Z",
+      "status": "running"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "Plan compliance audit - run `python scripts/verify_plan.py --plan .omo/plans/resqnet-sota-roadmap.md --implementation-count 27 --final-count 4 --check-fields references,acceptance,qa,evidence,commit --expand-range-dependencies --check-dag --check-dependency-field-equality --check-external-statuses` expecting exit 0; verify every todo’s Blocked by/Blocks exactly matches the matrix and every prerequisite uses the exact schema/status set; archive `.omo/evidence/resqnet-sota-roadmap/F1.json`.",
+      "session_id": "opencode:ses_03a1d288dffeYKhwD4G0fX0JgD",
+      "agent": "Sisyphus-Junior",
+      "started_at": "2026-08-03T04:46:32.821Z",
+      "status": "running",
+      "updated_at": "2026-08-03T05:08:14.201Z"
+    },
+    "final-wave:f2": {
+      "task_key": "final-wave:f2",
+      "task_label": "F2",
+      "task_title": "Code quality review - run `python scripts/run_quality_gate.py --report-file .omo/evidence/resqnet-sota-roadmap/F2/01-lint.json --cwd /root/srijan/ieee --expect-exit 0 -- make lint`, then unique report files for `make typecheck`, `cd frontend && npx eslint src/ --max-warnings 0`, `cd frontend && npm run typecheck`, `cd frontend && npm run test`, and `python scripts/verify_source_audit.py --files-from <(git diff --name-only $(git merge-base HEAD main)..HEAD) --checks security,durability,contracts`; individual missing tooling is 2/DEFERRED_EXTERNAL, any other failure is 1/FAIL, and `python scripts/run_quality_gate.py --aggregate .omo/evidence/resqnet-sota-roadmap/F2/*.json --report-file .omo/evidence/resqnet-sota-roadmap/F2/report.json` returns DEFERRED_EXTERNAL only when no check exits 1 and at least one is deferred, otherwise PASS.",
+      "session_id": "opencode:ses_039f9707fffez98uQK1qMSdb7L",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-08-03T05:29:28.533Z",
+      "started_at": "2026-08-03T05:29:28.533Z",
+      "status": "running"
+    }
+  },
+  "agent": "atlas",
+  "ended_at": "2026-08-03T05:59:40.858Z",
+  "elapsed_ms": 169559619
+}

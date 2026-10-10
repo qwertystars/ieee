@@ -1,0 +1,26 @@
+schema_version: resqnet.field-external.v1
+exercise_id: field-external
+mode: external_field_trial
+claim_class: field_external
+status: DEFERRED_EXTERNAL
+prerequisite_ids:
+  - dataset.sensor.regional-trial
+  - dataset.operator.human-factors
+  - hardware.secure-boot
+  - sensor.physical-calibration
+  - hardware.environmental-limits
+  - security.real-key-custody
+report: evidence/sota/field-trial-report.json
+required_report_fields:
+  - agency_authorization
+  - ethics_irb
+  - training
+  - insurance_safety_review
+  - device_inventory
+  - consent
+  - stop_authority
+  - sample_hazard_minimums
+  - blinding
+  - missing_data_rules
+  - hash
+deferred_reason: agency, human, hardware, ethics, safety, consent, and field sample evidence are unavailable

@@ -1,0 +1,47 @@
+{
+  "task_id": "24",
+  "command": "backend/.venv/bin/python scripts/run_exercise.py --scenario tests/fixtures/tabletop-machine-v1.yaml --replay --report evidence/sota/task-24-machine.json; backend/.venv/bin/python scripts/run_exercise.py --scenario tests/fixtures/tabletop-machine-failures.yaml --replay --assert-fail-closed; backend/.venv/bin/python scripts/run_exercise.py --scenario tests/fixtures/tabletop-external.yaml --prerequisites evidence/sota/prerequisites.json --expect-deferred participant-tabletop; backend/.venv/bin/python scripts/validate_interoperability.py --profile config/cap-profile-v1.2.yaml --lock config/validators.lock --verify-validator-hashes --ogc-classes core,crs,query --sensorthings-version 1.1 --fixtures tests/fixtures/interoperability/valid",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "scripts/run_exercise.py",
+    "tests/fixtures/tabletop-machine-v1.yaml",
+    "tests/fixtures/tabletop-machine-failures.yaml",
+    "tests/fixtures/tabletop-external.yaml",
+    "scripts/validate_interoperability.py",
+    "config/cap-profile-v1.2.yaml",
+    "config/validators.lock",
+    "evidence/sota/prerequisites.json",
+    "tests/fixtures/interoperability/valid"
+  ],
+  "code_revision": "working-tree-uncommitted",
+  "started_at": "2026-08-03T03:17:09.744Z",
+  "finished_at": "2026-08-03T03:17:09.744Z",
+  "exit_code": 2,
+  "status": "DEFERRED_EXTERNAL",
+  "metrics": {
+    "aggregate_timing": "legacy record captured only the first command timestamp",
+    "commands": [
+      {"exit_code": 0, "status": "PASS", "command": "tabletop-machine-v1 replay"},
+      {"exit_code": 1, "status": "FAIL", "command": "tabletop-machine-failures replay"},
+      {"exit_code": 2, "status": "DEFERRED_EXTERNAL", "command": "participant-tabletop external gate"},
+      {"exit_code": 2, "status": "DEFERRED_EXTERNAL", "command": "validator-hash interoperability gate"}
+    ],
+    "machine_gate": "PASS",
+    "machine_pass_satisfies_participant_gate": false,
+    "participant_tabletop": "DEFERRED_EXTERNAL",
+    "operational_interoperability": "DEFERRED_EXTERNAL",
+    "required_prerequisite_fields": ["id", "owner", "authority", "status", "evidence_type", "evidence_hash", "hash_algorithm", "source_url", "recorded_at", "expires_at", "depends_on", "deferred_reason", "claim_classes"]
+  },
+  "hashes": {
+    "scripts/run_exercise.py": "b309a5a3a176212b39d6d521a37740f4153123057072c5e55544e3dad8364527",
+    "tests/fixtures/tabletop-machine-v1.yaml": "cd3ecdcbd64ac7abda64aaeed44c5e5e2723a68fc742dfc197f5cce420443dc7",
+    "tests/fixtures/tabletop-machine-failures.yaml": "014fd6ed4a707aede9a6e829155bb6f4229a950caf30dddf40d025feff202d7e",
+    "tests/fixtures/tabletop-external.yaml": "3863fdb282c6fab2f827fc9768ab89a1654b00b2b33a697f3d5031295d679647",
+    "evidence/sota/task-24-machine.json": "9eda5b27b0e0671939008732e4a9e42a5f996c661daf0c55d9b0311a972bb57c",
+    "evidence/sota/tabletop-report.json": "849420c02e853f7d2b324ed4c38549038d4a4f404838f23fd7dd9bf0436bd710",
+    "tests/test_exercises.py": "458d081491467874104946a34b6c01a5cb619f9f432e8352300c82a31099913d",
+    "docs/CONFORMANCE_EXERCISES.md": "48139ecd58525c85f0e28356e7bc564e1b209a197f41e2a89f43f3673e15c837"
+  },
+  "failure_assertion": "Unsafe tabletop behaviors fail closed; participant tabletop and pinned validator operations remain DEFERRED_EXTERNAL, and machine replay is not promoted to a human or agency claim.",
+  "cleanup": "No external validators, dependencies, credentials, network, agency systems, participants, physical hardware, or runtime state were modified."
+}

@@ -1,0 +1,19 @@
+{
+  "flood_severity_dist": {
+    "none": 0.1,
+    "minor": 0.2,
+    "moderate": 0.4,
+    "severe": 0.2,
+    "extreme": 0.1
+  },
+  "flood_extent_pct": 25.0,
+  "flood_uncertainty": 0.15,
+  "road_ids": [
+    "road_001",
+    "road_002",
+    "road_003",
+    "road_004",
+    "road_005"
+  ],
+  "current_time_ms": 1753000000000
+}

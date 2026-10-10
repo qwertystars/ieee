@@ -1,0 +1,108 @@
+{
+  "task_id": "22",
+  "command": "cd frontend && npm run test:a11y; cd frontend && npx playwright test tests/e2e.spec.ts tests/action-card.spec.ts --project=chromium; cd frontend && npx playwright test tests/e2e.spec.ts --grep \"offline|stale|conflict\"; cd frontend && npx playwright test tests/outbox-recovery.spec.ts --project=chromium --grep \"conflict\"; cd frontend && npm run test; cd frontend && for run in 1 2 3 4 5 6 7 8 9 10; do npm run test -- --run src/lib/outbox.test.ts; done; cd frontend && npm run typecheck; cd frontend && npm run lint; cd frontend && npm run build; cd frontend && npm ci --dry-run",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "frontend/src/hooks/useOutbox.ts",
+    "frontend/src/lib/outbox.ts",
+    "frontend/src/lib/ulid.ts",
+    "frontend/src/components/AppLayout.tsx",
+    "frontend/tests/a11y.spec.ts",
+    "frontend/tests/action-card.spec.ts",
+    "frontend/tests/outbox-recovery.spec.ts",
+    "frontend/tests/e2e.spec.ts",
+    "frontend/playwright.config.ts",
+    "frontend/package.json",
+    "frontend/package-lock.json",
+    "frontend/tests/README.md",
+    "docs/FIELD_TRIAL_PROTOCOL.md",
+    "evidence/sota/prerequisites.json"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-03T02:03:21Z",
+  "finished_at": "2026-08-03T02:41:37Z",
+  "exit_code": 2,
+  "status": "DEFERRED_EXTERNAL",
+  "metrics": {
+    "a11y": {
+      "status": "PASS",
+      "tests": 3,
+      "violations": 0,
+      "package": "@axe-core/playwright@4.10.2",
+      "observed": "keyboard focus reaches approval, dismissal, modification, and dispatch controls; rationale, stale, offline, conflict, and error regions are named"
+    },
+    "action_card_and_responder_flow": {
+      "status": "PASS",
+      "tests": 18,
+      "failed": 0,
+      "observed": "critical action controls, dual-approval pending safety, rationale-bearing approval request, visible alert error, field update, offline queue, and stale rendering"
+    },
+    "conflict_failure_flow": {
+      "status": "PASS",
+      "tests": 1,
+      "failed": 0,
+      "observed": "scripted 409 remains visible as Conflict: manual resolution required and never shows Synced"
+    },
+    "frontend_unit": {
+      "status": "PASS",
+      "tests": 49,
+      "failed": 0,
+      "ulid_monotonicity_repeated_runs": {"runs": 10, "failed": 0},
+      "ulid_fix": "allocate ID and idempotency key before the first async hash; advance timestamp on random-field overflow",
+      "warnings": "pre-existing Vite/esbuild deprecation and expected provider-guard console output"
+    },
+    "frontend_quality": {
+      "typecheck": "PASS",
+      "eslint_src": "PASS",
+      "production_build": "PASS",
+      "lockfile_install_dry_run": "PASS"
+    },
+    "participant_human_factors": {
+      "status": "DEFERRED_EXTERNAL",
+      "prerequisite_id": "dataset.operator.human-factors",
+      "required_measures": ["time-to-decision", "severe-error-rate", "NASA-TLX", "SUS", "stale-data-comprehension", "conflict-resolution"],
+      "protocol": "12 trained operators and 100 incidents; NASA-TLX <= baseline + 10, SUS >= 70, severe-error <= baseline, stale comprehension >= 90%",
+      "evidence_hash": null,
+      "reason": "irb_consent_and_participants_not_available",
+      "external_metric_values_published": false
+    },
+    "claims": {
+      "research": "DEFERRED_EXTERNAL",
+      "production": "DEFERRED_EXTERNAL",
+      "shadow": "DEFERRED_EXTERNAL",
+      "field": "DEFERRED_EXTERNAL",
+      "machine_proxy_claim": "validation-only; not participant or field readiness evidence"
+    },
+    "lsp": {
+      "status": "UNAVAILABLE",
+      "typescript": "server not installed; prior installation declined"
+    },
+    "browser_environment": {
+      "status": "PASS_WITH_ENVIRONMENT_LIMITATIONS",
+      "substitute": "Playwright Chromium against Docker backend and production preview",
+      "latest_happy_rerun": "16 passed, 2 failed: simulator start control remained disabled and one test lost dashboard navigation during pre-test login",
+      "targeted_conflict": "PASS",
+      "a11y": "PASS, 3 tests, 0 axe violations",
+      "console_inspection": "UNAVAILABLE: Brave CDP could not launch in the root runtime; Playwright Chromium suites were the authoritative browser substitute",
+      "note": "The browser limitations are environment/setup failures unrelated to ULID monotonicity; no browser-wide pass is claimed."
+    }
+  },
+  "hashes": {
+    "frontend/src/hooks/useOutbox.ts": "e0219118620affb98a382d510bca5d8c86b00573745f82d163282d9d05fde5ef",
+    "frontend/src/lib/outbox.ts": "d32e421101acec54c2c98820943c8ad00e4007e6dd3b67b84f74e6aa1037609c",
+    "frontend/src/lib/ulid.ts": "3c68b6368913d1fcc45c4cae3a5eb084de985ddc4de55247900f81edf729842e",
+    "frontend/src/components/AppLayout.tsx": "b2d458022e245cac3e4bf6b0ad9a0fa973f2e60ad2493058aa8f305101cb79f6",
+    "frontend/tests/a11y.spec.ts": "8ad56d563d289ba6dfba8177b43d917fee28fdf109ec2e7c9d1bd4a0d14fb59c",
+    "frontend/tests/action-card.spec.ts": "db0a3ca199b8af73e07d4340532190a90cc7046746ac426da2e17cc4a8aab012",
+    "frontend/tests/outbox-recovery.spec.ts": "01c60fb30e2e8ca73fbd6649cdb996ce14da9c4df9f66aed6ad17d6ad2db9c9b",
+    "frontend/tests/e2e.spec.ts": "15950dcadaa3eed6855755a6e53765a26b97aba4f852371b520c5faf1c18429a",
+    "frontend/playwright.config.ts": "90034bd21561da9085f1365b7ba253a837ddbcfd79973e5c9ef882e95aa5e48d",
+    "frontend/package.json": "905b833c3b5e750adc2d6292ac913a5a2cd9efd00cf9e0b29d3a48f141a3f48a",
+    "frontend/package-lock.json": "9aa38277f0dff01f5e6ed17a2fba466afb5253e26260ca6fe253329e7b576379",
+    "frontend/tests/README.md": "c464544ca0f3ba6b154117cf05b217f5560c4aeccc442f74c78cfccf5ed5a13a",
+    "docs/FIELD_TRIAL_PROTOCOL.md": "d7a7d25763805c630128b6aed1eabe1d9616af0e7ef0b697da83b6f8d81b80fa",
+    "evidence/sota/prerequisites.json": "65b982196a807063179d02ee87d2f155e0fb1173c6e45c932dc7eaafda184e83"
+  },
+  "failure_assertion": "Automated controls and degradation states are visible and keyboard-reachable; 409 conflicts remain manual-resolution states; ULIDs remain strictly lexicographically increasing and unique under concurrent outbox writes; no participant, agency, SUS, NASA-TLX, field-readiness, or dispatch-success claim is made.",
+  "cleanup": "Playwright webServer lifecycle stopped its preview process. Docker services were left running by the repository e2e harness. npm ci --dry-run made no install changes. No external datasets, participants, credentials, or production systems were modified; prerequisites.json was read-only and remains DEFERRED_EXTERNAL."
+}

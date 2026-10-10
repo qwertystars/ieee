@@ -1,0 +1,5 @@
+{
+  "source": "../../data/datasets/benchmark-v1.json",
+  "mutation": "test record sen-test-01 shares incident_id with sen-train-01",
+  "records": "see benchmark-v1.json with the named incident mutation"
+}

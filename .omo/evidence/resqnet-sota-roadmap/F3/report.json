@@ -1,0 +1,102 @@
+{
+  "cleanup": "Aggregate report was generated from captured reports; no external validators, data, participants, credentials, or production state were created or modified.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "/usr/bin/python3 scripts/run_and_capture.py --aggregate .omo/evidence/resqnet-sota-roadmap/F3/01.json .omo/evidence/resqnet-sota-roadmap/F3/02.json .omo/evidence/resqnet-sota-roadmap/F3/03.json .omo/evidence/resqnet-sota-roadmap/F3/04.json .omo/evidence/resqnet-sota-roadmap/F3/05.json .omo/evidence/resqnet-sota-roadmap/F3/06-preflight.json --report-file .omo/evidence/resqnet-sota-roadmap/F3/report.json",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 0,
+  "failure_assertion": "F3 machine approval does not promote unavailable validator artifacts, production traffic, or external shadow evidence; those boundaries remain explicitly deferred.",
+  "finished_at": "2026-08-04T00:47:58.312602Z",
+  "hashes": {
+    ".omo/evidence/resqnet-sota-roadmap/task-20.json": "a8b7fc98dc381a109b86cdc3666ac221cfb82f803fed4badb1dcef782c074043",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/01.json": "7deb9d6b068a241ec9190dd3fc2636fc2e2b0fd1a5cb848f4dc72b55acea7886",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/02.json": "d118be28eb735043a1eba00d91f4c7dd4482ab8cc69ee2c88b46e961c25e63ee",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/03.json": "c77b4667c3bb6308ff47df2d08f513d16c9ee4a85f31b087fd50d8a8d314a174",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/04.json": "c13ba5c587d6e6fe23d19e33f35301a9b3eb58004f39e198abd59a233d3e4b7d",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/05.json": "52dfada23e1f29929a4f9bc283d8a820b34723621c8d0bb927e4459c5c9efe9a",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/06-preflight.json": "f28af4d944491bfcdfbc99e0a6250aa42db1f2089625e054acdb6f249f4b2375"
+  },
+  "inputs": [
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/01.json",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/02.json",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/03.json",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/04.json",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/05.json",
+    "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/06-preflight.json"
+  ],
+  "metrics": {
+    "aggregate_semantics": "PASS/APPROVE requires every individual report's expected exit/status pair to match; expected DEFERRED_EXTERNAL is a declared boundary, not a fabricated success.",
+    "all_expected_pairs_match": true,
+    "claim_boundaries": {
+      "production": "DEFERRED_EXTERNAL",
+      "shadow": "DEFERRED_EXTERNAL"
+    },
+    "individual_reports": [
+      {
+        "exit_code": 2,
+        "expected_exit_code": 2,
+        "expected_pair_match": true,
+        "expected_status": "DEFERRED_EXTERNAL",
+        "path": "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/01.json",
+        "status": "DEFERRED_EXTERNAL"
+      },
+      {
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "expected_pair_match": true,
+        "expected_status": "PASS",
+        "path": "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/02.json",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "expected_pair_match": true,
+        "expected_status": "PASS",
+        "path": "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/03.json",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "expected_pair_match": true,
+        "expected_status": "PASS",
+        "path": "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/04.json",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "expected_pair_match": true,
+        "expected_status": "PASS",
+        "path": "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/05.json",
+        "status": "PASS"
+      },
+      {
+        "exit_code": 2,
+        "expected_exit_code": 2,
+        "expected_pair_match": true,
+        "expected_status": "DEFERRED_EXTERNAL",
+        "path": "/root/srijan/ieee/.omo/evidence/resqnet-sota-roadmap/F3/06-preflight.json",
+        "status": "DEFERRED_EXTERNAL"
+      }
+    ],
+    "matching_pairs": 6,
+    "required_pairs": 6,
+    "validator_hash_prerequisite": {
+      "evidence": ".omo/evidence/resqnet-sota-roadmap/task-20.json",
+      "external_validator_availability": {
+        "cap-validator": "DEFERRED_EXTERNAL",
+        "ogc-api-features-validator": "DEFERRED_EXTERNAL",
+        "sensorthings-validator": "DEFERRED_EXTERNAL"
+      },
+      "machine_conformance": "PASS",
+      "recorded_exit_code": 2,
+      "recorded_status": "DEFERRED_EXTERNAL",
+      "successful_exit_0_conformance_capture": false
+    }
+  },
+  "started_at": "2026-08-04T00:47:58.312566Z",
+  "status": "PASS",
+  "task_id": "resqnet-sota-roadmap-F3",
+  "verdict": "APPROVE"
+}

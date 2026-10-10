@@ -1,0 +1,54 @@
+{
+  "claim_class": "sensor_protocol_machine",
+  "cleanup": "Read-only local fixture validation; no hardware, production keys, network, queue, database, or runtime state was modified.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "scripts/run_sensor_harness.py --fixture tests/fixtures/sensor-valid.ndjson --verify-signature --verify-sequence --report evidence/sota/task-25-machine.json",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 0,
+  "external_limitations": [
+    "Secure boot, physical calibration, environmental limits, and real key custody are not established by fixture replay.",
+    "No real sensing, rescue-ball detection, human detection, field, agency, or operational readiness claim is made."
+  ],
+  "failure_assertion": "all signed protocol records accepted and unsafe records quarantined",
+  "finished_at": "2026-08-03T03:44:29.906580Z",
+  "hashes": {
+    "scripts/run_sensor_harness.py": "bc1e857defb14e02a842813760244482bd050090369817a991e08d1dfbc6d7c9",
+    "tests/fixtures/sensor-valid.ndjson": "0f1937506ab5218332c1d3d1e4bc1f550e1a8a4719c2ba577af1244388161b6b"
+  },
+  "inputs": [
+    "tests/fixtures/sensor-valid.ndjson",
+    "scripts/run_sensor_harness.py"
+  ],
+  "metrics": {
+    "accepted_records": 6,
+    "controls": [
+      "provisioning",
+      "Ed25519",
+      "tenant_binding",
+      "sequence_order",
+      "loss_duplicate_replay_quarantine",
+      "calibration_provenance",
+      "key_rotation_revocation",
+      "clock_source_skew",
+      "replay_window",
+      "sequence_wrap"
+    ],
+    "expected_records": 6,
+    "findings": [],
+    "observed_sequences": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "physical_claim": "DEFERRED_EXTERNAL",
+    "protocol_contract": "PASS",
+    "quarantine": [],
+    "quarantined_records": 0
+  },
+  "started_at": "2026-08-03T03:44:29.898249Z",
+  "status": "PASS",
+  "task_id": "25"
+}

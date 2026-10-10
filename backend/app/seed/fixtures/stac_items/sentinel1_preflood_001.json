@@ -1,0 +1,45 @@
+{
+  "type": "Feature",
+  "stac_version": "1.0.0",
+  "stac_extensions": ["https://stac-extensions.github.io/sar/v1.0.0/schema.json"],
+  "id": "S1B_IW_GRDH_1SDV_20260719T043000_20260719T043030_054999",
+  "collection": "sentinel-1-grd",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [[
+      [72.83, 19.04], [72.93, 19.04], [72.93, 19.12],
+      [72.83, 19.12], [72.83, 19.04]
+    ]]
+  },
+  "bbox": [72.83, 19.04, 72.93, 19.12],
+  "properties": {
+    "datetime": "2026-07-19T04:30:00Z",
+    "platform": "sentinel-1b",
+    "constellation": "sentinel-1",
+    "instruments": ["c-sar"],
+    "sar:instrument_mode": "IW",
+    "sar:polarizations": ["VV", "VH"],
+    "sar:resolution_range": 20.0,
+    "sar:resolution_azimuth": 22.0,
+    "eo:cloud_cover": 0.0,
+    "view:incidence_angle": 38.9
+  },
+  "assets": {
+    "vv": {
+      "href": "s3://minio/sentinel1/S1B_20260719T043000_vv.tif",
+      "type": "image/tiff",
+      "sar:polarization": "VV",
+      "roles": ["data"]
+    },
+    "vh": {
+      "href": "s3://minio/sentinel1/S1B_20260719T043000_vh.tif",
+      "type": "image/tiff",
+      "sar:polarization": "VH",
+      "roles": ["data"]
+    }
+  },
+  "links": [
+    {"rel": "self", "href": "fixtures/stac_items/sentinel1_preflood_001.json"},
+    {"rel": "collection", "href": "fixtures/stac_items/collection.json"}
+  ]
+}

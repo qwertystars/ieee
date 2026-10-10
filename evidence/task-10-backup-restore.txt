@@ -1,0 +1,21 @@
+task_id=10
+command=make backup-restore-verify RPO_TARGET_S=60 RTO_TARGET_S=900
+cwd=/root/srijan/ieee
+code_revision=64d62f899a461ea8aebe7bfb566fee2aba478837
+started_at_utc=2026-08-02T21:11:34Z
+inputs=fixture database/object envelope; external key file; RPO_TARGET_S=60; RTO_TARGET_S=900
+failure_exit_code=1
+success_marker_exists=false
+finished_at_utc=2026-08-02T21:11:34Z
+exit_code=1
+status=FAIL
+cleanup=temporary workspace removed
+[backup] BACKUP_SUCCESS path=/tmp/tmp.flFNo0PlBr/backups/20260802T211134Z archive_sha256=c7f1acdd7cb39ac211acaf557e4795d9bfadedf19e5d8eaf497fe3584883296d rpo_seconds=1
+[restore] RESTORE_SUCCESS source=/tmp/tmp.flFNo0PlBr/backups/20260802T211134Z archive_sha256=c7f1acdd7cb39ac211acaf557e4795d9bfadedf19e5d8eaf497fe3584883296d rpo_seconds=1 rto_seconds=1 marker=/tmp/tmp.flFNo0PlBr/restore.success
+metrics={"rpo_seconds": 1, "rto_seconds": 1}
+hashes={"archive_sha256": "c7f1acdd7cb39ac211acaf557e4795d9bfadedf19e5d8eaf497fe3584883296d"}
+failure_assertion=corruption and partial dependency failures are fail-fast; exercised separately
+finished_at_utc=2026-08-02T21:11:35Z
+exit_code=0
+status=PASS
+cleanup=temporary workspace removed

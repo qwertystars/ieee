@@ -1,0 +1,50 @@
+=== Gate C Checkpoint ===
+Date: 2026-07-26T22:21:39Z
+
+=== Check 1: npm ci ===
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+=== Check 2: npm run build ===
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 13.25s
+
+=== Check 3: npm run typecheck ===
+
+> resqnet-sage-frontend@0.1.0 typecheck
+> tsc --noEmit
+
+Typecheck: PASS ✅
+
+=== Check 4: No online map tiles ===
+248
+Online tile refs: 0 ✅
+
+=== Check 5: All pages exist ===
+  LoginPage.tsx: EXISTS ✅
+  DashboardPage.tsx: EXISTS ✅
+  HypothesesPage.tsx: EXISTS ✅
+  PlanningPage.tsx: EXISTS ✅
+  SimulationPage.tsx: EXISTS ✅
+  FieldPage.tsx: EXISTS ✅
+  DeviceDetailPage.tsx: EXISTS ✅
+  AuditPage.tsx: EXISTS ✅
+
+=== Check 6: State components ===
+  state/LoadingState.tsx: EXISTS ✅
+  state/EmptyState.tsx: EXISTS ✅
+  state/ErrorState.tsx: EXISTS ✅
+  state/StaleState.tsx: EXISTS ✅
+  state/OfflineState.tsx: EXISTS ✅
+
+=== Gate C Summary ===
+Build succeeds ✅
+Typecheck passes ✅
+No online map tiles ✅
+All 8 pages exist ✅
+All 5 state components exist ✅
+Playwright e2e deferred (requires running backend server)

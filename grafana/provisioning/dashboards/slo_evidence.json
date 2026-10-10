@@ -1,0 +1,18 @@
+{
+  "id": null,
+  "uid": "resqnet-sage-slo-evidence",
+  "title": "ResQNet SLO Evidence",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {"from": "now-6h", "to": "now"},
+  "tags": ["resqnet-sage", "slo", "task-11"],
+  "panels": [
+    {"id": 1, "type": "timeseries", "title": "Event lifecycle: accepted / processed / failed / stale / lost", "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(event_state_total[5m])) by (event_state)", "legendFormat": "{{event_state}}"}]},
+    {"id": 2, "type": "timeseries", "title": "Worker processed / failed / retry outcomes", "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(worker_messages_total[5m])) by (outcome)", "legendFormat": "{{outcome}}"}]},
+    {"id": 3, "type": "timeseries", "title": "Queue age p95 and depth", "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum(rate(queue_age_seconds_bucket[5m])) by (le, queue_name))", "legendFormat": "age p95 {{queue_name}}"}, {"refId": "B", "expr": "queue_depth", "legendFormat": "depth {{queue_name}}"}]},
+    {"id": 4, "type": "timeseries", "title": "Dependency state and worker scrape", "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "dependency_health", "legendFormat": "{{dependency}} {{state}}"}, {"refId": "B", "expr": "up{job=\"worker\"}", "legendFormat": "worker scrape"}]},
+    {"id": 5, "type": "timeseries", "title": "Availability error budget burn", "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "1 - sum(rate(slo_successful_requests_total[1h])) / sum(rate(slo_eligible_requests_total[1h]))", "legendFormat": "1h error ratio"}, {"refId": "B", "expr": "1 - sum(rate(slo_successful_requests_total[6h])) / sum(rate(slo_eligible_requests_total[6h]))", "legendFormat": "6h error ratio"}]},
+    {"id": 6, "type": "timeseries", "title": "Offline sync and external feed outcomes", "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"refId": "A", "expr": "sum(rate(offline_sync_total[5m])) by (status)", "legendFormat": "offline {{status}}"}, {"refId": "B", "expr": "sum(rate(external_feed_total[5m])) by (feed, outcome)", "legendFormat": "feed {{feed}} {{outcome}}"}]}
+  ]
+}

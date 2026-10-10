@@ -1,0 +1,70 @@
+{
+  "claim_class": "field_machine",
+  "cleanup": "Read-only local fixture validation; no agency, participant, hardware, dispatch, public warning, resource commitment, network, database, queue, credential, or production state was invoked or modified.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "scripts/run_field_exercise_harness.py --scenario tests/fixtures/field-machine-v1.yaml --replay --report evidence/sota/task-26-machine.json",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 0,
+  "external_limitations": [
+    "Machine fixture replay does not establish agency authorization, IRB/ethics, training, insurance/safety, device inventory, consent, human workload, physical measurements, or field readiness."
+  ],
+  "failure_assertion": "fixed degraded-mode thresholds, signed-log integrity, deterministic replay, and no-actuation controls passed",
+  "finished_at": "2026-08-03T04:09:27.144747Z",
+  "hashes": {
+    "scripts/field_exercise_contract.py": "dd7a66c366f5d9d41eae8b9760fe45f109cbc3db564c0ae211a7f8315791d8e6",
+    "scripts/run_field_exercise_harness.py": "1d571ebf04822dc2e575cf5c86c3575ddf9d5f2a4524265b40b89f656c4a6482",
+    "tests/fixtures/field-machine-v1.yaml": "d0522bfbe773da02443363fe8f4b58d9bb6e470dcee4524a3ac1b4fda7de8da4"
+  },
+  "inputs": [
+    "tests/fixtures/field-machine-v1.yaml",
+    "scripts/run_field_exercise_harness.py",
+    "scripts/field_exercise_contract.py"
+  ],
+  "metrics": {
+    "alert_latency_p95_ms": 1800.0,
+    "audit_completeness": 1.0,
+    "authorization_failures": 1,
+    "claim_class": "field_machine",
+    "competing_incidents": 2,
+    "device_loss_events": 1,
+    "duplicate_rate": 0.02,
+    "external_field_claim": "DEFERRED_EXTERNAL",
+    "findings": [],
+    "intermittent_link_events": 2,
+    "loss_rate": 0.04,
+    "machine_gate_status": "PASS",
+    "no_actuation": true,
+    "offline_duration_s": 900,
+    "power_loss_events": 1,
+    "remediation": [],
+    "replay": {
+      "deterministic": true
+    },
+    "signed_log": {
+      "algorithm": "HMAC-SHA256",
+      "chain_head": "ec6282bd97ee3bdcea1ba1829dedf41ffed955f4d4e9eaf8e5ba7b58fec00f19",
+      "event_count": 12,
+      "event_types": [
+        "alert_latency",
+        "audit_completeness",
+        "authorization_failure",
+        "competing_incidents",
+        "degraded_connectivity",
+        "device_loss",
+        "loss_duplicates",
+        "no_actuation",
+        "offline_duration",
+        "power_loss",
+        "stale_map",
+        "sync_conflict"
+      ],
+      "integrity": "PASS",
+      "replay_digest": "97487f8d60a1e55a47c435c29cb50b97cd3d32fae5c80f7e3851cfaac9771e30"
+    },
+    "stale_map_age_s": 1800.0,
+    "sync_conflicts_unresolved": 0
+  },
+  "started_at": "2026-08-03T04:09:27.124803Z",
+  "status": "PASS",
+  "task_id": "26"
+}

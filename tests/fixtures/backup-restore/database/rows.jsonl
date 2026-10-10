@@ -1,0 +1,3 @@
+{"table":"raw_events","id":"evt-fixture-001","org_id":"org-fixture","canonical_hash":"sha256:raw-fixture-001"}
+{"table":"evaluation_jobs","id":"job-fixture-001","org_id":"org-fixture","status":"completed"}
+{"table":"audit_chain_heads","id":"org-fixture","last_sequence":2,"last_hash":"sha256:fixture-audit-002"}

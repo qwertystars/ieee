@@ -1,0 +1,41 @@
+{
+  "cleanup": "No external datasets downloaded; offline validation only.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "scripts/run_benchmark.py --manifest data/datasets/benchmark-v1.json --check-leakage --report evidence/sota/task-14-happy.json",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 0,
+  "failure_assertion": "all benchmark and published-baseline invariants passed",
+  "finished_at": "2026-08-03T01:10:38.267868Z",
+  "hashes": {
+    "data/datasets/benchmark-v1.json": "c5925502793ec4e6d92d5ad60185264362486064b3ad91a0ae9e0d4f078268f8",
+    "scripts/benchmark_contract.py": "895f8fab23f6348f03ef7350bc9e470894cbac618b50476b8d439d0af21832d6",
+    "scripts/benchmark_leakage.py": "eca4581d9fcdeb24cdc03123cf00bed98e74810e631e492e21f8b64ec2df5224",
+    "scripts/run_benchmark.py": "aeadd42100bbdc1fdd49794190acb808af0f48370e36cd1ade0b551d5337a56d"
+  },
+  "inputs": [
+    "data/datasets/benchmark-v1.json",
+    "scripts/run_benchmark.py",
+    "scripts/benchmark_contract.py",
+    "scripts/benchmark_leakage.py"
+  ],
+  "metrics": {
+    "computed_split_hashes": {
+      "calibration": "b4f9c0e03c1fc6c7aede452989b801527e57f105be5f97422d7319d9edcbb761",
+      "test": "4bdd33b52e49799bdb065ef99decbf9123ff1c8f4609dcfc02db8584936525e3",
+      "train": "db0e835c6c9566964f1288ed1d0743dc60d2765c25030a3a6cccd49d5a1dc172"
+    },
+    "external_datasets_pending": 3,
+    "final_test_hash_verified": true,
+    "real_data_execution": "DEFERRED_EXTERNAL",
+    "records": 9,
+    "split_counts": {
+      "calibration": 3,
+      "test": 3,
+      "train": 3
+    },
+    "synthetic_fixture_claim": "validation-only"
+  },
+  "started_at": "2026-08-03T01:10:38.267868Z",
+  "status": "PASS",
+  "task_id": "14"
+}

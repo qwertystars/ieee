@@ -1,0 +1,37 @@
+# Ruff configuration for ResQNet-SAGE backend.
+# Docs: https://docs.astral.sh/ruff/configuration/
+# Uses ruff's default rule set; only ignores style/noise rules that conflict
+# with FastAPI conventions or represent intentional boundary exception handling.
+target-version = "py311"
+line-length = 100
+extend-exclude = [".venv", "vendor", "models"]
+
+[lint]
+ignore = [
+    "B008",     # function-call-in-default-argument — FastAPI Depends() in defaults is the standard pattern
+    "BLE001",   # blind-except — intentional boundary catches with logging in a resilience-first platform
+    "S110",     # try-except-pass — capability probes that intentionally swallow errors
+    "SIM102",   # collapsible-if — readability preference, nested ifs are clearer for policy logic
+    "SIM103",   # needless-bool — readability preference, explicit if/return is clearer for policy logic
+    "SIM117",   # multiple-with-statements — readability preference
+    "PYI034",   # non-self-return-type — false positive on non-stub methods returning Self
+    "PLR0913",  # too-many-arguments — disaster-response domain types legitimately need many fields
+    "PLR0915",  # too-many-statements — route handlers with provenance/audit are legitimately long
+    "PLR2004",  # magic-value-comparison — threshold constants inline are clearer for domain math
+    "PLW0603",  # global-statement — module-level singletons are intentional
+    "PLW2901",  # redefined-loop-name — common in SQLAlchemy query chains
+]
+
+[lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",     # assert — asserts are the point of tests
+    "S106",     # hardcoded-password-func-arg — test fixtures use dummy credentials
+    "S311",     # suspicious-non-cryptographic-random — tests don't need crypto RNG
+    "PLR2004",  # magic-value-comparison — test assertions use literal expected values
+]
+"alembic/**/*.py" = [
+    "E402",  # module-import-not-at-top — alembic templates put imports after config
+]
+
+[lint.isort]
+known-first-party = ["app"]

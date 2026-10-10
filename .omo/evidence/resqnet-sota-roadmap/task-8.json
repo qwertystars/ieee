@@ -1,0 +1,102 @@
+{
+  "task_id": "8",
+  "command": "cd frontend && npx playwright test tests/outbox-recovery.spec.ts tests/e2e.spec.ts --grep \"outbox|synced\"; cd frontend && npx playwright test tests/outbox-recovery.spec.ts --grep \"crash|network|stale\"; cd frontend && npm test; cd frontend && npm run typecheck && npm run lint && npm run build; cd backend && PYTHONPATH=. .venv/bin/python -m pytest tests/test_edge_sync.py tests/test_sync.py -q; cd backend && PYTHONPATH=. .venv/bin/ruff check app/realtime/edge_sync.py app/realtime/sync.py app/api/routes/edge_sync.py tests/test_edge_sync.py alembic/versions/0011_edge_sync_replay_guards.py; cd frontend && node --check public/sw.js",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "frontend/public/sw.js",
+    "frontend/src/lib/outbox.ts",
+    "frontend/src/lib/outbox-policy.ts",
+    "frontend/src/hooks/useOutbox.ts",
+    "frontend/src/lib/outbox.test.ts",
+    "frontend/tests/outbox-recovery.spec.ts",
+    "frontend/tests/e2e.spec.ts",
+    "frontend/playwright.config.ts",
+    "backend/app/realtime/edge_sync.py",
+    "backend/app/realtime/sync.py",
+    "backend/app/api/routes/edge_sync.py",
+    "backend/app/main.py",
+    "backend/alembic/versions/0011_edge_sync_replay_guards.py",
+    "backend/tests/test_edge_sync.py",
+    "docs/OFFLINE_OPERATION.md"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-03T07:28:00Z",
+  "finished_at": "2026-08-03T07:44:00Z",
+  "exit_code": 2,
+  "status": "DEFERRED_EXTERNAL",
+  "metrics": {
+    "playwright_outbox_synced": {
+      "status": "DEFERRED_EXTERNAL",
+      "exit_code": 1,
+      "reason": "Required Playwright webServer could not start: Docker Redis and MinIO exited while restoring incompatible existing volumes (the first attempt also exposed missing Compose variables). No browser outcome was promoted to PASS."
+    },
+    "playwright_crash_network_stale": {
+      "status": "DEFERRED_EXTERNAL",
+      "exit_code": 1,
+      "reason": "Required Playwright webServer could not start because the existing Docker Redis volume failed its dependency health check."
+    },
+    "frontend_unit": {
+      "status": "PASS",
+      "exit_code": 0,
+      "test_files": 3,
+      "passed": 52,
+      "failed": 0
+    },
+    "focused_outbox_unit": {
+      "status": "PASS",
+      "exit_code": 0,
+      "passed": 26,
+      "failed": 0,
+      "observed": "transactional device sequence allocation, terminal 24-hour expiry, non-exportable/revoked key lifecycle, encrypted conflict audit, and durable transition recovery"
+    },
+    "backend_edge_sync": {
+      "status": "PASS",
+      "exit_code": 0,
+      "passed": 22,
+      "failed": 0,
+      "observed": "future skew 30 seconds, stale age 24 hours, content hash mismatch, idempotency-key replay, device sequence replay, reinstall quarantine, conflict hash computation, tenant-scoped legacy sync, and authenticated route registration"
+    },
+    "frontend_quality": {
+      "status": "PASS",
+      "typecheck": "PASS",
+      "lint": "PASS",
+      "production_build": "PASS"
+    },
+    "backend_quality": {
+      "status": "PASS",
+      "ruff": "PASS",
+      "py_compile": "PASS",
+      "alembic_current": "0011 (head)"
+    },
+    "service_worker_syntax": {
+      "status": "PASS",
+      "exit_code": 0,
+      "command": "node --check public/sw.js"
+    },
+    "lsp": {
+      "status": "UNAVAILABLE",
+      "typescript": "server not installed; prior installation declined",
+      "basedpyright": "server not installed; prior installation declined"
+    },
+    "manual_browser": {
+      "status": "UNAVAILABLE",
+      "reason": "Brave CDP could not launch in the root container; required Chromium/Playwright webServer verification was blocked by existing Redis/MinIO Docker volume failures",
+      "substitute": "Vitest, typecheck, ESLint, Vite build, Python pytest, Ruff, py_compile, and service-worker syntax checks passed"
+    }
+  },
+  "hashes": {
+    "service_worker_sha256": "addf72aead6906059816c1335e581e691b0af41184dc9986e8cc6d4633409467",
+    "outbox_sha256": "e92ec22e96706463fec60dd3a4d0d05a0262591deec321f76016c0ab7eef5778",
+    "outbox_policy_sha256": "eb7013b0fac947de4e07472aeeb92e96ac6901b52f0befa415c9d19705e29061",
+    "hook_sha256": "4c90d9fd261f8e252e468e53ecb79a735f2224220467240bc699adbcb284f60d",
+    "edge_sync_sha256": "869f0f6f93d58dbd6da77c252ac16192130e7e6294e97a3e63107f79cd9ff04d",
+    "legacy_sync_sha256": "ada2b055b9556c1f7db37a3ce6342ed1ff563a94738543d8acbf47a837a5cdd6",
+    "edge_sync_route_sha256": "77c64caa925d67594762c8e23af7077d60b7fc22bd09f9dcaa6a96c65af4760f",
+    "edge_sync_migration_sha256": "34f891e679e447b572f12657ce8fcb7b3dabe2520c5a5651a49f31425a63d3d0",
+    "offline_docs_sha256": "e20ef266f4cf8e3937f08900aa9c885366be90a53cff20825aaa0f0a85ad03ff",
+    "outbox_unit_sha256": "84a7d3f9b531f701d7b5c6798098f329fbeaa20aeca3e6e109bd8e7373f22c95",
+    "edge_sync_tests_sha256": "7b8c84328e566d55766b2078706ef655eb553c5116939fd5e8ce2822ef97c26a"
+  },
+  "failure_assertion": "Encrypted durable outbox transitions queued/sending/acked/failed/conflict without replaying expired or orphaned state; server replay is tenant-scoped and idempotent with enforced hash, age/skew, sequence, reinstall, and fail-closed conflict rules; authenticated API responses never enter public Cache Storage. Browser acceptance remains externally deferred because the required Docker-backed Playwright server could not start.",
+  "cleanup": "No Docker volumes were removed or reset. The Playwright webServer failed before browser tests because existing Redis/MinIO volumes were incompatible; no external or field evidence was claimed. Local focused test/build artifacts were not promoted as browser evidence."
+}

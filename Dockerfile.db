@@ -1,0 +1,68 @@
+# Dockerfile.db — PostgreSQL 16 with PostGIS, Apache AGE, TimescaleDB, and h3
+# Spike T51: validate extension coexistence in a single image.
+#
+# Build:  docker build -t resqnet-db -f Dockerfile.db .
+# Run:    docker run --rm -e POSTGRES_PASSWORD=disaster -p 5432:5432 resqnet-db
+# Test:   docker exec <cid> psql -U disaster -d disaster -c "CREATE EXTENSION postgis; CREATE EXTENSION age; CREATE EXTENSION timescaledb; CREATE EXTENSION h3; SELECT extname FROM pg_extension;"
+
+FROM postgres:16.3-bookworm
+
+# Default credentials (matching docker-compose.yml)
+ENV POSTGRES_USER=disaster \
+    POSTGRES_PASSWORD=disaster \
+    POSTGRES_DB=disaster \
+    POSTGRES_INITDB_ARGS="--encoding=UTF8 --locale=C"
+
+# ── Layer 1: apt repositories (PGDG + TimescaleDB) ───────────────────────────
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release \
+    ; \
+    install -d /usr/share/postgresql-common/pgdg; \
+    curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+        https://www.postgresql.org/media/keys/ACCC4CF8.asc; \
+    echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list; \
+    curl -fsSL https://packagecloud.io/install/repositories/timescale/timescaledb/script.deb.sh | bash; \
+    apt-get update
+
+# ── Layer 2: PostGIS 3.x, h3, TimescaleDB (all from apt) ─────────────────────
+RUN set -eux; \
+    apt-get install -y --no-install-recommends \
+        postgresql-16-postgis-3 \
+        postgresql-16-postgis-3-scripts \
+        postgresql-16-h3 \
+        timescaledb-2-postgresql-16 \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
+# ── Layer 3: Apache AGE v1.6.0 built from source for PG16 ────────────────────
+# AGE is not in apt; compile against the PG16 server headers.
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        git \
+        postgresql-server-dev-16 \
+        flex \
+        bison \
+    ; \
+    git clone --depth 1 --branch PG16/v1.6.0-rc0 https://github.com/apache/age.git /tmp/age; \
+    make -C /tmp/age PG_CONFIG=/usr/lib/postgresql/16/bin/pg_config install; \
+    rm -rf /tmp/age; \
+    apt-get purge -y --auto-remove \
+        build-essential \
+        git \
+        postgresql-server-dev-16 \
+        flex \
+        bison \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
+# TimescaleDB (background workers) and AGE (cypher() function handler)
+# must both be in shared_preload_libraries.
+CMD ["postgres", "-c", "shared_preload_libraries=timescaledb,age"]

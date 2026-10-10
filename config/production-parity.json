@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "task_id": "12",
+  "run_class": "BOUNDED_PARITY",
+  "claim_class": "production",
+  "production_claim_allowed": false,
+  "duration_seconds": 3600,
+  "duration_is_exact": true,
+  "load_shape": {
+    "operators": 50,
+    "operator_concurrency": 50,
+    "ingest_events_per_second": 100,
+    "ingest_burst_events": 200,
+    "traffic_distribution": "round_robin_through_tls_proxy",
+    "duplicate_delivery_fraction": 0.05,
+    "dependency_fault_fraction": 0.01
+  },
+  "thresholds": {
+    "availability": 0.999,
+    "failure_budget": 0.001,
+    "acknowledged_event_loss": 0.0,
+    "duplicate_acknowledged_effects": 0,
+    "latency_seconds": {
+      "api_read": {"p50": 0.5, "p95": 0.5, "p99": 1.0},
+      "dashboard": {"p50": 1.0, "p95": 2.0, "p99": 4.0}
+    },
+    "saturation": {
+      "cpu": 0.7,
+      "memory": 0.75,
+      "database_connections": 0.8,
+      "queue_age_p95_seconds": 60
+    },
+    "failover_seconds": 30,
+    "reconciliation_hashes_identical": true
+  },
+  "images": {
+    "db": {
+      "environment_variable": "RESQNET_DB_IMAGE",
+      "development_reference": "resqnet-db:task-12-local",
+      "production_pin": "sha256 digest required"
+    },
+    "backend": {
+      "environment_variable": "RESQNET_BACKEND_IMAGE",
+      "development_reference": "resqnet-backend:task-12-local",
+      "production_pin": "sha256 digest required"
+    },
+    "worker": {
+      "environment_variable": "RESQNET_WORKER_IMAGE",
+      "development_reference": "resqnet-backend:task-12-local",
+      "production_pin": "sha256 digest required"
+    },
+    "redis": {"version": "7.2.5-alpine", "production_pin": "sha256 digest required"},
+    "redpanda": {"version": "v24.3.9", "production_pin": "sha256 digest required"},
+    "minio": {"version": "RELEASE.2024-06-29T01-20-47Z", "production_pin": "sha256 digest required"},
+    "haproxy": {"version": "3.0.4-alpine", "production_pin": "sha256 digest required"}
+  },
+  "topology": {
+    "backend_instances": 2,
+    "traffic_entrypoint": "haproxy_tls_8443",
+    "shared_authorities": ["postgresql", "redis", "redpanda", "minio"],
+    "session_affinity": false,
+    "consumer_group": "observations-consumer",
+    "migration_owner": "single_migrate_job",
+    "rollback": "previous_attested_image_only; never downgrade schema",
+    "dependency_ha": {
+      "postgresql": {"minimum_authority_replicas": 3, "mode": "managed_primary_with_quorum"},
+      "redis": {"minimum_authority_replicas": 3, "mode": "managed_sentinel_or_cluster"},
+      "redpanda": {"minimum_authority_replicas": 3, "mode": "replicated_topics_factor_3"},
+      "minio": {"minimum_authority_replicas": 4, "mode": "erasure_coded"}
+    },
+    "local_compose_dependency_mode": "single_host_fixture_only; external_ha_attestation_required"
+  },
+  "migration_policy": {
+    "ordering": "expand_migrate_backfill_contract",
+    "startup_migration": false,
+    "interruption": "abort_release_and_reconcile_before_traffic",
+    "rollback": "application_image_only_after_forward_compatible_schema_check",
+    "destructive_downgrade": "forbidden",
+    "unsafe_release_exit_code": 1
+  },
+  "health_policy": {
+    "liveness": "/healthz",
+    "readiness": "/healthz/deep",
+    "traffic_gate": "readiness_200_only",
+    "unknown_dependency": "not_ready",
+    "startup_grace_seconds": 60,
+    "failure_action": "remove_instance_and_fail_closed"
+  },
+  "queue_policy": {
+    "max_in_memory_buffer": 100,
+    "max_queue_age_seconds": 60,
+    "max_retry_attempts": 3,
+    "dlq_retention_days": 30,
+    "admission_action": "429_or_bounded_retry_without_ack",
+    "ack_boundary": "durable_raw_ledger_or_acknowledged_dlq_handoff",
+    "duplicate_delivery": "at_least_once_delivery_exactly_once_idempotent_effect"
+  },
+  "secret_policy": {
+    "tls": "external_pem_bundle_injected_as_compose_secret",
+    "application_secrets": "environment_or_external_secret_manager_only",
+    "repository_values": "forbidden",
+    "rotation": "replace_secret_and_rolling_restart",
+    "internal_ports": "private_to_compose_network"
+  },
+  "scenarios": [
+    "rolling-restart",
+    "migration-interrupt-rollback",
+    "capacity",
+    "readiness-liveness",
+    "queue-saturation",
+    "dependency-loss",
+    "partial-instance-failure",
+    "rollback",
+    "acknowledged-event-loss"
+  ],
+  "external_deferral_policy": "A local fixture or single-machine soak never upgrades production or field readiness; missing external traffic driver, secret custody, TLS material, or 3600-second runtime is DEFERRED_EXTERNAL."
+}

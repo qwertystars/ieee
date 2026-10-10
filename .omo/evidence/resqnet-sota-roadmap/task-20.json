@@ -1,0 +1,61 @@
+{
+  "task_id": "20",
+  "command": "backend/.venv/bin/python scripts/validate_interoperability.py --profile config/cap-profile-v1.2.yaml --lock config/validators.lock --verify-validator-hashes --ogc-classes core,crs,query --sensorthings-version 1.1 --fixtures tests/fixtures/interoperability/valid",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "config/cap-profile-v1.2.yaml",
+    "config/validators.lock",
+    "scripts/validate_interoperability.py",
+    "scripts/interoperability_contract.py",
+    "scripts/interoperability_standards.py",
+    "tests/fixtures/interoperability/valid/cap.json",
+    "tests/fixtures/interoperability/valid/ogc.json",
+    "tests/fixtures/interoperability/valid/sensorthings.json",
+    "tests/fixtures/interoperability/invalid/cap.json",
+    "tests/fixtures/interoperability/invalid/ogc.json",
+    "tests/fixtures/interoperability/invalid/sensorthings.json",
+    "tests/fixtures/interoperability/offline/offline.json",
+    "tests/fixtures/validators-tampered.lock",
+    "tests/test_interoperability.py"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-03T02:11:45.835Z",
+  "finished_at": "2026-08-03T02:11:46.312Z",
+  "exit_code": 2,
+  "status": "DEFERRED_EXTERNAL",
+  "metrics": {
+    "machine_conformance": "PASS",
+    "operational_interoperability": "DEFERRED_EXTERNAL",
+    "external_validator_availability": {
+      "cap-validator": "DEFERRED_EXTERNAL",
+      "ogc-api-features-validator": "DEFERRED_EXTERNAL",
+      "sensorthings-validator": "DEFERRED_EXTERNAL"
+    },
+    "valid_fixture_count": 3,
+    "bindings": ["EPSG:4326", "UCUM", "HTTPS JSON", "MQTT 3.1.1"],
+    "failure_commands": [
+      {"command": "backend/.venv/bin/python scripts/validate_interoperability.py --lock tests/fixtures/validators-tampered.lock --fixtures tests/fixtures/interoperability/invalid --offline", "exit_code": 1, "status": "FAIL"},
+      {"command": "backend/.venv/bin/python scripts/validate_interoperability.py --lock config/validators.lock --fixtures tests/fixtures/interoperability/offline --offline", "exit_code": 2, "status": "DEFERRED_EXTERNAL"}
+    ],
+    "focused_tests": "4 passed",
+    "basedpyright": "unavailable; prior installation decision declined the server"
+  },
+  "hashes": {
+    "config/cap-profile-v1.2.yaml": "535ee6bb696a1485b8ee7fdeb1819c0663ef7fd62f7977a5208e30dea28ac606",
+    "config/validators.lock": "8e8cce1ac58cd0a1f18614da06dff56c1025eae77d94e3afef27d6b145eb89c0",
+    "scripts/validate_interoperability.py": "9f13cf18b026e1eb7244d1563e3108868e8a4577c70a1d625d4759062cb967d0",
+    "scripts/interoperability_contract.py": "2d6f65c4eb3287e78b35761d2627221cd37de053b80040ddc37a4867d01bace6",
+    "scripts/interoperability_standards.py": "f11490f99ca050c83f779bed1143ad8b4ba7f630614320df4929af046510c4af",
+    "tests/fixtures/interoperability/valid/cap.json": "f57ddb0f029856b033e359880b47b7ebdc8a81d74b590bc5332fb50d863fff91",
+    "tests/fixtures/interoperability/valid/ogc.json": "060e23c6f94fb5aec58ba0d6c32cb3adde23b15ca06ef1574d1642ff883edb97",
+    "tests/fixtures/interoperability/valid/sensorthings.json": "0a17a09fdd73ad29625fc1baabb23dd74a8737b05153c2434c9e22db16570ffe",
+    "tests/fixtures/interoperability/invalid/cap.json": "8181eb58f07b1ec930ec665f0d4b6024e7e79f08b6e15c7eb836345be6de8c67",
+    "tests/fixtures/interoperability/invalid/ogc.json": "ce9c6b664507e4b66102dc5618d0e057f33298e472ced6f1fd11188dce7f4f38",
+    "tests/fixtures/interoperability/invalid/sensorthings.json": "5223302f53359a4bce856c855332f45ceeaf355fcbd2443d7a9b881bdf58cb66",
+    "tests/fixtures/interoperability/offline/offline.json": "92d6ce26fdfd09cc03043554c0c36e3e387889aa9563b53c1f94823df5804ab8",
+    "tests/fixtures/validators-tampered.lock": "5b733aae73b686b4168f6eef20fb59eb529ce6b00001759ac36d924aab8ca0b1",
+    "tests/test_interoperability.py": "9d9c6a371cbbd9243136f39bc5550c396131b6036875e97a4c4d96dd2c1ebf09"
+  },
+  "failure_assertion": "Local syntactic conformance passes; absent pinned external validators defer with exit 2, while lock tampering and invalid payloads fail with exit 1. No agency or production interoperability claim is made.",
+  "cleanup": "No validators, dependencies, external data, credentials, or production systems were downloaded or modified; fixtures and lock inputs were read locally."
+}

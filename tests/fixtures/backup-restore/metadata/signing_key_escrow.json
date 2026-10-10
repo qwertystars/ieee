@@ -1,0 +1,1 @@
+{"algorithm":"Ed25519","live_keys_external":true,"private_keys_in_backup":false,"escrow_reference":"DEFERRED_EXTERNAL:secret-manager/backup-signing-key","public_key_ids":["01JFIXTUREKEY00000000000001"],"policy":"restore public verification metadata only; recover live signing keys from external custody"}

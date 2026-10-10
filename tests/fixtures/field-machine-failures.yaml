@@ -1,0 +1,67 @@
+schema_version: resqnet.field-machine.v1
+exercise_id: field-machine-failures
+mode: machine_replay
+claim_class: field_machine
+security:
+  fail_closed: false
+  no_actuation: false
+  network_access: none
+  replay_protection: false
+required_controls: [degraded_connectivity]
+thresholds:
+  alert_latency_p95_ms_max: 2000
+  loss_rate_max: 0.05
+  duplicate_rate_max: 0.03
+  offline_duration_min_s: 600
+  sync_conflicts_unresolved_max: 0
+  audit_completeness_min: 1.0
+  authorization_failures_min: 1
+  stale_map_age_min_s: 900
+  power_loss_events_min: 1
+  device_loss_events_min: 1
+  intermittent_link_events_min: 1
+  competing_incidents_min: 2
+measurements:
+  alert_latency_ms: [3000]
+  sent_events: 10
+  lost_events: 8
+  duplicate_events: 4
+  offline_duration_s: 60
+  sync_conflicts:
+    - conflict_id: conflict-unsafe
+      status: applied
+      unresolved: true
+  authorization_failures:
+    - request_id: unauthorized-dispatch
+      denied: false
+      side_effects: 1
+  audit: {expected_events: 2, complete_events: 1}
+  stale_maps:
+    - map_id: map-unsafe
+      age_s: 60
+      status: fresh
+      action: allow_critical_action
+  power_loss_events: 0
+  device_loss_events: 0
+  intermittent_link_events: 0
+  competing_incidents: 1
+  actuation:
+    dispatch: true
+    public_warning: false
+    resource_commitment: false
+    device_command: false
+    network_egress: true
+signed_log:
+  algorithm: HMAC-SHA256
+  key_id: field-machine-fixture-key-v1
+  fixture_key: field-machine-fixture-key-v1-not-production
+  expected_chain_head: invalid
+  expected_replay_digest: invalid
+event_log:
+  - sequence: 2
+    event_id: unsafe-event
+    event_type: degraded_connectivity
+    payload: {link: none}
+    prev_hash: "0000000000000000000000000000000000000000000000000000000000000000"
+    hash: invalid
+    signature: invalid

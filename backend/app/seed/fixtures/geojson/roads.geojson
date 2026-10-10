@@ -1,0 +1,445 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.85,
+            19.06
+          ],
+          [
+            72.858,
+            19.065
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Coastal Highway",
+        "status": "flooded",
+        "road_class": "arterial"
+      },
+      "id": "road_1"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.865,
+            19.06
+          ],
+          [
+            72.876,
+            19.069
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Riverside Drive",
+        "status": "flooded",
+        "road_class": "arterial"
+      },
+      "id": "road_2"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.88,
+            19.06
+          ],
+          [
+            72.894,
+            19.065
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Main Street",
+        "status": "flooded",
+        "road_class": "arterial"
+      },
+      "id": "road_3"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.895,
+            19.06
+          ],
+          [
+            72.903,
+            19.069
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Bridge Road",
+        "status": "flooded",
+        "road_class": "arterial"
+      },
+      "id": "road_4"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.91,
+            19.06
+          ],
+          [
+            72.921,
+            19.065
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Market Lane",
+        "status": "flooded",
+        "road_class": "arterial"
+      },
+      "id": "road_5"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.85,
+            19.072
+          ],
+          [
+            72.864,
+            19.081
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Hospital Road",
+        "status": "flooded",
+        "road_class": "arterial"
+      },
+      "id": "road_6"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.865,
+            19.072
+          ],
+          [
+            72.873,
+            19.077
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Station Road",
+        "status": "damaged",
+        "road_class": "arterial"
+      },
+      "id": "road_7"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.88,
+            19.072
+          ],
+          [
+            72.891,
+            19.081
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Industrial Avenue",
+        "status": "damaged",
+        "road_class": "arterial"
+      },
+      "id": "road_8"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.895,
+            19.072
+          ],
+          [
+            72.909,
+            19.077
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Harbor Road",
+        "status": "damaged",
+        "road_class": "secondary"
+      },
+      "id": "road_9"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.91,
+            19.072
+          ],
+          [
+            72.918,
+            19.081
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Hill Road",
+        "status": "damaged",
+        "road_class": "secondary"
+      },
+      "id": "road_10"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.85,
+            19.084
+          ],
+          [
+            72.861,
+            19.089
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Park Street",
+        "status": "passable",
+        "road_class": "secondary"
+      },
+      "id": "road_11"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.865,
+            19.084
+          ],
+          [
+            72.879,
+            19.093
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Garden Road",
+        "status": "passable",
+        "road_class": "secondary"
+      },
+      "id": "road_12"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.88,
+            19.084
+          ],
+          [
+            72.888,
+            19.089
+          ]
+        ]
+      },
+      "properties": {
+        "name": "River Cross Road",
+        "status": "passable",
+        "road_class": "secondary"
+      },
+      "id": "road_13"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.895,
+            19.084
+          ],
+          [
+            72.906,
+            19.093
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Beach Road",
+        "status": "passable",
+        "road_class": "secondary"
+      },
+      "id": "road_14"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.91,
+            19.084
+          ],
+          [
+            72.924,
+            19.089
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Canal Street",
+        "status": "passable",
+        "road_class": "secondary"
+      },
+      "id": "road_15"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.85,
+            19.096
+          ],
+          [
+            72.858,
+            19.105
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Embankment Road",
+        "status": "passable",
+        "road_class": "secondary"
+      },
+      "id": "road_16"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.865,
+            19.096
+          ],
+          [
+            72.876,
+            19.101
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Old Mill Road",
+        "status": "passable",
+        "road_class": "secondary"
+      },
+      "id": "road_17"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.88,
+            19.096
+          ],
+          [
+            72.894,
+            19.105
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Factory Road",
+        "status": "passable",
+        "road_class": "secondary"
+      },
+      "id": "road_18"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.895,
+            19.096
+          ],
+          [
+            72.903,
+            19.101
+          ]
+        ]
+      },
+      "properties": {
+        "name": "School Lane",
+        "status": "passable",
+        "road_class": "secondary"
+      },
+      "id": "road_19"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.91,
+            19.096
+          ],
+          [
+            72.921,
+            19.105
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Civic Center Road",
+        "status": "passable",
+        "road_class": "secondary"
+      },
+      "id": "road_20"
+    }
+  ]
+}

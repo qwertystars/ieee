@@ -1,0 +1,40 @@
+{
+  "task_id": "27",
+  "command": "backend/.venv/bin/python scripts/verify_plan.py ...; backend/.venv/bin/python scripts/verify_release_gate.py ...",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    ".omo/plans/resqnet-sota-roadmap.md",
+    "evidence/sota/release-manifest.json",
+    "evidence/sota/prerequisites.json",
+    "evidence/sota/release-governance.json",
+    "tests/fixtures/release-missing-evidence.json"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-03T00:00:00Z",
+  "finished_at": "2026-08-03T00:00:00Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "plan_status": "PASS",
+    "happy_release_gate": "PASS aggregate with research and production DEFERRED_EXTERNAL",
+    "failure_a_missing_production_evidence": "FAIL exit 1",
+    "failure_b_allowed_field_deferral": "DEFERRED_EXTERNAL exit 2",
+    "claim_mapping": {
+      "research": ["dataset", "license", "split", "model", "calibration"],
+      "production": ["security", "config", "DR", "validator", "key_custody"],
+      "shadow": ["operator", "baseline", "30_day"],
+      "field": ["agency", "IRB", "training", "hardware", "physical_calibration"]
+    },
+    "external_claims_promoted": false,
+    "signed_external_attestations": "DEFERRED_EXTERNAL"
+  },
+  "hashes": {
+    "scripts/verify_plan.py": "eadaaa16945ec1cc25efd4ba58d675b4b7a06077a0bdaba22f88b83d32e67118",
+    "scripts/verify_release_gate.py": "ba53a025e905713e3ab20fbbcc265b9a76999932da1aaddc0f8bc5c683240976",
+    "evidence/sota/release-manifest.json": "66edcad906b6ea60559b95935f2dc062e664196d200716f239f0a51a1f24924a",
+    "evidence/sota/release-governance.json": "d132f1032a983011e6f78c3237d398952f419d7de4f8a23976c017f26e99590c",
+    "evidence/sota/prerequisites.json": "6cb552992f67188c9b150770b0d8dfd63da6afcf92d95befaff4da937dd24f4f"
+  },
+  "failure_assertion": "Missing, failed, revoked, expired, or altered evidence cannot promote a claim; allowed deferral remains explicitly external.",
+  "cleanup": "Only repository-local normative artifacts and read-only verification inputs were used; no external data, credentials, agency, participant, hardware, or production system was accessed."
+}

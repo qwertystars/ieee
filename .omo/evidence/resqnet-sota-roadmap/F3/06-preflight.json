@@ -1,0 +1,29 @@
+{
+  "cleanup": "Command output was captured; no external validators, data, participants, credentials, or production state were created or modified by the wrapper.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "python scripts/check_optional_dependencies.py --simulate-missing",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 2,
+  "failure_assertion": "The observed exit/status pair must match the exact F3 expectation; expected DEFERRED_EXTERNAL is accepted only for the declared external preflight.",
+  "finished_at": "2026-08-03T05:57:16.681219Z",
+  "hashes": {
+    "command_sha256": "ed0d2664dfd2150ccf473619fcd7a276532bac9ca11fbd3211071f3ed810c3c7",
+    "config/validators.lock": "8e8cce1ac58cd0a1f18614da06dff56c1025eae77d94e3afef27d6b145eb89c0",
+    "scripts/check_optional_dependencies.py": "739279aa0c3781ef27e901600a0c2cd7919633ee22c9f3264fd37098a7f0ac2a"
+  },
+  "inputs": [
+    "scripts/check_optional_dependencies.py",
+    "config/validators.lock"
+  ],
+  "metrics": {
+    "expected_exit_code": 2,
+    "expected_pair_match": true,
+    "expected_status": "DEFERRED_EXTERNAL",
+    "observed_exit_code": 2,
+    "stderr": "",
+    "stdout": "status=DEFERRED_EXTERNAL\ndeferred_reason=simulated_missing:cap-validator\ndeferred_reason=simulated_missing:ogc-api-features-validator\ndeferred_reason=simulated_missing:sensorthings-validator\nmachine_conformance=not evaluated by dependency preflight\n"
+  },
+  "started_at": "2026-08-03T05:57:16.616253Z",
+  "status": "DEFERRED_EXTERNAL",
+  "task_id": "resqnet-sota-roadmap-F3-06-preflight"
+}

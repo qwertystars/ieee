@@ -1,0 +1,193 @@
+=== Stub routes grep: status ok / stub / placeholder / not implemented ===
+--- grep -rn 'status.*ok\|stub\|placeholder\|not implemented' backend/app/api/routes/ ---
+backend/app/api/routes/eval.py:1:"""Eval routes — GET /api/eval (stub)."""
+backend/app/api/routes/eval.py:13:    """Evaluation pipeline (stub — real logic comes later)."""
+backend/app/api/routes/eval.py:14:    return {"status": "ok", "endpoint": "eval", "org_id": user.org_id}
+backend/app/api/routes/observations.py:1:"""Observations routes — GET /api/observations (stub)."""
+backend/app/api/routes/observations.py:13:    """List observations (stub — real logic comes later)."""
+backend/app/api/routes/observations.py:14:    return {"status": "ok", "endpoint": "observations", "org_id": user.org_id}
+backend/app/api/routes/scenarios.py:1:"""Scenarios routes — GET /api/scenarios (stub)."""
+backend/app/api/routes/scenarios.py:13:    """List scenarios (stub — real logic comes later)."""
+backend/app/api/routes/scenarios.py:14:    return {"status": "ok", "endpoint": "scenarios", "org_id": user.org_id}
+backend/app/api/routes/sensing.py:1:"""Sensing routes — GET /api/sensing (stub)."""
+backend/app/api/routes/sensing.py:13:    """Sensing pipeline status (stub — real logic comes later)."""
+backend/app/api/routes/sensing.py:14:    return {"status": "ok", "endpoint": "sensing", "org_id": user.org_id}
+backend/app/api/routes/hypotheses.py:1:"""Hypotheses routes — GET /api/hypotheses (stub)."""
+backend/app/api/routes/hypotheses.py:13:    """List hypotheses (stub — real logic comes later)."""
+backend/app/api/routes/hypotheses.py:14:    return {"status": "ok", "endpoint": "hypotheses", "org_id": user.org_id}
+
+=== Route files overview ===
+total 48
+drwxrwxr-x 2 1000 1000 4096 Jul 21 05:14 .
+drwxrwxr-x 3 1000 1000 4096 Jul 18 09:06 ..
+-rw-rw-r-- 1 1000 1000    0 Jul 18 07:32 __init__.py
+-rw-rw-r-- 1 1000 1000 1379 Jul 18 09:04 auth.py
+-rw-rw-r-- 1 1000 1000  424 Jul 18 09:04 eval.py
+-rw-rw-r-- 1 1000 1000 8117 Jul 21 05:09 health.py
+-rw-rw-r-- 1 1000 1000  452 Jul 18 09:04 hypotheses.py
+-rw-rw-r-- 1 1000 1000  466 Jul 18 09:04 observations.py
+-rw-rw-r-- 1 1000 1000  313 Jul 21 05:14 optimize.py
+-rw-rw-r-- 1 1000 1000  445 Jul 18 09:04 scenarios.py
+-rw-rw-r-- 1 1000 1000  437 Jul 18 09:04 sensing.py
+-rw-rw-r-- 1 1000 1000 1180 Jul 18 09:04 ws.py
+
+=== Content of each stub route (first 20 lines each) ===
+--- backend/app/api/routes/__init__.py (first 20 lines) ---
+
+--- backend/app/api/routes/auth.py (first 20 lines) ---
+"""Auth routes — POST /api/auth/login."""
+
+from datetime import timedelta
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
+
+from app.auth.jwt import create_access_token
+from app.auth.passwords import verify_password
+from app.config import settings
+from app.deps import get_db
+from app.models.user import User
+from app.schemas.auth import TokenResponse
+
+router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.post("/login", response_model=TokenResponse)
+def login(
+
+--- backend/app/api/routes/eval.py (first 20 lines) ---
+"""Eval routes — GET /api/eval (stub)."""
+
+from fastapi import APIRouter, Depends
+
+from app.deps import require_roles
+from app.models.user import User
+
+router = APIRouter(prefix="/eval", tags=["eval"])
+
+
+@router.get("")
+def eval_endpoint(user: User = Depends(require_roles())) -> dict:
+    """Evaluation pipeline (stub — real logic comes later)."""
+    return {"status": "ok", "endpoint": "eval", "org_id": user.org_id}
+
+--- backend/app/api/routes/health.py (first 20 lines) ---
+"""Honest degradation display — per-feed health, data age, lost feeds, widening uncertainty.
+
+Exposes per-feed status (healthy/degraded/down) based on data age vs phenomenon-specific
+tau thresholds. Stale data is flagged as degraded/down, never displayed as current.
+
+GET /api/incidents/{id}/feed-health returns per-feed status with:
+- feed_name, status, data_age_seconds, last_update, coverage_pct, queue_backlog, sync_state
+"""
+from __future__ import annotations
+
+import logging
+import math
+
+from fastapi import APIRouter, Depends
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from app.deps import get_db
+from app.fusion.freshness import DEFAULT_TAU, TAU_BY_PHENOMENON
+from app.lib.time import now_ms
+
+--- backend/app/api/routes/hypotheses.py (first 20 lines) ---
+"""Hypotheses routes — GET /api/hypotheses (stub)."""
+
+from fastapi import APIRouter, Depends
+
+from app.deps import require_roles
+from app.models.user import User
+
+router = APIRouter(prefix="/hypotheses", tags=["hypotheses"])
+
+
+@router.get("")
+def list_hypotheses(user: User = Depends(require_roles())) -> dict:
+    """List hypotheses (stub — real logic comes later)."""
+    return {"status": "ok", "endpoint": "hypotheses", "org_id": user.org_id}
+
+--- backend/app/api/routes/observations.py (first 20 lines) ---
+"""Observations routes — GET /api/observations (stub)."""
+
+from fastapi import APIRouter, Depends
+
+from app.deps import require_roles
+from app.models.user import User
+
+router = APIRouter(prefix="/observations", tags=["observations"])
+
+
+@router.get("")
+def list_observations(user: User = Depends(require_roles())) -> dict:
+    """List observations (stub — real logic comes later)."""
+    return {"status": "ok", "endpoint": "observations", "org_id": user.org_id}
+
+--- backend/app/api/routes/optimize.py (first 20 lines) ---
+"""Optimize routes — POST /api/optimize (async solve) + GET /api/optimize/{task_id}.
+
+The optimizer router (POST + GET polling) lives in app.optimizer.engine.
+This module re-exports it so main.py's existing import continues to work.
+"""
+
+from app.optimizer.api import router  # noqa: F401
+
+__all__ = ["router"]
+
+--- backend/app/api/routes/scenarios.py (first 20 lines) ---
+"""Scenarios routes — GET /api/scenarios (stub)."""
+
+from fastapi import APIRouter, Depends
+
+from app.deps import require_roles
+from app.models.user import User
+
+router = APIRouter(prefix="/scenarios", tags=["scenarios"])
+
+
+@router.get("")
+def list_scenarios(user: User = Depends(require_roles())) -> dict:
+    """List scenarios (stub — real logic comes later)."""
+    return {"status": "ok", "endpoint": "scenarios", "org_id": user.org_id}
+
+--- backend/app/api/routes/sensing.py (first 20 lines) ---
+"""Sensing routes — GET /api/sensing (stub)."""
+
+from fastapi import APIRouter, Depends
+
+from app.deps import require_roles
+from app.models.user import User
+
+router = APIRouter(prefix="/sensing", tags=["sensing"])
+
+
+@router.get("")
+def sensing(user: User = Depends(require_roles())) -> dict:
+    """Sensing pipeline status (stub — real logic comes later)."""
+    return {"status": "ok", "endpoint": "sensing", "org_id": user.org_id}
+
+--- backend/app/api/routes/ws.py (first 20 lines) ---
+"""WebSocket routes — /ws/events/{incident_id} for real-time updates."""
+
+import logging
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+logger = logging.getLogger("app.ws")
+
+router = APIRouter(prefix="/ws", tags=["websocket"])
+
+
+@router.websocket("/events/{incident_id}")
+async def events_ws(websocket: WebSocket, incident_id: str) -> None:
+    """WebSocket for real-time event updates scoped to an incident.
+
+    Accepts the connection, sends a connected acknowledgment, then keeps
+    the connection alive. Real Redpanda consumer fanout comes later.
+    """
+    await websocket.accept()
+    await websocket.send_json(
+

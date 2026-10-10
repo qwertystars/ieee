@@ -1,0 +1,59 @@
+{
+  "task_id": "9",
+  "command": "cd backend && .venv/bin/python ../scripts/verify_config.py --environment production --matrix config/production-matrix.json; cd backend && .venv/bin/python ../scripts/verify_config.py --environment production --matrix config/production-matrix.json --env-file tests/fixtures/unsafe-production.env; cd backend && .venv/bin/python -m pytest tests/test_auth_hardening.py tests/test_task9_config_identity.py -q; make typecheck",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "backend/app/config.py",
+    "backend/app/main.py",
+    "backend/app/auth/jwt.py",
+    "backend/app/deps.py",
+    "backend/app/api/routes/auth.py",
+    "docker-compose.yml",
+    ".env.example",
+    "config/production-matrix.json",
+    "scripts/verify_config.py",
+    "backend/tests/fixtures/unsafe-production.env",
+    "backend/tests/test_auth_hardening.py",
+    "backend/tests/test_task9_config_identity.py"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-02T20:20:00Z",
+  "finished_at": "2026-08-02T20:39:14Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "production_matrix": {"status": "PASS", "exit_code": 0, "observed": "safe matrix accepted"},
+    "unsafe_fixture": {
+      "status": "PASS",
+      "exit_code": 1,
+      "observed": "named violations: JWT_SECRET, REDIS_REVOCATION_REQUIRED, REFRESH_TOKEN_ROTATION_REQUIRED, ACCESS_TOKEN_EXPIRE_MINUTES, CORS_ORIGINS, UVICORN_RELOAD, SOURCE_MOUNTS_ENABLED, MOCK_BINDINGS_ENABLED, EXPOSE_INTERNAL_PORTS, DATABASE_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY"
+    },
+    "focused_auth_config_tests": {"status": "PASS", "passed": 21, "failed": 0},
+    "changed_file_mypy": {"status": "PASS", "files": 4},
+    "ruff_compile_no_excuse": {"status": "PASS", "observed": "Ruff and compile pass; no-excuse reports only inherited deps.py oversized-module warning"},
+    "startup_import": {"status": "PASS", "observed": "safe production import completed before lifespan"},
+    "startup_unsafe_import": {"status": "PASS", "observed": "unsafe production import exited nonzero without secret value"},
+    "compose_config_with_example_env": {"status": "PASS", "exit_code": 0},
+    "root_typecheck": {
+      "status": "PRE_EXISTING_FAILURE",
+      "exit_code": 1,
+      "observed": "20 existing mypy errors in backend/app/perception/serving.py, api/routes/scenarios.py, auth/command_authorization.py, lib/idempotency.py, fusion/kernel.py, fusion/state.py, fusion/replay.py, api/routes/alert_commands.py, and api/routes/alerts.py; no errors in changed-file mypy"
+    }
+  },
+  "hashes": {
+    "backend/app/config.py": "e94b2dbfaa8a87302f556b4311e8a1441eee8d73cea9a6ab906ca7b7d2fa17a2",
+    "backend/app/main.py": "a1297b5d1e73b70cfc53c26e81d78c719bd0683cc9dd31ba4b3332edb4a60645",
+    "backend/app/auth/jwt.py": "eccfe29b36a8575262cd0c6cc7b951e78601cb74b614af7a6b37fb1fc71f33b9",
+    "backend/app/deps.py": "ebd431b60bb2cfb24a3560e5fa117c0237bb21d1b8311eb9d04944c040d7103a",
+    "backend/app/api/routes/auth.py": "210a12fc532ffb9ec31ba1e095c26233e5878885719222dfbfbf708b80555467",
+    "docker-compose.yml": "383d9a0f9976e07daa8c1bb8cd095dc84bffa2bd6e5eb7eb06dfe90ef9e9ade9",
+    ".env.example": "43d7540ce14074eed9959e126be563539df69b2d579a02748e57a38092e7e0af",
+    "config/production-matrix.json": "70f36e894d3443f36423ea2c47805a8d2287b923d724fd7db1de5bd910602f94",
+    "scripts/verify_config.py": "51960a9fe6281da207ed7af82a84cd30da504384a6c0f6730ed01601186815fe",
+    "backend/tests/test_auth_hardening.py": "a3ef41850b683625598163418429fe19d7155a436aedbe00f5e769bc8e97af7c",
+    "backend/tests/test_task9_config_identity.py": "ccac7a137ec9473ef781577a5d0588bb343b64e033b34183ba70717dba6fac2d",
+    "backend/tests/fixtures/unsafe-production.env": "e69ce1b3cf15200a302579612ced11728d6451ab1bdf369f8c302153cf703487"
+  },
+  "failure_assertion": "Production startup rejects unsafe settings before serving and emits setting names without secret values; refresh replay and Redis outage deny protected authentication; the unsafe fixture exits nonzero with named violations.",
+  "cleanup": "No services or production data were modified. PostgreSQL-backed tests were run serially. Existing ignored development env files were not changed or included as evidence."
+}

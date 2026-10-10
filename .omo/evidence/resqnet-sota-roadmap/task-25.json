@@ -1,0 +1,52 @@
+{
+  "task_id": "25",
+  "command": "backend/.venv/bin/python scripts/run_sensor_harness.py --fixture tests/fixtures/sensor-valid.ndjson --verify-signature --verify-sequence --report evidence/sota/task-25-machine.json; backend/.venv/bin/python scripts/run_sensor_harness.py --fixture tests/fixtures/sensor-failures.ndjson --assert-quarantine; backend/.venv/bin/python scripts/run_sensor_harness.py --fixture tests/fixtures/sensor-physical-required.ndjson --prerequisites evidence/sota/prerequisites.json --require-physical --expect-deferred",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "scripts/run_sensor_harness.py",
+    "tests/fixtures/sensor-valid.ndjson",
+    "tests/fixtures/sensor-failures.ndjson",
+    "tests/fixtures/sensor-physical-required.ndjson",
+    "evidence/sota/prerequisites.json",
+    "docs/HARDWARE_SPECIFICATION.md"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-03T03:41:55Z",
+  "finished_at": "2026-08-03T03:41:56Z",
+  "exit_code": 2,
+  "status": "DEFERRED_EXTERNAL",
+  "metrics": {
+    "commands": [
+      {"exit_code": 0, "status": "PASS", "assertion": "six signed, tenant-bound, calibration-versioned telemetry records passed strict sequence and replay checks"},
+      {"exit_code": 1, "status": "FAIL", "assertion": "unsafe records were quarantined"},
+      {"exit_code": 2, "status": "DEFERRED_EXTERNAL", "assertion": "secure boot, physical calibration, environmental limits, and real key custody were unavailable"}
+    ],
+    "claim_classes": {
+      "sensor_protocol_machine": "PASS",
+      "physical_integration": "DEFERRED_EXTERNAL",
+      "human_detection": "DEFERRED_EXTERNAL",
+      "field_readiness": "DEFERRED_EXTERNAL"
+    },
+    "machine_gate": {"status": "PASS", "accepted_records": 6, "quarantined_failure_records": 5},
+    "physical_gate": {"status": "DEFERRED_EXTERNAL", "missing_prerequisites": ["hardware.secure-boot", "sensor.physical-calibration", "hardware.environmental-limits", "security.real-key-custody"], "machine_pass_satisfies_physical_gate": false},
+    "external_limitations": [
+      "Fixture key material is not production device key custody.",
+      "No physical sensing, calibration, secure boot, environmental, rescue-ball detection, agency, or field readiness claim is made.",
+      "basedpyright is unavailable because the prior installation decision declined the server."
+    ]
+  },
+  "hashes": {
+    "scripts/run_sensor_harness.py": "bc1e857defb14e02a842813760244482bd050090369817a991e08d1dfbc6d7c9",
+    "scripts/sensor_harness_contract.py": "a45e8b59b8047e8d639aecfe460beb1db5fc1fc94eb53cb89ea41f7c926f92dd",
+    "scripts/sensor_harness_input.py": "8c678991055437b067ab9b8f1bfa7e7da6b936ec1d8f011ada29c2b7abc0b61d",
+    "tests/test_sensor_harness.py": "20b116e52c53f9ddc4fba715bf9a806991ffeb17db20a793d5d874854981d099",
+    "tests/fixtures/sensor-valid.ndjson": "0f1937506ab5218332c1d3d1e4bc1f550e1a8a4719c2ba577af1244388161b6b",
+    "tests/fixtures/sensor-failures.ndjson": "ebde8ef79d4e4b8f9a4740c457299fc2af11c788e494547fc5b582a405514861",
+    "tests/fixtures/sensor-physical-required.ndjson": "738ac40c125718f7e6b82e14f503a126853d9580d49a326fb151ff3181589a79",
+    "docs/HARDWARE_SPECIFICATION.md": "15402b20c06b9248005a827950f58245527e726cc7056c1853ff1cc5e5cc2169",
+    "evidence/sota/task-25-machine.json": "18b6b4be428c0ba01283a25dfed19658a915d76b73e456d37674d1b6b1a1ad75",
+    "evidence/sota/prerequisites.json": "6cb552992f67188c9b150770b0d8dfd63da6afcf92d95befaff4da937dd24f4f"
+  },
+  "failure_assertion": "Unsafe telemetry remains quarantined; machine protocol PASS does not promote unavailable physical prerequisites or any hardware, human-detection, or field claim.",
+  "cleanup": "No hardware, production keys, dependencies, network, database, queue, external data, or runtime state was modified."
+}

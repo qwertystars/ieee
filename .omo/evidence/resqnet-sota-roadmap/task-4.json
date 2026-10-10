@@ -1,0 +1,39 @@
+{
+  "task_id": "4",
+  "command": "cd backend && .venv/bin/ruff check app/models/events.py tests/test_task4_contracts.py tests/test_task4_adversarial.py tests/test_task4_callers.py; .venv/bin/python -m pytest tests/test_task4_contracts.py tests/test_task4_adversarial.py tests/test_task4_callers.py -q; .venv/bin/python -m pytest tests/test_migration_correctness.py tests/test_geometry_roundtrip.py -q; .venv/bin/python -m pytest tests/test_concurrent_idempotency.py -q",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "backend/tests/test_task4_contracts.py",
+    "backend/tests/test_migration_correctness.py",
+    "backend/tests/test_geometry_roundtrip.py",
+    "backend/tests/test_concurrent_idempotency.py",
+    "backend/alembic/versions/0006_canonical_event_contracts.py"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-01T08:30:00Z",
+  "finished_at": "2026-08-01T09:20:00Z",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "migration_geometry_tests_passed": 10,
+    "concurrent_idempotency_tests_passed": 4,
+    "task4_contract_adversarial_tests_passed": 27,
+    "tamper_truncation_reorder_fork": "PASS",
+    "malformed_provenance": "PASS",
+    "duplicate_external_payload_conflict": "PASS",
+    "timestamp_validation_regressions_passed": 6,
+    "ruff": "PASS"
+  },
+  "hashes": {
+    "backend/app/models/events.py": "1b8ac2fa0840d4d939c1b733ef3e3fc210f83eb88ca259ea39f886f53eba70c9",
+    "backend/app/models/observation.py": "be1cf1d906b0f2efa518ee787e6ae221b1771552ea17275143e7824430b1fab7",
+    "backend/app/lib/audit.py": "908a1a06c67c51a5ab1930dd6ffb1da68603899c3c25f67a6fae3bcf5fdb58c4",
+    "backend/app/lib/idempotency.py": "930aa8e1fa260ea3ca73e818d8efd302d540153634f470a6e849a15142b63634",
+    "backend/alembic/versions/0006_canonical_event_contracts.py": "d919883fca40f1cd1bd7004bf006bb57dc61403ef92276b8460ca17bd8f2048d",
+    "backend/tests/test_task4_contracts.py": "822849cd126805ac676e8513427465e5b71ec092dff77363505ed2c6a98c3e37",
+    "backend/tests/test_task4_adversarial.py": "1e20df36d4385664486b82bbd63bbcd1502ff9c724e6f022ee42c04d117f0338",
+    "backend/tests/test_task4_callers.py": "1d066127a2bd74b67d20a03ae67c46754a3de5479a4463877e9fd009eab7615c"
+  },
+  "failure_assertion": "Malformed provenance, duplicate payloads, tampered payloads, tail truncation, reordered sequence, and forked predecessor are rejected; identical retries are no-ops.",
+  "cleanup": "Pytest fixtures delete task-4 rows and close sessions; no generated runtime artifacts were added."
+}

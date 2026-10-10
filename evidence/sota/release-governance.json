@@ -1,0 +1,91 @@
+{
+  "revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "claim_mapping": {
+    "research": ["dataset", "license", "split", "model", "calibration"],
+    "production": ["security", "config", "DR", "validator", "key_custody"],
+    "shadow": ["operator", "baseline", "30_day"],
+    "field": ["agency", "IRB", "training", "hardware", "physical_calibration"]
+  },
+  "release_board": {
+    "quorum": 4,
+    "roles": ["security_lead", "ml_lead", "operations_lead", "incident_command"],
+    "conflict_policy": "A conflicted member is recused and replaced by a named, recorded delegate; quorum must still be four distinct authorities.",
+    "rollback_authority": "incident_command",
+    "recertification": "Review on expiry, material hash/config/model/data change, incident, or drift trigger before re-release."
+  },
+  "checklist": {
+    "software": "Run the structural plan, test, security, durability, and interoperability gates.",
+    "ml": "Verify dataset license, split, model, calibration, baseline, uncertainty, and bounded metric evidence.",
+    "operations": "Verify configuration, DR, validator, telemetry, rollback, retraining, and drift controls.",
+    "incident_command": "Approve rollback decision, incident response, operator communications, and claim taxonomy.",
+    "retraining_and_drift": "Freeze promotion on drift thresholds or calibration breach; retrain only on a new reviewed split and recertify.",
+    "incident_response": "Quarantine affected claims, preserve audit evidence, notify the board, and rollback to the last attested revision.",
+    "rollback": "Rollback is mandatory when a gate fails, an attestation is revoked, or an expiry is reached."
+  },
+  "attestations": [
+    {
+      "claim_class": "research",
+      "owner": "release-board",
+      "authority_quorum": ["security_lead", "ml_lead", "operations_lead", "incident_command"],
+      "conflict_declaration": "No signed external authority attestation is present; external conflict declarations remain pending.",
+      "recusal": null,
+      "delegate": null,
+      "timestamp": "2026-08-03T00:00:00Z",
+      "revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+      "expires_at": "2027-08-03T00:00:00Z",
+      "prerequisite_hashes": ["6cb552992f67188c9b150770b0d8dfd63da6afcf92d95befaff4da937dd24f4f"],
+      "rollback_decision": "No promotion; retain bounded fixture-only release and rollback on invalidation.",
+      "claim_taxonomy": ["research"],
+      "signature": null,
+      "status": "DEFERRED_EXTERNAL"
+    },
+    {
+      "claim_class": "production",
+      "owner": "release-board",
+      "authority_quorum": ["security_lead", "ml_lead", "operations_lead", "incident_command"],
+      "conflict_declaration": "No production authority or external custody attestation is present.",
+      "recusal": null,
+      "delegate": null,
+      "timestamp": "2026-08-03T00:00:00Z",
+      "revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+      "expires_at": "2027-08-03T00:00:00Z",
+      "prerequisite_hashes": ["6cb552992f67188c9b150770b0d8dfd63da6afcf92d95befaff4da937dd24f4f"],
+      "rollback_decision": "No production promotion; rollback to bounded validation only.",
+      "claim_taxonomy": ["production"],
+      "signature": null,
+      "status": "DEFERRED_EXTERNAL"
+    },
+    {
+      "claim_class": "shadow",
+      "owner": "release-board",
+      "authority_quorum": ["security_lead", "ml_lead", "operations_lead", "incident_command"],
+      "conflict_declaration": "Operator and trusted-baseline authorities are unavailable; no signed external attestation is present.",
+      "recusal": null,
+      "delegate": null,
+      "timestamp": "2026-08-03T00:00:00Z",
+      "revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+      "expires_at": "2027-08-03T00:00:00Z",
+      "prerequisite_hashes": ["6cb552992f67188c9b150770b0d8dfd63da6afcf92d95befaff4da937dd24f4f"],
+      "rollback_decision": "No shadow promotion; machine replay remains non-actuating validation evidence.",
+      "claim_taxonomy": ["shadow"],
+      "signature": null,
+      "status": "DEFERRED_EXTERNAL"
+    },
+    {
+      "claim_class": "field",
+      "owner": "release-board",
+      "authority_quorum": ["security_lead", "ml_lead", "operations_lead", "incident_command"],
+      "conflict_declaration": "Agency, IRB, hardware, and physical calibration authorities are unavailable; no signed external attestation is present.",
+      "recusal": null,
+      "delegate": null,
+      "timestamp": "2026-08-03T00:00:00Z",
+      "revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+      "expires_at": "2027-08-03T00:00:00Z",
+      "prerequisite_hashes": ["6cb552992f67188c9b150770b0d8dfd63da6afcf92d95befaff4da937dd24f4f"],
+      "rollback_decision": "No field promotion; no physical deployment or life-safety actuation.",
+      "claim_taxonomy": ["field"],
+      "signature": null,
+      "status": "DEFERRED_EXTERNAL"
+    }
+  ]
+}

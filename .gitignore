@@ -1,33 +1,69 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.egg-info/
 .venv/
 venv/
-ENV/
+.env
+*.log
 
-# Node
+# Node / frontend
 node_modules/
-.next/
 dist/
+.vite/
+*.local
+test-results/
+playwright-report/
+frontend/tests/.auth/
+
+# Playwright trace archives (regenerable evidence; commit summaries/screenshots only)
+*.trace.zip
+evidence/gate-c/**/*.zip
+evidence/final-verification/**/trace-*.zip
+
+# Runtime backup artifacts (make backup -> backups/<timestamp>/)
+backups/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# OMC state
+.omc/state/
+.omc/logs/
+.omo/run-continuation/
+
+# External references (p4 source cloned for porting)
+tmp/
+
+# Calibration datasets (downloaded by scripts/download_calibration_datasets.py)
+# Not committed to git — large GeoTIFF files. Manifest with checksums is
+# generated at download time under backend/data/calibration/manifest.json
+backend/data/calibration/
+
+# HuggingFace cache + model download cache (not source)
+backend/vendor/
+backend/models/
+
+# ONNX model weights (downloaded by scripts/download_real_models.py)
+# Not committed to git — large binary files. Manifest with checksums is
+# committed at backend/data/models/manifests.json
+*.onnx
+*.onnx.placeholder.bak
+
+# Next.js (modules)
+.next/
 out/
-build/
 .eslintcache
 
-# Flutter/Dart
+# Flutter / Dart (modules/mesh_app)
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-build/
+modules/mesh_app/build/
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
+# PlatformIO (hardware/drone)
+.pio/

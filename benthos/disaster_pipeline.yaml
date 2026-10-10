@@ -1,0 +1,126 @@
+# Benthos disaster pipeline — full normalization, dedup, and routing.
+#
+# Flow: observations.raw → parse+normalize → dedup by observation_id (Redis)
+#       → switch-route by source_type → observations.normalized + type-specific
+# Malformed messages → observations.dlq
+
+input:
+  kafka:
+    addresses:
+      - redpanda:9092
+    topics:
+      - observations.raw
+    consumer_group: benthos-disaster-pipeline
+
+pipeline:
+  processors:
+    # Step 1: Parse JSON and normalize all fields.
+    - mapping: |
+        root = content().parse_json()
+
+        # Timestamp → epoch ms (UTC)
+        root.observed_at = this.observed_at.ts_unix_milli()
+        root.valid_from = if this.valid_from.or("") != "" {
+          this.valid_from.ts_unix_milli()
+        } else {
+          root.observed_at
+        }
+        root.valid_until = if this.valid_until.or("") != "" {
+          this.valid_until.ts_unix_milli()
+        } else {
+          null
+        }
+        root.received_at = now().ts_unix_milli()
+
+        # source_type → UPPERCASE for consistent routing
+        root.source_type = this.source_type.uppercase()
+
+        # Coordinate normalization: lat/lng → GeoJSON Point
+        root.geometry = {
+          "type": "Point",
+          "coordinates": [this.longitude, this.latitude]
+        }
+
+        # Default fields for downstream consumers
+        root.freshness = 1.0
+        root.corroboration_state = "uncorroborated"
+        root.quality_flags = {}
+        root.access_policy = "internal"
+        root.provenance_chain = {}
+        root.raw_data_hash = ""
+
+        # Drop raw lat/lng (now in geometry)
+        root.latitude = deleted()
+        root.longitude = deleted()
+
+    # Step 2: If normalization failed, build error payload for DLQ.
+    - switch:
+        - check: errored()
+          processors:
+            - mapping: |
+                root = {
+                  "error": error(),
+                  "raw": content().string(),
+                  "failed_at": now().ts_unix_milli()
+                }
+
+    # Step 3: Dedup by observation_id (only for non-errored messages).
+    - switch:
+        - check: '!errored()'
+          processors:
+            - dedupe:
+                cache: redis_dedup
+                key: ${! json("observation_id") }
+
+output:
+  switch:
+    retry_until_success: false
+    cases:
+      # Errored messages → DLQ (no continue, stop here)
+      - check: errored()
+        output:
+          kafka:
+            addresses:
+              - redpanda:9092
+            topic: observations.dlq
+      # Type-specific routing (continue: true → also hits default case)
+      - check: this.source_type.or("") == "SENSOR"
+        continue: true
+        output:
+          kafka:
+            addresses:
+              - redpanda:9092
+            topic: observations.sensor
+      - check: this.source_type.or("") == "CITIZEN_REPORT"
+        continue: true
+        output:
+          kafka:
+            addresses:
+              - redpanda:9092
+            topic: observations.citizen
+      - check: this.source_type.or("") == "SATELLITE"
+        continue: true
+        output:
+          kafka:
+            addresses:
+              - redpanda:9092
+            topic: observations.satellite
+      - check: this.source_type.or("") == "OFFICIAL_FEED"
+        continue: true
+        output:
+          kafka:
+            addresses:
+              - redpanda:9092
+            topic: alerts.official
+      # Default: all non-errored messages → observations.normalized
+      - output:
+          kafka:
+            addresses:
+              - redpanda:9092
+            topic: observations.normalized
+
+cache_resources:
+  - label: redis_dedup
+    redis:
+      url: redis://redis:6379/1
+      default_ttl: 24h

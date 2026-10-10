@@ -1,0 +1,10 @@
+{
+  "topics": [
+    {
+      "name": "observations.dlq",
+      "retention_ms": 2592000000,
+      "retention_days": 30,
+      "provisioning_status": "required"
+    }
+  ]
+}

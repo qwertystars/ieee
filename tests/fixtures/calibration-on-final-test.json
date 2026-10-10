@@ -1,0 +1,9 @@
+{
+  "schema_version": "resqnet.calibration-evaluation.v1",
+  "manifest_version": "1.0.0",
+  "calibration_fit_partition": "test",
+  "evaluation_partition": "test",
+  "final_test_hash_verified": true,
+  "test_tuning": true,
+  "claim_policy": "validation-only fixture"
+}

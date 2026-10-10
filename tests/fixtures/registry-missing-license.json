@@ -1,0 +1,54 @@
+{
+  "schema_version": "resqnet.dataset-registry.v1",
+  "registry_version": "1.0.0",
+  "datasets": [
+    {
+      "dataset_id": "xbd-damage-gated",
+      "dataset_type": "damage",
+      "immutable_id": "xview2:xBD@registration-required",
+      "version": "registration-required",
+      "preprocessing_version": "not_registered",
+      "artifact_sha256": null,
+      "artifact_available": false,
+      "source_authority": "xView2 program",
+      "source_url": "https://xview2.org/dataset",
+      "license_name": null,
+      "license_version": null,
+      "license_authority": "xView2 program",
+      "allowed_use_status": "NOT_PERMITTED",
+      "status": "DEFERRED_EXTERNAL",
+      "geography": {
+        "regions": [],
+        "events": [],
+        "availability": "registration-gated"
+      },
+      "events": [],
+      "label_schema": {
+        "classes": ["no-damage", "minor", "major", "destroyed"],
+        "annotation_status": "not_available"
+      },
+      "crs": "UNKNOWN_PENDING_ARTIFACT",
+      "split_metadata": {
+        "status": "UNAVAILABLE",
+        "algorithm": "incident_geography_time_v1",
+        "hash": null
+      },
+      "consent_status": "PENDING",
+      "irb_status": "PENDING",
+      "geographic_privacy": {
+        "status": "PENDING",
+        "method": "authorization and regional privacy review not available"
+      },
+      "claim_classes": ["research"],
+      "expires_at": null,
+      "revoked_at": null,
+      "gating": {
+        "mode": "registration",
+        "download_permitted": false,
+        "authorization_status": "NOT_GRANTED",
+        "reason": "license terms and registration authorization are not present"
+      },
+      "prerequisite_id": "dataset.damage.xbd"
+    }
+  ]
+}

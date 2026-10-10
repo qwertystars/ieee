@@ -1,0 +1,59 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.86,
+          19.07
+        ]
+      },
+      "properties": {
+        "name": "ST-01 Central Shelter",
+        "status": "open",
+        "capacity": 500,
+        "occupancy": 312,
+        "shelter_type": "school"
+      },
+      "id": "shelter_1"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.872,
+          19.078
+        ]
+      },
+      "properties": {
+        "name": "ST-02 Riverside Shelter",
+        "status": "open",
+        "capacity": 300,
+        "occupancy": 280,
+        "shelter_type": "community_hall"
+      },
+      "id": "shelter_2"
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.884,
+          19.086
+        ]
+      },
+      "properties": {
+        "name": "ST-03 Uptown Shelter",
+        "status": "open",
+        "capacity": 1000,
+        "occupancy": 150,
+        "shelter_type": "stadium"
+      },
+      "id": "shelter_3"
+    }
+  ]
+}

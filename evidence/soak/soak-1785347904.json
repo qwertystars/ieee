@@ -1,0 +1,12 @@
+{
+  "duration_s": 60.64,
+  "configured_duration_s": 60,
+  "concurrency": 50,
+  "total_requests": 5858,
+  "successes": 5858,
+  "failures": 0,
+  "success_rate": 1.0,
+  "p95_dashboard_s": 0.6877,
+  "p95_observations_s": 0.6791,
+  "base_url": "http://localhost:8000"
+}

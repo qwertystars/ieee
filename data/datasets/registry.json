@@ -1,0 +1,330 @@
+{
+  "schema_version": "resqnet.dataset-registry.v1",
+  "registry_version": "1.0.0",
+  "datasets": [
+    {
+      "dataset_id": "sen1floods11-flood",
+      "dataset_type": "flood",
+      "immutable_id": "github:cloudtostreet/Sen1Floods11@b9e460dabe70230111a3c3d36cd0c5ce03606ee9",
+      "version": "v1.1",
+      "preprocessing_version": "resqnet-sar-features-v1",
+      "artifact_sha256": null,
+      "artifact_available": false,
+      "artifact_reference": "backend/data/calibration/manifest.json",
+      "source_authority": "Cloud to Street / Sen1Floods11 maintainers",
+      "source_url": "https://github.com/cloudtostreet/Sen1Floods11",
+      "license_name": "CC BY 4.0",
+      "license_version": "4.0",
+      "license_authority": "Creative Commons",
+      "allowed_use_status": "ALLOWED",
+      "status": "DEFERRED_EXTERNAL",
+      "geography": {
+        "regions": ["Bolivia", "Ghana", "India", "Mekong", "Nigeria", "Pakistan", "Paraguay", "Somalia", "Spain", "Sri-Lanka", "USA"],
+        "events": ["Bolivia", "Ghana", "India", "Mekong", "Nigeria", "Pakistan", "Paraguay", "Somalia", "Spain", "Sri-Lanka", "USA"],
+        "availability": "source-described; artifact not present in this workspace"
+      },
+      "events": ["Bolivia", "Ghana", "India", "Mekong", "Nigeria", "Pakistan", "Paraguay", "Somalia", "Spain", "Sri-Lanka", "USA"],
+      "label_schema": {
+        "name": "binary flood mask",
+        "version": "source-v1.1",
+        "classes": ["NoData", "NotWater", "Water"],
+        "annotation_status": "source-described"
+      },
+      "crs": "source-defined; verify from artifact before use",
+      "split_metadata": {
+        "status": "UNAVAILABLE",
+        "algorithm": "incident geography time split policy v1; seed 2025",
+        "hash": null,
+        "train": null,
+        "calibration": null,
+        "test": null
+      },
+      "consent_status": "NOT_REQUIRED",
+      "irb_status": "NOT_REQUIRED",
+      "geographic_privacy": {
+        "status": "PENDING",
+        "method": "source-level geographic privacy review must be recorded with the acquired artifact"
+      },
+      "claim_classes": ["research", "production", "shadow"],
+      "expires_at": null,
+      "revoked_at": null,
+      "gating": {
+        "mode": "public-license",
+        "download_permitted": true,
+        "authorization_status": "LICENSE_RECORDED_ARTIFACT_ABSENT",
+        "reason": "No local artifact is claimed; acquisition and hash recording are prerequisites to use"
+      },
+      "prerequisite_id": "dataset.flood.sen1floods11"
+    },
+    {
+      "dataset_id": "floodnet-flood",
+      "dataset_type": "flood",
+      "immutable_id": "github:BinaLab/FloodNet-Supervised_v1.0@1cba183788e5661c1ec326d7ded1f2536f82e9ad",
+      "version": "pinned-commit",
+      "preprocessing_version": "not_registered",
+      "artifact_sha256": null,
+      "artifact_available": false,
+      "artifact_reference": null,
+      "source_authority": "Bina Lab / FloodNet maintainers",
+      "source_url": "https://github.com/BinaLab/FloodNet-Supervised_v1.0",
+      "license_name": "UNKNOWN_PENDING_AUTHORIZATION",
+      "license_version": null,
+      "license_authority": "Dataset maintainers; terms not recorded in this workspace",
+      "allowed_use_status": "PENDING_AUTHORIZATION",
+      "status": "DEFERRED_EXTERNAL",
+      "geography": {
+        "regions": [],
+        "events": [],
+        "availability": "not acquired"
+      },
+      "events": [],
+      "label_schema": {
+        "name": "not registered",
+        "version": "not registered",
+        "classes": [],
+        "annotation_status": "not available"
+      },
+      "crs": "UNKNOWN_PENDING_ARTIFACT",
+      "split_metadata": {
+        "status": "UNAVAILABLE",
+        "algorithm": "incident geography time split policy v1; seed 2025",
+        "hash": null,
+        "train": null,
+        "calibration": null,
+        "test": null
+      },
+      "consent_status": "PENDING",
+      "irb_status": "PENDING",
+      "geographic_privacy": {
+        "status": "PENDING",
+        "method": "dataset authorization and source privacy terms are not recorded"
+      },
+      "claim_classes": ["research"],
+      "expires_at": null,
+      "revoked_at": null,
+      "gating": {
+        "mode": "license-unknown",
+        "download_permitted": false,
+        "authorization_status": "NOT_VERIFIED",
+        "reason": "Do not download or use until license authority and terms are recorded"
+      },
+      "prerequisite_id": "dataset.flood.floodnet"
+    },
+    {
+      "dataset_id": "xbd-damage",
+      "dataset_type": "damage",
+      "immutable_id": "github:DIUx-xView/xView2_baseline@821d9f8b9201ee7952aef13b073c9fd38ce11d4b",
+      "version": "registration-required",
+      "preprocessing_version": "not_registered",
+      "artifact_sha256": null,
+      "artifact_available": false,
+      "artifact_reference": null,
+      "source_authority": "xView2 program",
+      "source_url": "https://xview2.org/dataset",
+      "license_name": "Non-commercial research license",
+      "license_version": "xView2 terms; version not recorded",
+      "license_authority": "xView2 program",
+      "allowed_use_status": "PENDING_AUTHORIZATION",
+      "status": "DEFERRED_EXTERNAL",
+      "geography": {
+        "regions": [],
+        "events": [],
+        "availability": "registration-gated"
+      },
+      "events": [],
+      "label_schema": {
+        "name": "building damage grade",
+        "version": "source-described",
+        "classes": ["no-damage", "minor", "major", "destroyed"],
+        "annotation_status": "source-described; artifact absent"
+      },
+      "crs": "UNKNOWN_PENDING_ARTIFACT",
+      "split_metadata": {
+        "status": "UNAVAILABLE",
+        "algorithm": "incident geography time split policy v1; seed 2025",
+        "hash": null,
+        "train": null,
+        "calibration": null,
+        "test": null
+      },
+      "consent_status": "PENDING",
+      "irb_status": "PENDING",
+      "geographic_privacy": {
+        "status": "PENDING",
+        "method": "registration terms and geographic privacy review are not available"
+      },
+      "claim_classes": ["research"],
+      "expires_at": null,
+      "revoked_at": null,
+      "gating": {
+        "mode": "registration",
+        "download_permitted": false,
+        "authorization_status": "NOT_GRANTED",
+        "reason": "xBD is gated and is not silently substituted with another damage dataset"
+      },
+      "prerequisite_id": "dataset.damage.xbd"
+    },
+    {
+      "dataset_id": "incident-nlp-evaluation",
+      "dataset_type": "nlp",
+      "immutable_id": "incident-nlp:labeled-evaluation-corpus@not-identified",
+      "version": "not-identified",
+      "preprocessing_version": "not_registered",
+      "artifact_sha256": null,
+      "artifact_available": false,
+      "artifact_reference": null,
+      "source_authority": "No public labeled incident dataset identified",
+      "source_url": "docs/MODEL_DATA_LICENSING.md",
+      "license_name": "NO_PUBLIC_LICENSE_IDENTIFIED",
+      "license_version": null,
+      "license_authority": "NOT_IDENTIFIED",
+      "allowed_use_status": "UNKNOWN",
+      "status": "DEFERRED_EXTERNAL",
+      "geography": {
+        "regions": [],
+        "events": [],
+        "availability": "no public labeled evaluation corpus identified"
+      },
+      "events": [],
+      "label_schema": {
+        "name": "verified incident structured outputs",
+        "version": "not registered",
+        "classes": [],
+        "annotation_status": "no corpus identified"
+      },
+      "crs": "NOT_APPLICABLE",
+      "split_metadata": {
+        "status": "UNAVAILABLE",
+        "algorithm": "incident geography time split policy v1; seed 2025",
+        "hash": null,
+        "train": null,
+        "calibration": null,
+        "test": null
+      },
+      "consent_status": "PENDING",
+      "irb_status": "PENDING",
+      "geographic_privacy": {
+        "status": "PENDING",
+        "method": "labeled incident reports require privacy and authorization review"
+      },
+      "claim_classes": ["research", "production"],
+      "expires_at": null,
+      "revoked_at": null,
+      "gating": {
+        "mode": "no-public-data",
+        "download_permitted": false,
+        "authorization_status": "NOT_APPLICABLE",
+        "reason": "CrisisPulse model plumbing cannot substitute for a licensed labeled evaluation corpus"
+      },
+      "prerequisite_id": "dataset.nlp.incident-evaluation"
+    },
+    {
+      "dataset_id": "regional-sensor-data",
+      "dataset_type": "sensor",
+      "immutable_id": "field-sensors:regional-trial@region-not-selected",
+      "version": "region-not-selected",
+      "preprocessing_version": "not_registered",
+      "artifact_sha256": null,
+      "artifact_available": false,
+      "artifact_reference": null,
+      "source_authority": "ResQNet field-trial lead agency; not assigned",
+      "source_url": "docs/FIELD_TRIAL_PROTOCOL.md",
+      "license_name": "DATA_SHARING_AGREEMENT_NOT_EXECUTED",
+      "license_version": null,
+      "license_authority": "Participating agencies; none committed",
+      "allowed_use_status": "PENDING_AUTHORIZATION",
+      "status": "DEFERRED_EXTERNAL",
+      "geography": {
+        "regions": [],
+        "events": [],
+        "availability": "trial region and agency not selected"
+      },
+      "events": [],
+      "label_schema": {
+        "name": "SensorSource observations",
+        "version": "contract-not-data",
+        "classes": [],
+        "annotation_status": "protocol only"
+      },
+      "crs": "EPSG:4326",
+      "split_metadata": {
+        "status": "UNAVAILABLE",
+        "algorithm": "incident geography time split policy v1; seed 2025",
+        "hash": null,
+        "train": null,
+        "calibration": null,
+        "test": null
+      },
+      "consent_status": "PENDING",
+      "irb_status": "PENDING",
+      "geographic_privacy": {
+        "status": "PENDING",
+        "method": "agency agreement, location precision, retention, and de-identification are pending"
+      },
+      "claim_classes": ["shadow", "field"],
+      "expires_at": null,
+      "revoked_at": null,
+      "gating": {
+        "mode": "agency-agreement",
+        "download_permitted": false,
+        "authorization_status": "NOT_EXECUTED",
+        "reason": "The field-trial protocol is not an executed data-sharing agreement"
+      },
+      "prerequisite_id": "dataset.sensor.regional-trial"
+    },
+    {
+      "dataset_id": "operator-study-data",
+      "dataset_type": "operator",
+      "immutable_id": "field-operators:human-factors-study@not-executed",
+      "version": "not-executed",
+      "preprocessing_version": "not_registered",
+      "artifact_sha256": null,
+      "artifact_available": false,
+      "artifact_reference": null,
+      "source_authority": "ResQNet field-trial protocol; participants and agency not assigned",
+      "source_url": "docs/FIELD_TRIAL_PROTOCOL.md",
+      "license_name": "CONSENT_AND_IRB_NOT_EXECUTED",
+      "license_version": null,
+      "license_authority": "Future trial lead agency and reviewing IRB",
+      "allowed_use_status": "PENDING_AUTHORIZATION",
+      "status": "DEFERRED_EXTERNAL",
+      "geography": {
+        "regions": [],
+        "events": [],
+        "availability": "no operator study executed"
+      },
+      "events": [],
+      "label_schema": {
+        "name": "operator task and human-factors observations",
+        "version": "protocol-not-data",
+        "classes": [],
+        "annotation_status": "protocol only"
+      },
+      "crs": "NOT_APPLICABLE",
+      "split_metadata": {
+        "status": "UNAVAILABLE",
+        "algorithm": "incident geography time split policy v1; seed 2025",
+        "hash": null,
+        "train": null,
+        "calibration": null,
+        "test": null
+      },
+      "consent_status": "PENDING",
+      "irb_status": "PENDING",
+      "geographic_privacy": {
+        "status": "PENDING",
+        "method": "participant consent, IRB review, de-identification, and retention are pending"
+      },
+      "claim_classes": ["shadow", "field"],
+      "expires_at": null,
+      "revoked_at": null,
+      "gating": {
+        "mode": "human-study",
+        "download_permitted": false,
+        "authorization_status": "NOT_EXECUTED",
+        "reason": "No participant data exists and no operator evidence is claimed"
+      },
+      "prerequisite_id": "dataset.operator.human-factors"
+    }
+  ]
+}

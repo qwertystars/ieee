@@ -1,0 +1,65 @@
+{
+  "profile": "reduced",
+  "date": "2026-07-29",
+  "soak_duration_s": 299.78,
+  "configured_soak_duration_s": 300,
+  "concurrent_operators": 50,
+  "phases": {
+    "operator": {
+      "phase": "operator",
+      "duration_s": 299.78,
+      "total_requests": 7332,
+      "total_failures": 0,
+      "success_rate": 1.0,
+      "p95_dashboard_s": 0.0481,
+      "p95_api_read_ms": 31.4,
+      "ingest_posts": 0,
+      "ingest_failures": 0,
+      "ingest_rate_per_s": 0.0
+    },
+    "ingest": {
+      "phase": "ingest",
+      "duration_s": 299.77,
+      "total_requests": 5963,
+      "total_failures": 0,
+      "success_rate": 1.0,
+      "p95_dashboard_s": 0.0,
+      "p95_api_read_ms": 0.0,
+      "ingest_posts": 5863,
+      "ingest_failures": 0,
+      "ingest_rate_per_s": 195.58
+    }
+  },
+  "slo_targets": {
+    "concurrent_operators": 50,
+    "ingest_rate_per_s": 100.0,
+    "dashboard_p95_s": 2.0,
+    "api_read_p95_ms": 500.0,
+    "success_rate": 0.99,
+    "failover_s": 30.0
+  },
+  "slo_results": {
+    "concurrent_operators": 50,
+    "ingest_rate_per_s": 195.58,
+    "dashboard_p95_s": 0.0481,
+    "api_read_p95_ms": 31.4,
+    "success_rate": 1.0,
+    "failover_s": 30.0
+  },
+  "slo_met": {
+    "concurrent_operators": true,
+    "ingest_rate": true,
+    "dashboard_p95": true,
+    "api_read_p95": true,
+    "success_rate": true,
+    "failover": true
+  },
+  "ingest": {
+    "posts_attempted": 5863,
+    "posts_succeeded": 5863,
+    "posts_failed": 0,
+    "rate_per_s": 195.58
+  },
+  "failover_source": "evidence/chaos/*.json (T19 chaos tests)",
+  "failover_note": "T19 chaos tests recorded recovered_within_30s=true for redis, redpanda, and minio. Failover time is bounded by 30s; precise measurement is in the chaos test evidence."
+}

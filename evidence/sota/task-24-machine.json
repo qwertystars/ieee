@@ -1,0 +1,77 @@
+{
+  "claim_class": "tabletop_machine",
+  "cleanup": "Read-only local fixtures; no validators, dependencies, credentials, network, agency systems, or runtime state were modified.",
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "command": "scripts/run_exercise.py --scenario tests/fixtures/tabletop-machine-v1.yaml --replay --report evidence/sota/task-24-machine.json",
+  "cwd": "/root/srijan/ieee",
+  "exit_code": 0,
+  "failure_assertion": "all machine controls passed and unsafe paths failed closed",
+  "finished_at": "2026-08-03T03:23:12.658888Z",
+  "hashes": {
+    "config/cap-profile-v1.2.yaml": "535ee6bb696a1485b8ee7fdeb1819c0663ef7fd62f7977a5208e30dea28ac606",
+    "config/validators.lock": "8e8cce1ac58cd0a1f18614da06dff56c1025eae77d94e3afef27d6b145eb89c0",
+    "scripts/run_exercise.py": "b309a5a3a176212b39d6d521a37740f4153123057072c5e55544e3dad8364527",
+    "tests/fixtures/tabletop-machine-v1.yaml": "cd3ecdcbd64ac7abda64aaeed44c5e5e2723a68fc742dfc197f5cce420443dc7"
+  },
+  "inputs": [
+    "tests/fixtures/tabletop-machine-v1.yaml",
+    "scripts/run_exercise.py",
+    "config/cap-profile-v1.2.yaml",
+    "config/validators.lock"
+  ],
+  "metrics": {
+    "audit_chain_head": "1d22b380ed8d3828210a4ebe948edcb79d93ab2bd38ea0fa510c989e9c64845b",
+    "claim_class": "tabletop_machine",
+    "controls": [
+      "CAP",
+      "OGC API Features",
+      "SensorThings",
+      "security",
+      "schema",
+      "roles",
+      "authority",
+      "conflicts",
+      "public_warning_dual_approval",
+      "offline_sync",
+      "incident_reconstruction",
+      "replay_tamper"
+    ],
+    "external_limitations": [
+      "Local fixtures do not establish agency, production, or operational interoperability."
+    ],
+    "findings": [],
+    "interoperability": {
+      "bindings": [
+        "EPSG:4326",
+        "UCUM",
+        "HTTPS JSON",
+        "MQTT 3.1.1"
+      ],
+      "deferred_reasons": [
+        "validator_unavailable:cap-validator",
+        "validator_unavailable:ogc-api-features-validator",
+        "validator_unavailable:sensorthings-validator"
+      ],
+      "external_validator_availability": {
+        "cap-validator": "DEFERRED_EXTERNAL",
+        "ogc-api-features-validator": "DEFERRED_EXTERNAL",
+        "sensorthings-validator": "DEFERRED_EXTERNAL"
+      },
+      "fixture_count": 3,
+      "machine_conformance": "PASS",
+      "operational_interoperability": "DEFERRED_EXTERNAL",
+      "standards": [
+        "CAP 1.2",
+        "FEMA IPAWS CAP Profile 1.0",
+        "OGC API Features 1.0.1 Core/CRS/Query",
+        "SensorThings Sensing 1.1"
+      ]
+    },
+    "machine_conformance": "PASS",
+    "machine_gate_status": "PASS",
+    "participant_tabletop": "DEFERRED_EXTERNAL"
+  },
+  "started_at": "2026-08-03T03:23:12.612227Z",
+  "status": "PASS",
+  "task_id": "24"
+}

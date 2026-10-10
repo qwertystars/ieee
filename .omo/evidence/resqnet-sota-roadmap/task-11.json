@@ -1,0 +1,70 @@
+{
+  "task_id": "11",
+  "command": "cd backend && .venv/bin/python ../scripts/verify_observability.py --scenario event-trace --expect-worker-scrape --expect-alerts",
+  "cwd": "/root/srijan/ieee",
+  "inputs": [
+    "config/observability/slos.json",
+    "prometheus.yml",
+    "prometheus/alerts.yml",
+    "grafana/provisioning/dashboards/slo_evidence.json",
+    "docs/OBSERVABILITY.md",
+    "backend/app/lib/observability.py",
+    "backend/app/lib/observability_metrics.py",
+    "backend/app/lib/telemetry.py",
+    "backend/app/api/routes/service_health.py",
+    "backend/app/streaming/consumer.py",
+    "backend/app/streaming/producer.py",
+    "backend/app/perception/serving.py",
+    "backend/app/realtime/edge_sync.py",
+    "scripts/verify_observability.py"
+  ],
+  "code_revision": "64d62f899a461ea8aebe7bfb566fee2aba478837",
+  "started_at": "2026-08-02T21:49:35.917218+00:00",
+  "finished_at": "2026-08-02T21:49:35.917254+00:00",
+  "exit_code": 0,
+  "status": "PASS",
+  "metrics": {
+    "sli_count": 8,
+    "worker_scrape": true,
+    "alerts": true,
+    "dashboard_panels": 6,
+    "metrics": {
+      "event_states": 5,
+      "worker_metric": true,
+      "forbidden_label_lines": 0
+    },
+    "trace": {
+      "span_count": 6,
+      "span_names": [
+        "api.request",
+        "audit.write",
+        "client.response",
+        "model.inference",
+        "queue.publish",
+        "worker.process"
+      ],
+      "one_trace": true
+    },
+    "external_deferrals": [
+      "long-term production retention, Alertmanager delivery, trace collector availability, and 30-day SLO evidence remain DEFERRED_EXTERNAL"
+    ]
+  },
+  "hashes": {
+    "config/observability/slos.json": "70eec52325e26e3b3e15f8a187c20f34b0cb0975a187781176b8f844d1cbce47",
+    "prometheus.yml": "be864f7fa1e5c7bcd20968fee523f66832f97d60e35943f4f56c22e17a0f91ce",
+    "prometheus/alerts.yml": "4003bb20adac96f7a4bbd725de62593b3c5e9c1e3a4d682e997d70daf16d75dd",
+    "grafana/provisioning/dashboards/slo_evidence.json": "5c32a64fb8300ae99542716dd1d6954511ac4a1d2f882e775b6df5fc98a38fb1",
+    "docs/OBSERVABILITY.md": "b3b2cf7dc1ba37c53ef0c7eed50f06001173499cfcbe496ab93f4270dc9c7620",
+    "backend/app/lib/observability.py": "aa936a49a44191e30cb3061acb4fdab0f66f74ad9c16007e73401ca50cdfcc3b",
+    "backend/app/lib/observability_metrics.py": "dd32d11a5acd3f39f164215285beb35b813aca83710393d4a34972fe8118ed0b",
+    "backend/app/lib/telemetry.py": "3838500bf118b3190d6c5ad6ffcebf363231da5ba643d59d8f4abb223ee75eac",
+    "backend/app/api/routes/service_health.py": "675cf0c04e114c31c73814cc81173d18cdc70fc788a4da7fa8383af730f478bd",
+    "backend/app/streaming/consumer.py": "f6a180b30d91b646de12f8375d80a729c3c9325c529ca840c45036800de33bac",
+    "backend/app/streaming/producer.py": "8f9205199156d935ddf345f5a332516149739dacccc9a2b19dc4432e5cfd60b8",
+    "backend/app/perception/serving.py": "9435849c62f1b2ff8f7c7904edac1c9e1197c36f2d0442e876996b495f16131e",
+    "backend/app/realtime/edge_sync.py": "ae73fb034bd70b3a245f66693df5e838e014869b391051c4dc37720bedab939c",
+    "scripts/verify_observability.py": "925fbb213041328c1456458eb5f4027eb43a484e378e88a5edb1686cb39bae2f"
+  },
+  "failure_assertion": "Network loss exposes burn-rate and dependency-unknown alerts without secret, PII, payload, or credential labels.",
+  "cleanup": "No services, database rows, queues, external feeds, or production data were modified; in-memory telemetry and spans were discarded."
+}

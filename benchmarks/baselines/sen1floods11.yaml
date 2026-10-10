@@ -1,0 +1,9 @@
+{
+  "schema_version": "resqnet.published-baseline-config.v1",
+  "baseline_id": "sen1floods11-unet-published-v1",
+  "task": "sen1floods11",
+  "status": "DEFERRED_EXTERNAL",
+  "reason": "published weights and licensed benchmark artifact are not available; validation-only command",
+  "artifact_available": false,
+  "command": "python scripts/run_baseline.py --config benchmarks/baselines/sen1floods11.yaml"
+}
