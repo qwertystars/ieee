@@ -1,0 +1,391 @@
+{
+  "status": "PASS",
+  "created_at": "2026-10-10T01:53:17.096Z",
+  "scope": "Real local services; no request mocks; seeded Rivertown scenario; no physical hardware",
+  "checks": [
+    {
+      "workspace": "Situation map",
+      "loaded": true,
+      "mobile_overflow": false
+    },
+    {
+      "workspace": "Survivor map",
+      "loaded": true,
+      "mobile_overflow": false
+    },
+    {
+      "workspace": "Planning & dispatch",
+      "loaded": true,
+      "mobile_overflow": false
+    },
+    {
+      "workspace": "Route sandbox",
+      "loaded": true,
+      "mobile_overflow": false
+    },
+    {
+      "workspace": "Digital twin",
+      "loaded": true,
+      "mobile_overflow": false
+    },
+    {
+      "workspace": "Field operations",
+      "loaded": true,
+      "mobile_overflow": false
+    },
+    {
+      "workspace": "AI hypotheses",
+      "loaded": true,
+      "mobile_overflow": false
+    },
+    {
+      "workspace": "Audit trail",
+      "loaded": true,
+      "mobile_overflow": false
+    },
+    {
+      "simulator_controls": "start, pause, resume, inject fault, stop",
+      "telemetry": true,
+      "device_details": true
+    }
+  ],
+  "responses": [
+    {
+      "path": "/api/auth/login",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/auth/me",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/health",
+      "port": "8001",
+      "status": 200
+    },
+    {
+      "path": "/health",
+      "port": "8001",
+      "status": 200
+    },
+    {
+      "path": "/api/hazard",
+      "port": "8765",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/alerts",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/tasks",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/feed-health",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/observations",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/situation-report",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/alerts",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/feed-health",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/tasks",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/situation-report",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/health",
+      "port": "8001",
+      "status": 200
+    },
+    {
+      "path": "/health",
+      "port": "8001",
+      "status": 200
+    },
+    {
+      "path": "/api/simulator/status",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/health",
+      "port": "8001",
+      "status": 200
+    },
+    {
+      "path": "/api/hazard",
+      "port": "8765",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/hypotheses",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/audit-logs",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/audit/verify",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/audit/verify",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/simulator/start",
+      "port": "8000",
+      "status": 202
+    },
+    {
+      "path": "/api/simulator/status",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/simulator/pause",
+      "port": "8000",
+      "status": 204
+    },
+    {
+      "path": "/api/simulator/status",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/simulator/resume",
+      "port": "8000",
+      "status": 204
+    },
+    {
+      "path": "/api/simulator/status",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/simulator/inject-fault",
+      "port": "8000",
+      "status": 202
+    },
+    {
+      "path": "/api/simulator/status",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/simulator/stop",
+      "port": "8000",
+      "status": 204
+    },
+    {
+      "path": "/api/simulator/status",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/auth/me",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/health",
+      "port": "8001",
+      "status": 200
+    },
+    {
+      "path": "/api/hazard",
+      "port": "8765",
+      "status": 200
+    },
+    {
+      "path": "/health",
+      "port": "8001",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/alerts",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/tasks",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/situation-report",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/observations",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/entities",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents/01K0KF2EG0XC8KE3AD81HK0VEW/feed-health",
+      "port": "8000",
+      "status": 200
+    },
+    {
+      "path": "/api/incidents",
+      "port": "8000",
+      "status": 200
+    }
+  ],
+  "page_errors": [],
+  "script_sha256": "e1dec6c50c2043ee89418f050e891d28989774aa8deda8d1ae4434a1c1fe2f2b"
+}
