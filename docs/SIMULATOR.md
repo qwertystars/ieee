@@ -10,16 +10,34 @@ The simulator is a deterministic digital twin of a rescue ball, a notional
 spherical device deployed into flooded urban areas for situational awareness.
 It produces synthetic sensor observations (battery, temperature, signal,
 altitude) and publishes them to the `observations.raw` Kafka topic, matching
-the payload format expected by the streaming consumer.
+the payload format expected by the streaming consumer. The explicitly configured
+development database transport persists draft observations locally without Kafka.
 
 ## Architecture
 
-```
-SimulationEngine (singleton)
-  ├── RescueBallDevice[]   — digital twins, one per device
-  ├── random.Random(seed)  — deterministic RNG, same seed = same trajectory
-  ├── asyncio.Task          — background loop, 1 tick/second
-  └── ProducerManager       — Kafka producer (best-effort, non-fatal if down)
+```mermaid
+flowchart TB
+    API["Authenticated simulator API<br/>Organization-scoped controls"]
+    ENGINE["SimulationEngine<br/>One engine per organization"]
+    RNG["Seeded random generator<br/>Deterministic trajectory and IDs"]
+    LOOP["Async background loop<br/>One simulated second per tick"]
+    DEVICES["RescueBallDevice instances<br/>Position · battery · signal · temperature"]
+    PAYLOAD["Observation payloads<br/>Simulation provenance"]
+    PRODUCER["ProducerManager<br/>Kafka transport"]
+    RAW["observations.raw"]
+    LOCAL["Explicit development database transport<br/>Canonical ingestion + idempotency + audit"]
+    DB[("PostgreSQL<br/>Draft observations")]
+
+    API --> ENGINE
+    ENGINE --> RNG
+    ENGINE --> LOOP
+    LOOP -->|Advance device state| DEVICES
+    RNG --> DEVICES
+    DEVICES --> PAYLOAD
+    PAYLOAD -->|Default transport| PRODUCER
+    PRODUCER --> RAW
+    PAYLOAD -.->|SIMULATOR_TRANSPORT=database| LOCAL
+    LOCAL --> DB
 ```
 
 Each tick (1 second):
@@ -31,7 +49,7 @@ Each tick (1 second):
 
 ## API
 
-All endpoints are under `/api/simulator`. Start, stop, and inject-fault require
+All endpoints are under `/api/simulator`. Start, stop, pause, resume, speed changes, and inject-fault require
 `admin` or `emergency_manager` roles. Status is available to any authenticated user.
 
 ### Start the simulation
