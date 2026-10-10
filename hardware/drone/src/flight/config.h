@@ -51,6 +51,7 @@ constexpr AxisMap IMU_AXES[3] = {{0, +1}, {1, -1}, {2, -1}};
 constexpr uint32_t LOOP_HZ = 250;
 constexpr float COMP_FILTER_ALPHA = 0.995f;  // trust in gyro vs accelerometer per loop (~1 s time constant)
 constexpr float MANUAL_MIX_LIMIT = 0.25f;   // full stick = 25% roll/pitch motor offset
+constexpr float MANUAL_YAW_LIMIT = 0.15f;   // full stick = 15% CW/CCW motor offset (spin); raise if it turns too slowly
 constexpr float ARM_MAX_TILT_DEG = 15;       // refuse to arm if tilted more than this
 constexpr float CRASH_ANGLE_DEG = 60;        // disarm if tilted more than this
 constexpr uint32_t LINK_TIMEOUT_MS = 600;    // disarm if the phone goes quiet this long

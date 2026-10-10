@@ -1,7 +1,7 @@
 // Manual flight controller for the ESP32 quad (4x ESC + 2212 motors, MPU6050 telemetry).
 //
 // The flight loop runs at 250 Hz in its own high-priority task:
-//   Phone throttle + manual roll/pitch motor offsets -> mixer -> ESCs.
+//   Phone throttle + manual roll/pitch/yaw motor offsets -> mixer -> ESCs.
 // MPU6050 angles are used only for telemetry and tilt cutoffs, never motor corrections.
 // The phone connects to the "esp32-drone" WiFi network and opens http://192.168.4.1/.
 //
@@ -30,6 +30,7 @@ struct Control {
   float throttle = 0;  // 0..1 from the phone's throttle strip
   float roll = 0;      // -1..1, + = right
   float pitch = 0;     // -1..1, + = forward
+  float yaw = 0;       // -1..1, + = spin nose right (clockwise from above)
   uint32_t lastMsgMs = 0;
   bool armRequest = false;
   bool disarmRequest = false;
@@ -195,9 +196,10 @@ void flightStep(float dt) {
   // Pad forward = nose down; centred pad gives equal throttle on all motors.
   const float outRoll = c.roll * MANUAL_MIX_LIMIT;
   const float outPitch = -c.pitch * MANUAL_MIX_LIMIT;
+  const float outYaw = c.yaw * MANUAL_YAW_LIMIT;
 
   for (int m = 0; m < NUM_MOTORS; m++) {
-    const float out = baseThrottle + MIX[m].roll * outRoll + MIX[m].pitch * outPitch;
+    const float out = baseThrottle + MIX[m].roll * outRoll + MIX[m].pitch * outPitch + MIX[m].yaw * outYaw;
     writeMotor(m, constrain(out, IDLE_THROTTLE, MAX_THROTTLE));
   }
 }
@@ -243,10 +245,12 @@ void handleControl() {
   const float t = constrain(server.arg("t").toFloat(), 0.0f, 1.0f);
   const float r = constrain(server.arg("r").toFloat(), -1.0f, 1.0f);
   const float p = constrain(server.arg("p").toFloat(), -1.0f, 1.0f);
+  const float y = constrain(server.arg("y").toFloat(), -1.0f, 1.0f);  // absent (touch page) = 0
   portENTER_CRITICAL(&ctlMux);
   ctl.throttle = t;
   ctl.roll = r;
   ctl.pitch = p;
+  ctl.yaw = y;
   ctl.lastMsgMs = millis();
   portEXIT_CRITICAL(&ctlMux);
   sendTelemetry();
@@ -289,7 +293,7 @@ void startBench(float pct) {
   benchStick = (pct / 100 - IDLE_THROTTLE) / (MAX_THROTTLE - IDLE_THROTTLE);
   portENTER_CRITICAL(&ctlMux);
   ctl.throttle = 0;  // arming needs zero throttle; benchService raises it once armed
-  ctl.roll = ctl.pitch = 0;  // bench mode always drives equal motor throttle
+  ctl.roll = ctl.pitch = ctl.yaw = 0;  // bench mode always drives equal motor throttle
   ctl.armRequest = true;
   ctl.lastMsgMs = millis();
   portEXIT_CRITICAL(&ctlMux);
