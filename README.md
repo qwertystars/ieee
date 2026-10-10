@@ -1,7 +1,7 @@
 # Disaster Situational Awareness & Response Platform
 
 Real-time situational awareness and response coordination for urban flooding (v1 demo
-region: **Rivertown**). Monorepo: FastAPI backend + APScheduler worker + React/Vite
+region: **Rivertown**). Monorepo: FastAPI backend + async Kafka worker + React/Vite
 frontend on PostgreSQL/PostGIS with Apache AGE, TimescaleDB, and h3 extensions.
 
 See [`DESIGN.md`](./DESIGN.md) for the frozen interface contract.
@@ -16,7 +16,7 @@ docker compose up --build
 Services:
 - **db** — PostgreSQL 16 + PostGIS + AGE + TimescaleDB + h3 on `localhost:5432`
 - **backend** — FastAPI on http://localhost:8000 (docs at `/docs`, health at `/healthz`)
-- **worker** — APScheduler ingestion loop
+- **worker** — aiokafka consumer for normalized observations
 - **frontend** — Vite dev server on http://localhost:5173
 - **redis** — token denylist, rate limiting, caching
 - **redpanda** — Kafka-compatible event streaming
@@ -102,36 +102,57 @@ make typecheck
 
 ## Architecture
 
-```
-                    ┌─────────────┐
-                    │  Frontend   │  React + Vite + MapLibre
-                    │  (PWA)      │  Service worker + IndexedDB outbox
-                    └──────┬──────┘
-                           │ REST + WebSocket
-                    ┌──────▼──────┐
-                    │   Backend   │  FastAPI + JWT auth + RBAC + ABAC
-                    │  (FastAPI)  │  Progressive precision PII redaction
-                    └──┬──┬──┬──┬─┘
-           ┌───────────┘  │  │  └───────────┐
-           ▼              ▼  ▼              ▼
-     ┌──────────┐  ┌─────────┐ ┌────────┐ ┌──────────┐
-     │PostgreSQL│  │ Redpanda│ │ Redis  │ │  MinIO   │
-     │+PostGIS  │  │ (Kafka) │ │        │ │ (S3)     │
-     │+AGE      │  └────┬────┘ └────────┘ └──────────┘
-     │+Timescale│       │
-     │+h3       │  ┌────▼────┐
-     └──────────┘  │ Benthos │  Normalize + dedup + route
-                   └────┬────┘
-                   ┌────▼────┐
-                   │  Worker │  APScheduler ingestion
-                   └─────────┘
+```mermaid
+flowchart TB
+    UI["Unified dashboard<br/>React · Vite · MapLibre PWA"]
+    OUTBOX["Encrypted IndexedDB outbox<br/>Offline mutation queue"]
+    API["FastAPI backend<br/>JWT · RBAC · ABAC · PII redaction"]
+    DB[("PostgreSQL<br/>PostGIS · AGE · TimescaleDB · h3")]
+    REDIS["Redis<br/>Revocation · realtime fanout"]
+    S3["MinIO<br/>S3 object storage"]
+    RAW["Redpanda / Kafka<br/>observations.raw"]
+    PIPE["Benthos<br/>Normalize · deduplicate · route"]
+    NORMALIZED["Redpanda / Kafka<br/>observations.normalized"]
+    WORKER["Async Kafka worker<br/>aiokafka ConsumerManager"]
+    MODELS["Manifest-bound ONNX serving"]
+    TWIN["Rescue-ball digital twin"]
+
+    UI -->|REST + WebSocket| API
+    UI <--> OUTBOX
+    OUTBOX -->|Reconnect and synchronize| API
+    API <--> DB
+    API <--> REDIS
+    API <--> S3
+    API --> MODELS
+    API -->|Scenario controls| TWIN
+    API -->|Ingestion| RAW
+    TWIN -->|Kafka transport| RAW
+    TWIN -.->|Explicit development DB transport| DB
+    RAW --> PIPE
+    PIPE --> NORMALIZED
+    NORMALIZED --> WORKER
+    WORKER -->|Persist observations| DB
+
+    subgraph FIELD["Field services and hardware"]
+        PHONE["Flutter mesh app<br/>BLE relay observations"]
+        MESH["BLE localization service<br/>Mesh sync + route WebSocket"]
+        THERMAL["Thermal ingestion service<br/>Detection events"]
+        CONTROLLER["Phone controller page<br/>Bluetooth gamepad"]
+        DRONE["ESP32 drone firmware"]
+        PHONE -->|Mesh table sync| MESH
+        CONTROLLER -->|WiFi commands| DRONE
+    end
+
+    UI <-->|Health + route updates| MESH
+    UI -->|Poll detections| THERMAL
+    UI -->|Open or embed| CONTROLLER
 ```
 
 ### Backend layout
 
 ```
 backend/app/
-  api/routes/    — Hono route handlers (auth, observations, alerts, tasks, simulator, ...)
+  api/routes/    — FastAPI route handlers (auth, observations, alerts, tasks, simulator, ...)
   auth/          — JWT, RBAC (6 roles), ABAC engine, emergency overrides
   middleware/    — request_id, org_context (server-side org_id), error_handler
   lib/           — ulid, time, audit (hash-chained), privacy (progressive precision)
@@ -267,8 +288,3 @@ See [`.env.example`](.env.example) for all configuration variables. Key settings
 - `KAFKA_BOOTSTRAP_SERVERS` — event streaming broker
 - `OTEL_EXPORTER` — set to `none` to disable, or OTLP endpoint
 - `VITE_MESH_API_BASE` — BLE mesh localization service for the Rescue page (default `http://<host>:8001`)
-
-## License
-
-Model weights are downloaded from HuggingFace under the `resqnet` organization.
-See [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for model licensing details.
